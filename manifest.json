@@ -1,0 +1,11 @@
+{
+  "name": "S.H.A.M Coco Production - Daily Expenses",
+  "short_name": "SHAM Expenses",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#EFE7D3",
+  "theme_color": "#3B6B35",
+  "icons": [
+    { "src": "logo.png", "sizes": "360x360", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
