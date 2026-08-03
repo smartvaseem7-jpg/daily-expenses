@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>S.H.A.M Coco Production</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#3B6B35" />
+<link rel="apple-touch-icon" href="logo.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="SHAM Expenses" />
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap');
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:'Inter',system-ui,sans-serif; background:#EFE7D3; color:#3A2E1E; }
+  .mono { font-family:'IBM Plex Mono', monospace; }
+  .display { font-family:'Fraunces', serif; }
+  .wrap { max-width:640px; margin:0 auto; padding:16px 8px 60px; }
+  .card { position:relative; background:#F3ECD9; border:1px solid #D8C89A; border-radius:14px; padding:26px 22px; overflow:hidden; }
+  .leaf-corner { position:absolute; font-size:60px; opacity:0.35; pointer-events:none; line-height:1; }
+  .tl { top:-10px; left:-10px; }
+  .bl { bottom:-10px; left:-10px; transform:scaleX(-1) rotate(10deg); }
+  .br { bottom:-10px; right:-10px; rotate:180deg; }
+  .topbar { position:relative; z-index:1; display:flex; justify-content:flex-end; margin-bottom:6px; }
+  .brand { position:relative; z-index:1; text-align:center; margin-bottom:14px; }
+  .brand h1 { font-size:22px; font-weight:700; margin:0; color:#4A3B28; }
+  .brand h2 { font-size:24px; font-weight:900; margin:2px 0 8px; color:#3B6B35; }
+  .brand .tagline { font-size:12px; color:#6B5B45; margin-top:2px; }
+  .divider { display:flex; align-items:center; justify-content:center; gap:10px; color:#9A8B6E; }
+  .divider .line { height:1px; background:#C9BC9C; flex:1; max-width:90px; }
+  .home-grid { position:relative; z-index:1; display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+  .home-btn { background:#3B6B35; color:#F3ECD9; border:none; border-radius:14px; padding:26px 10px; text-align:center; font-family:'Fraunces',serif; font-weight:700; font-size:15px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .home-btn .icon { font-size:30px; }
+  .home-btn.soon { background:#C9BC9C; color:#4A3B28; }
+  .section-header { position:relative; z-index:1; display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .back-btn { border:none; background:#E4D8B4; border-radius:6px; padding:8px 12px; font-size:13px; cursor:pointer; color:#4A3B28; font-weight:600; }
+  .section-title { font-family:'Fraunces',serif; font-size:19px; font-weight:900; color:#3B6B35; margin:0; }
+  nav.tabs { position:relative; z-index:1; display:flex; gap:8px; margin-bottom:14px; }
+  nav.tabs button { flex:1; padding:9px 0; border-radius:6px; border:1px solid #C9BC9C; background:transparent; color:#4A3B28; font-size:13px; font-weight:600; cursor:pointer; }
+  nav.tabs button.active { background:#4A3B28; color:#F3ECD9; }
+  .datenav { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:12px; }
+  .datenav button { border:none; background:#E4D8B4; border-radius:6px; padding:7px 10px; cursor:pointer; font-size:14px; }
+  .cashbox { text-align:center; margin-bottom:14px; }
+  .cashbox label { font-size:11px; font-weight:600; color:#6B5B45; text-transform:uppercase; letter-spacing:0.04em; }
+  .cashbox .row { display:flex; align-items:center; justify-content:center; gap:4px; }
+  .cashbox input { font-size:20px; font-weight:600; border:none; border-bottom:2px solid #C9BC9C; background:transparent; width:140px; padding:4px 0; text-align:center; }
+  .ledger-row { border-bottom:1px dotted #B8A87E; display:flex; align-items:baseline; gap:10px; padding:9px 2px; }
+  .ledger-row .iname { flex:1; font-size:16px; font-weight:700; }
+  .ledger-row .icat { font-size:11px; color:#8A7A5E; white-space:nowrap; }
+  .ledger-row .iprice { font-size:16px; font-weight:700; min-width:50px; text-align:right; }
+  .ledger-row .idel { border:none; background:none; color:#B33A3A; cursor:pointer; padding:2px; font-size:15px; }
+  .form-row { display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+  .form-row input, .form-row select { padding:9px 10px; border-radius:6px; border:1px solid #C9BC9C; font-size:13px; }
+  .form-row .fname { flex:2; min-width:110px; }
+  .form-row .fprice { flex:1; min-width:80px; }
+  .form-row .fcat { flex:1; min-width:110px; background:white; }
+  .form-row .fcustom { flex:1; min-width:110px; }
+  .form-row .fadd { padding:9px 14px; border-radius:6px; border:none; background:#3B6B35; color:white; font-size:13px; font-weight:600; cursor:pointer; }
+  .totals { border-top:1px solid #C9BC9C; padding-top:14px; }
+  .totals .line { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .totals .label { font-size:16px; color:#4A3B28; font-family:'Fraunces',serif; }
+  .totals .val { font-size:18px; font-weight:700; }
+  .actions { display:flex; gap:8px; margin-top:18px; }
+  .actions button { display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 0; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; }
+  .btn-export { flex:1; border:1px solid #4A3B28; background:transparent; color:#4A3B28; }
+  .btn-clear { border:1px solid #C9BC9C; background:transparent; color:#6B5B45; padding:10px 12px; }
+  .empty { font-size:13px; color:#9A8B6E; text-align:center; margin:0 0 10px; }
+  .month-row { display:flex; justify-content:space-between; padding:9px 2px; font-size:13px; border-bottom:1px dotted #B8A87E; }
+  .month-total { display:flex; justify-content:space-between; padding:12px 2px; font-size:14px; font-weight:700; border-top:1px solid #C9BC9C; margin-top:4px; }
+  .save-note { font-size:11px; color:#9A8B6E; text-align:center; margin-bottom:6px; }
+  .lock-btn { border:none; background:none; color:#8A7A5E; font-size:12px; cursor:pointer; text-decoration:underline; }
+  #lockScreen { position:fixed; inset:0; background:#EFE7D3; display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+  .lock-card { background:#F3ECD9; border:1px solid #D8C89A; border-radius:14px; padding:34px 26px; max-width:340px; width:100%; text-align:center; }
+  .lock-card input { font-size:22px; letter-spacing:6px; text-align:center; width:160px; padding:10px; border-radius:8px; border:1px solid #C9BC9C; margin:14px 0; }
+  .lock-card button { padding:10px 26px; border-radius:8px; border:none; background:#3B6B35; color:white; font-size:14px; font-weight:600; cursor:pointer; }
+  .lock-error { color:#B33A3A; font-size:13px; min-height:18px; }
+  .mt-card { background:#EFE7D3; border:1px solid #D8C89A; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+  .mt-card-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .mt-card-head .sec-name { font-family:'Fraunces',serif; font-size:16px; font-weight:700; color:#4A3B28; }
+  .mt-card-head .sec-balance { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700; color:#3B6B35; }
+  .mt-card-body { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .mt-card-body .mt-opening { font-size:12px; color:#8A7A5E; flex-basis:100%; }
+  .mt-card-body input { flex:1; min-width:80px; padding:7px 8px; border-radius:6px; border:1px solid #C9BC9C; font-size:13px; }
+  @media print {
+    .no-print { display:none !important; }
+    body { background:white; }
+  }
+</style>
+</head>
+<body>
+
+<div id="lockScreen">
+  <div class="lock-card">
+    <div class="leaf-corner" style="position:relative;font-size:40px;">&#127811;</div>
+    <h1 class="display" style="font-size:19px;color:#4A3B28;margin:6px 0 2px;">S.H.A.M COCO PRODUCTION</h1>
+    <p style="font-size:12px;color:#6B5B45;margin:0 0 10px;">Enter PIN to view</p>
+    <input type="password" inputmode="numeric" maxlength="6" id="pinInput" placeholder="••••" />
+    <div class="lock-error" id="lockError"></div>
+    <button id="pinSubmit">Unlock</button>
+  </div>
+</div>
+
+<div class="wrap" id="appRoot" style="display:none;">
+  <div class="card" id="mainCard">
+    <div class="leaf-corner tl">&#127811;</div>
+    <div class="leaf-corner bl">&#127811;</div>
+    <div class="leaf-corner br">&#127811;</div>
+
+    <div class="topbar no-print">
+      <button class="lock-btn" id="lockAgainBtn">&#128274; Lock</button>
+    </div>
+
+    <!-- ===== HOME SCREEN ===== -->
+    <div id="homeScreen">
+      <div class="brand">
+        <img src="logo.png" alt="SHAM Coco Production logo" style="width:110px;height:110px;object-fit:contain;margin-bottom:6px;" />
+        <h1>S.H.A.M COCO PRODUCTION</h1>
+        <div class="divider"><div class="line"></div><span>&#127811;</span><div class="line"></div></div>
+        <p class="tagline">Choose a section</p>
+      </div>
+      <div class="home-grid no-print">
+        <button class="home-btn" id="goExpenses"><span class="icon">&#128181;</span>Daily Expenses</button>
+        <button class="home-btn" id="goMachine"><span class="icon">&#9881;&#65039;</span>Machine Team</button>
+        <button class="home-btn soon" id="goDryer"><span class="icon">&#127788;&#65039;</span>Dryer Team</button>
+        <button class="home-btn soon" id="goStore"><span class="icon">&#127974;&#65039;</span>Store</button>
+      </div>
+    </div>
+
+    <!-- ===== DAILY EXPENSES ===== -->
+    <div id="expensesSection" style="display:none;">
+      <div class="section-header">
+        <button class="back-btn no-print" data-home>&#8592; Home</button>
+        <h2 class="section-title">DAILY EXPENSES</h2>
+      </div>
+
+      <nav class="tabs no-print">
+        <button id="tabDay" class="active">Day</button>
+        <button id="tabMonth">Month</button>
+      </nav>
+
+      <div id="dayView">
+        <div class="datenav no-print">
+          <button id="prevDay">&#8592;</button>
+          <span class="mono" id="niceDate" style="font-size:13px;color:#6B5B45;"></span>
+          <button id="nextDay">&#8594;</button>
+        </div>
+
+        <div class="cashbox">
+          <label>Cash received today</label>
+          <div class="row">
+            <span class="mono" style="font-size:20px;color:#3B6B35;">&#8377;</span>
+            <span class="mono" id="cashTotalDisplay" style="font-size:22px;font-weight:700;"></span>
+          </div>
+        </div>
+
+        <div id="cashEntriesList"></div>
+        <div class="form-row no-print">
+          <input type="number" inputmode="decimal" placeholder="Cash from boss" id="cashAddInput" style="flex:2;min-width:120px;" />
+          <button class="fadd" id="cashAddBtn">+ Add cash</button>
+        </div>
+
+        <div id="itemsList"></div>
+
+        <div class="form-row no-print">
+          <input class="fname" placeholder="Item name" id="itemName" />
+          <input class="fprice" type="number" inputmode="decimal" placeholder="Price" id="itemPrice" />
+          <select class="fcat" id="itemCat">
+            <option>Travel</option>
+            <option>Food</option>
+            <option>Transport</option>
+            <option>Coconut Supplies</option>
+            <option>Other</option>
+          </select>
+          <input class="fcustom" placeholder="Type category" id="itemCustomCat" style="display:none;" />
+          <button class="fadd" id="addItemBtn">+ Add</button>
+        </div>
+        <div class="save-note no-print" id="saveNote"></div>
+
+        <div class="totals">
+          <div class="line"><span class="label">Total cash &raquo;&raquo;</span><span class="val mono" id="totalCashVal" style="color:#B5651D;"></span></div>
+          <div class="line"><span class="label">Balance cash &raquo;&raquo;</span><span class="val mono" id="balanceVal"></span></div>
+        </div>
+
+        <div class="actions no-print">
+          <button class="btn-export" id="exportDayBtn">&#128424; Export day (PDF)</button>
+          <button class="btn-clear" id="clearDayBtn">&#8635; Clear</button>
+        </div>
+      </div>
+
+      <div id="monthView" style="display:none;">
+        <h2 class="display" style="font-size:17px;margin:0 0 12px;text-align:center;color:#4A3B28;" id="monthLabel"></h2>
+        <div id="monthRows"></div>
+        <button class="btn-export no-print" id="exportMonthBtn" style="width:100%;">&#128424; Export month (PDF)</button>
+      </div>
+    </div>
+
+    <!-- ===== MACHINE TEAM ===== -->
+    <div id="machineSection" style="display:none;">
+      <div class="section-header">
+        <button class="back-btn no-print" data-home>&#8592; Home</button>
+        <h2 class="section-title">MACHINE TEAM</h2>
+      </div>
+
+      <div class="datenav no-print">
+        <button id="mtPrevDay">&#8592;</button>
+        <span class="mono" id="mtNiceDate" style="font-size:13px;color:#6B5B45;"></span>
+        <button id="mtNextDay">&#8594;</button>
+      </div>
+
+      <div class="cashbox">
+        <label>Workers today</label>
+        <div class="row">
+          <input type="number" inputmode="numeric" placeholder="0" id="mtWorkersInput" class="mono" style="width:100px;" />
+        </div>
+      </div>
+
+      <div id="mtSectionsList"></div>
+
+      <div class="totals" style="margin-top:6px;">
+        <div class="line"><span class="label">Total matta &raquo;&raquo;</span><span class="val mono" id="mtTotalVal" style="color:#3B6B35;"></span></div>
+      </div>
+      <div class="save-note no-print" id="mtSaveNote"></div>
+
+      <div class="actions no-print">
+        <button class="btn-export" id="mtExportBtn" style="flex:1;">&#128424; Export day (PDF)</button>
+      </div>
+    </div>
+
+    <!-- ===== DRYER TEAM (placeholder) ===== -->
+    <div id="dryerSection" style="display:none;">
+      <div class="section-header">
+        <button class="back-btn no-print" data-home>&#8592; Home</button>
+        <h2 class="section-title">DRYER TEAM</h2>
+      </div>
+      <p class="empty">Idhu innum build panala. Idhula enna track pannanumnu sollunga, apram add pannuven.</p>
+    </div>
+
+    <!-- ===== STORE (placeholder) ===== -->
+    <div id="storeSection" style="display:none;">
+      <div class="section-header">
+        <button class="back-btn no-print" data-home>&#8592; Home</button>
+        <h2 class="section-title">STORE</h2>
+      </div>
+      <p class="empty">Idhu innum build panala. Idhula enna track pannanumnu sollunga, apram add pannuven.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== SETTINGS ======
+const ACCESS_PIN = "19744"; // <-- change this number to your secret PIN
+const firebaseConfig = {
+  apiKey: "AIzaSyA4Kh806eyIy3yjuRmmF6HSKM93xwtQ00A",
+  authDomain: "wm-point-e9196.firebaseapp.com",
+  projectId: "wm-point-e9196",
+  storageBucket: "wm-point-e9196.firebasestorage.app",
+  messagingSenderId: "708620946182",
+  appId: "1:708620946182:web:620dabf9c46418d92dec87"
+};
+const SECTION_KEYS = ["A","B","C","D","E"];
+// ======================
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+const CATS = ["Travel","Food","Transport","Coconut Supplies","Other"];
+
+function fmtDate(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function fmtParts(dstr){
+  const d = new Date(dstr+"T00:00:00");
+  const weekday = d.toLocaleDateString("en-IN",{weekday:"long"}).toUpperCase();
+  const dd=String(d.getDate()).padStart(2,"0"), mm=String(d.getMonth()+1).padStart(2,"0"), yy=String(d.getFullYear()).slice(-2);
+  return {weekday, short:`${dd}-${mm}-${yy}`};
+}
+function fmtNice(dstr){
+  const d = new Date(dstr+"T00:00:00");
+  return d.toLocaleDateString("en-IN",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
+}
+function monthKey(dstr){ return dstr.slice(0,7); }
+function monthNice(mk){
+  const d = new Date(mk+"-01T00:00:00");
+  return d.toLocaleDateString("en-IN",{month:"long",year:"numeric"});
+}
+function rupee(n){ return (Number(n)||0).toLocaleString("en-IN",{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+// ---------- LOCK SCREEN ----------
+function tryUnlock(){
+  const val = document.getElementById("pinInput").value.trim();
+  if(val === ACCESS_PIN){
+    localStorage.setItem("sham-unlocked","true");
+    showApp();
+  } else {
+    document.getElementById("lockError").textContent = "Wrong PIN, try again.";
+  }
+}
+document.getElementById("pinSubmit").addEventListener("click", tryUnlock);
+document.getElementById("pinInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") tryUnlock(); });
+document.getElementById("lockAgainBtn").addEventListener("click", ()=>{
+  localStorage.removeItem("sham-unlocked");
+  document.getElementById("appRoot").style.display="none";
+  document.getElementById("lockScreen").style.display="flex";
+  document.getElementById("pinInput").value="";
+});
+
+function showApp(){
+  document.getElementById("lockScreen").style.display="none";
+  document.getElementById("appRoot").style.display="block";
+  auth.signInAnonymously().then(()=>{
+    showScreen("homeScreen");
+  }).catch((e)=>{
+    alert("Connection error. Check internet.");
+  });
+}
+
+if(localStorage.getItem("sham-unlocked") === "true"){
+  showApp();
+}
+
+// ---------- SCREEN NAVIGATION ----------
+const SCREENS = ["homeScreen","expensesSection","machineSection","dryerSection","storeSection"];
+function showScreen(id){
+  SCREENS.forEach(s=>{
+    document.getElementById(s).style.display = (s===id) ? "block" : "none";
+  });
+}
+document.querySelectorAll("[data-home]").forEach(btn=>{
+  btn.addEventListener("click", ()=>showScreen("homeScreen"));
+});
+
+let expensesLoadedOnce = false;
+let mtLoadedOnce = false;
+
+document.getElementById("goExpenses").addEventListener("click", ()=>{
+  showScreen("expensesSection");
+  if(!expensesLoadedOnce){ expensesLoadedOnce = true; loadDay(selectedDate); }
+});
+document.getElementById("goMachine").addEventListener("click", ()=>{
+  showScreen("machineSection");
+  if(!mtLoadedOnce){ mtLoadedOnce = true; mtLoadDay(mtSelectedDate); }
+});
+document.getElementById("goDryer").addEventListener("click", ()=>showScreen("dryerSection"));
+document.getElementById("goStore").addEventListener("click", ()=>showScreen("storeSection"));
+
+// ---------- EXPENSES STATE ----------
+let selectedDate = fmtDate(new Date());
+let cashEntries = [];
+let items = [];
+
+function totalCash(){ return cashEntries.reduce((s,c)=>s+Number(c.amount||0),0); }
+
+function loadDay(dateStr){
+  document.getElementById("saveNote").textContent = "Loading...";
+  db.collection("expenses").doc(dateStr).get().then((doc)=>{
+    if(doc.exists){
+      const parsed = doc.data();
+      if(Array.isArray(parsed.cashEntries)){
+        cashEntries = parsed.cashEntries;
+      } else if(parsed.cashReceived != null){
+        cashEntries = [{id:"legacy", amount:Number(parsed.cashReceived)||0}];
+      } else {
+        cashEntries = [];
+      }
+      items = Array.isArray(parsed.items) ? parsed.items : [];
+    } else {
+      cashEntries = []; items = [];
+    }
+    document.getElementById("saveNote").textContent = "";
+    renderDay();
+  }).catch((e)=>{
+    document.getElementById("saveNote").textContent = "Couldn't load. Check internet.";
+    cashEntries = []; items = [];
+    renderDay();
+  });
+}
+
+function persistDay(dateStr, nextCashEntries, nextItems){
+  document.getElementById("saveNote").textContent = "Saving...";
+  db.collection("expenses").doc(dateStr).set({
+    cashEntries: nextCashEntries,
+    items: nextItems,
+    date: dateStr,
+    month: monthKey(dateStr)
+  }).then(()=>{
+    document.getElementById("saveNote").textContent = "Saved";
+    setTimeout(()=>{ document.getElementById("saveNote").textContent=""; }, 1200);
+  }).catch((e)=>{
+    document.getElementById("saveNote").textContent = "Couldn't save. Check internet.";
+  });
+}
+
+function renderDay(){
+  document.getElementById("niceDate").textContent = fmtNice(selectedDate);
+
+  const cashList = document.getElementById("cashEntriesList");
+  cashList.innerHTML = "";
+  cashEntries.forEach(c=>{
+    const row = document.createElement("div");
+    row.className="ledger-row display";
+    row.innerHTML = `<div class="iname">CASH RECEIVED</div><div class="iprice mono">${rupee(c.amount)}</div><button class="idel no-print" data-id="${c.id}">&#128465;</button>`;
+    cashList.appendChild(row);
+  });
+  cashList.querySelectorAll(".idel").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      cashEntries = cashEntries.filter(c=>c.id!==btn.dataset.id);
+      persistDay(selectedDate, cashEntries, items);
+      renderDay();
+    });
+  });
+  document.getElementById("cashTotalDisplay").textContent = rupee(totalCash());
+
+  const list = document.getElementById("itemsList");
+  list.innerHTML = "";
+  if(items.length===0){
+    const p = document.createElement("p");
+    p.className="empty"; p.textContent="No items yet today. Add below.";
+    list.appendChild(p);
+  } else {
+    items.forEach(it=>{
+      const row = document.createElement("div");
+      row.className="ledger-row display";
+      row.innerHTML = `<div class="iname">${escapeHtml(it.name.toUpperCase())}</div><div class="icat">${escapeHtml(it.category)}</div><div class="iprice mono">${rupee(it.price)}</div><button class="idel no-print" data-id="${it.id}">&#128465;</button>`;
+      list.appendChild(row);
+    });
+    list.querySelectorAll(".idel").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        items = items.filter(i=>i.id!==btn.dataset.id);
+        persistDay(selectedDate, cashEntries, items);
+        renderDay();
+      });
+    });
+  }
+
+  const totalSpent = items.reduce((s,i)=>s+Number(i.price),0);
+  const balance = totalCash() - totalSpent;
+  document.getElementById("totalCashVal").textContent = rupee(totalCash());
+  const balEl = document.getElementById("balanceVal");
+  balEl.textContent = rupee(balance);
+  balEl.style.color = balance < 0 ? "#B33A3A" : "#3B6B35";
+}
+
+document.getElementById("cashAddBtn").addEventListener("click", ()=>{
+  const val = document.getElementById("cashAddInput").value;
+  if(!val || Number(val)<=0) return;
+  cashEntries.push({id:Date.now().toString(36), amount:Number(val)});
+  persistDay(selectedDate, cashEntries, items);
+  document.getElementById("cashAddInput").value="";
+  renderDay();
+});
+
+document.getElementById("itemCat").addEventListener("change", (e)=>{
+  document.getElementById("itemCustomCat").style.display = e.target.value==="Other" ? "block" : "none";
+});
+
+document.getElementById("addItemBtn").addEventListener("click", ()=>{
+  const name = document.getElementById("itemName").value.trim();
+  const price = document.getElementById("itemPrice").value;
+  const catSel = document.getElementById("itemCat").value;
+  const custom = document.getElementById("itemCustomCat").value.trim();
+  const finalCat = catSel==="Other" && custom ? custom : catSel;
+  if(!name || !price || Number(price)<=0) return;
+  items.push({id:Date.now().toString(36), name, price:Number(price), category:finalCat});
+  persistDay(selectedDate, cashEntries, items);
+  document.getElementById("itemName").value="";
+  document.getElementById("itemPrice").value="";
+  document.getElementById("itemCat").value="Travel";
+  document.getElementById("itemCustomCat").value="";
+  document.getElementById("itemCustomCat").style.display="none";
+  renderDay();
+});
+
+document.getElementById("prevDay").addEventListener("click", ()=>{
+  const d = new Date(selectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
+  selectedDate = fmtDate(d); loadDay(selectedDate);
+});
+document.getElementById("nextDay").addEventListener("click", ()=>{
+  const d = new Date(selectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
+  selectedDate = fmtDate(d); loadDay(selectedDate);
+});
+document.getElementById("clearDayBtn").addEventListener("click", ()=>{
+  items=[]; cashEntries=[];
+  persistDay(selectedDate, [], []);
+  renderDay();
+});
+
+document.getElementById("tabDay").addEventListener("click", ()=>{
+  document.getElementById("dayView").style.display="block";
+  document.getElementById("monthView").style.display="none";
+  document.getElementById("tabDay").classList.add("active");
+  document.getElementById("tabMonth").classList.remove("active");
+});
+document.getElementById("tabMonth").addEventListener("click", ()=>{
+  document.getElementById("dayView").style.display="none";
+  document.getElementById("monthView").style.display="block";
+  document.getElementById("tabDay").classList.remove("active");
+  document.getElementById("tabMonth").classList.add("active");
+  renderMonth();
+});
+
+function renderMonth(){
+  const mk = monthKey(selectedDate);
+  document.getElementById("monthLabel").textContent = monthNice(mk);
+  const container = document.getElementById("monthRows");
+  container.innerHTML = '<p class="empty">Loading...</p>';
+  db.collection("expenses").where("month","==",mk).get().then((snap)=>{
+    const rows = [];
+    snap.forEach(doc=>{
+      const parsed = doc.data();
+      let cash = 0;
+      if(Array.isArray(parsed.cashEntries)) cash = parsed.cashEntries.reduce((s,c)=>s+Number(c.amount||0),0);
+      else if(parsed.cashReceived != null) cash = Number(parsed.cashReceived)||0;
+      const spent = (parsed.items||[]).reduce((s,i)=>s+Number(i.price),0);
+      rows.push({date: doc.id, cash, spent});
+    });
+    rows.sort((a,b)=>a.date.localeCompare(b.date));
+    container.innerHTML = "";
+    if(rows.length===0){
+      container.innerHTML = '<p class="empty">No entries yet this month.</p>';
+      return;
+    }
+    let totalCashM=0, totalSpent=0;
+    rows.forEach(r=>{
+      totalCashM+=r.cash; totalSpent+=r.spent;
+      const bal = r.cash-r.spent;
+      const div = document.createElement("div");
+      div.className="month-row";
+      div.innerHTML = `<span>${fmtNice(r.date)}</span><span class="mono" style="color:${bal<0?'#B33A3A':'#3B6B35'};font-weight:700;">${rupee(bal)}</span>`;
+      container.appendChild(div);
+    });
+    const totalDiv = document.createElement("div");
+    totalDiv.className="month-total";
+    totalDiv.innerHTML = `<span>Total</span><span class="mono">${rupee(totalCashM-totalSpent)}</span>`;
+    container.appendChild(totalDiv);
+  }).catch((e)=>{
+    container.innerHTML = '<p class="empty">Couldn\'t load. Check internet.</p>';
+  });
+}
+
+document.getElementById("exportDayBtn").addEventListener("click", ()=>window.print());
+document.getElementById("exportMonthBtn").addEventListener("click", ()=>window.print());
+document.getElementById("mtExportBtn").addEventListener("click", ()=>window.print());
+
+// ---------- MACHINE TEAM STATE ----------
+let mtSelectedDate = fmtDate(new Date());
+let mtWorkers = "";
+let mtSections = {};
+SECTION_KEYS.forEach(k=>{ mtSections[k] = {opening:0, added:0, cut:0, balance:0}; });
+
+function mtLoadDay(dateStr){
+  document.getElementById("mtSaveNote").textContent = "Loading...";
+  db.collection("machineTeam").doc(dateStr).get().then((doc)=>{
+    if(doc.exists){
+      const data = doc.data();
+      mtWorkers = data.workers != null ? String(data.workers) : "";
+      mtSections = {};
+      SECTION_KEYS.forEach(k=>{
+        const s = (data.sections && data.sections[k]) || {opening:0,added:0,cut:0,balance:0};
+        mtSections[k] = {opening:Number(s.opening)||0, added:Number(s.added)||0, cut:Number(s.cut)||0, balance:Number(s.balance)||0};
+      });
+      document.getElementById("mtSaveNote").textContent = "";
+      mtRender();
+    } else {
+      db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(1).get().then((snap)=>{
+        const opening = {};
+        SECTION_KEYS.forEach(k=>opening[k]=0);
+        if(!snap.empty){
+          const prev = snap.docs[0].data();
+          SECTION_KEYS.forEach(k=>{
+            opening[k] = (prev.sections && prev.sections[k] && Number(prev.sections[k].balance)) || 0;
+          });
+        }
+        mtWorkers = "";
+        mtSections = {};
+        SECTION_KEYS.forEach(k=>{ mtSections[k] = {opening:opening[k], added:0, cut:0, balance:opening[k]}; });
+        document.getElementById("mtSaveNote").textContent = "";
+        mtRender();
+      }).catch(()=>{
+        mtWorkers = "";
+        mtSections = {};
+        SECTION_KEYS.forEach(k=>{ mtSections[k] = {opening:0, added:0, cut:0, balance:0}; });
+        document.getElementById("mtSaveNote").textContent = "Couldn't load previous balance.";
+        mtRender();
+      });
+    }
+  }).catch((e)=>{
+    document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet.";
+  });
+}
+
+function mtPersist(){
+  document.getElementById("mtSaveNote").textContent = "Saving...";
+  db.collection("machineTeam").doc(mtSelectedDate).set({
+    date: mtSelectedDate,
+    month: monthKey(mtSelectedDate),
+    workers: Number(mtWorkers)||0,
+    sections: mtSections
+  }).then(()=>{
+    document.getElementById("mtSaveNote").textContent = "Saved";
+    setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
+  }).catch((e)=>{
+    document.getElementById("mtSaveNote").textContent = "Couldn't save. Check internet.";
+  });
+}
+
+function mtRecalc(k){
+  const s = mtSections[k];
+  s.balance = (Number(s.opening)||0) + (Number(s.added)||0) - (Number(s.cut)||0);
+}
+
+function mtRenderTotal(){
+  const total = SECTION_KEYS.reduce((sum,k)=>sum+(Number(mtSections[k].balance)||0), 0);
+  document.getElementById("mtTotalVal").textContent = rupee(total);
+}
+
+function mtRender(){
+  document.getElementById("mtNiceDate").textContent = fmtNice(mtSelectedDate);
+  document.getElementById("mtWorkersInput").value = mtWorkers;
+
+  const list = document.getElementById("mtSectionsList");
+  list.innerHTML = "";
+  SECTION_KEYS.forEach(k=>{
+    const s = mtSections[k];
+    const card = document.createElement("div");
+    card.className = "mt-card";
+    card.innerHTML = `
+      <div class="mt-card-head">
+        <span class="sec-name display">Section ${k}</span>
+        <span class="sec-balance">Balance: ${rupee(s.balance)}</span>
+      </div>
+      <div class="mt-card-body">
+        <div class="mt-opening">Opening: ${rupee(s.opening)}</div>
+        <input type="number" inputmode="decimal" placeholder="Added" value="${s.added||''}" class="no-print" data-sec="${k}" data-field="added" />
+        <input type="number" inputmode="decimal" placeholder="Cut" value="${s.cut||''}" class="no-print" data-sec="${k}" data-field="cut" />
+      </div>`;
+    list.appendChild(card);
+  });
+
+  list.querySelectorAll("input[data-sec]").forEach(inp=>{
+    inp.addEventListener("input", (e)=>{
+      const k = e.target.dataset.sec, field = e.target.dataset.field;
+      mtSections[k][field] = Number(e.target.value)||0;
+      mtRecalc(k);
+      mtPersist();
+      mtRenderTotal();
+      const balEl = e.target.closest(".mt-card").querySelector(".sec-balance");
+      balEl.textContent = "Balance: " + rupee(mtSections[k].balance);
+    });
+  });
+
+  mtRenderTotal();
+}
+
+document.getElementById("mtWorkersInput").addEventListener("input", (e)=>{
+  mtWorkers = e.target.value;
+  mtPersist();
+});
+document.getElementById("mtPrevDay").addEventListener("click", ()=>{
+  const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
+  mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
+});
+document.getElementById("mtNextDay").addEventListener("click", ()=>{
+  const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
+  mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
+});
+
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw-1-1.js").catch(()=>{});
+}
+</script>
+</body>
+</html>
