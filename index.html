@@ -810,24 +810,32 @@ function mtRender(){
 
   mtRenderTotalsOnly();
 }
+function exportPDF(filename) {
+    const element = document.getElementById("mainCard");
 
-function mtRenderWorkerCount(){
-  const count = WORKER_NAMES.filter(n=>mtWorkers[n]).length;
-  document.getElementById("mtWorkersCount").textContent = `Workers present: ${count}/${WORKER_NAMES.length}`;
+    html2pdf().set({
+        margin: 0.5,
+        filename: filename,
+        image: { type: "jpeg", quality: 1 },
+        html2canvas: { scale: 2 },
+        jsPDF: {
+            unit: "in",
+            format: "a4",
+            orientation: "portrait"
+        }
+    }).from(element).save();
 }
 
-document.getElementById("mtTargetInput").addEventListener("input", (e)=>{
-  mtTarget = e.target.value;
-  mtPersist();
-  mtRenderTotalsOnly();
+document.getElementById("exportDayBtn").addEventListener("click", () => {
+    exportPDF(`Daily-Expenses-${selectedDate}.pdf`);
 });
-document.getElementById("mtPrevDay").addEventListener("click", ()=>{
-  const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
-  mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
+
+document.getElementById("exportMonthBtn").addEventListener("click", () => {
+    exportPDF(`Monthly-Report-${monthKey(selectedDate)}.pdf`);
 });
-document.getElementById("mtNextDay").addEventListener("click", ()=>{
-  const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
-  mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
+
+document.getElementById("mtExportBtn").addEventListener("click", () => {
+    exportPDF(`Machine-Team-${mtSelectedDate}.pdf`);
 });
 
 if("serviceWorker" in navigator){
