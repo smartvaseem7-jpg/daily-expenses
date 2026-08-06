@@ -92,6 +92,17 @@
   @media print {
     .no-print { display:none !important; }
     body { background:white; }
+    .wrap { max-width:100% !important; padding:0 !important; margin:0 !important; }
+    .card { padding:50px !important; border-radius:0 !important; }
+    .brand h1, .section-title { font-size:30px !important; }
+    .brand h2 { font-size:32px !important; }
+    .cashbox label, .sub-label, .sub-title { font-size:16px !important; }
+    #cashTotalDisplay, #mtTotalVal, #mtBalanceVal, #mtOpeningVal, .totals .val { font-size:30px !important; }
+    .ledger-row .iname, .ledger-row .iprice, .month-row { font-size:20px !important; }
+    .totals .label { font-size:20px !important; }
+    .mt-card-head .sec-name, .mt-card-head .sec-balance { font-size:20px !important; }
+    .person-row { font-size:18px !important; }
+    .datenav span, .cashbox div { font-size:16px !important; }
   }
 </style>
 </head>
@@ -216,8 +227,14 @@
         <button id="mtNextDay" class="no-print">&#8594;</button>
       </div>
 
+      <button class="btn-clear no-print" id="mtToggleEdit" style="width:100%;margin-bottom:14px;">&#9998; Edit</button>
+
       <h3 class="sub-title display">Workers Today</h3>
       <div id="mtWorkersList"></div>
+      <div class="form-row no-print" id="mtWorkerFormRow" style="display:none;">
+        <input type="text" placeholder="Worker name" id="mtWorkerNameInput" style="flex:2;" />
+        <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
+      </div>
       <p class="empty" id="mtWorkersCount"></p>
 
       <h3 class="sub-title display">Matta Today</h3>
@@ -230,7 +247,7 @@
         <div class="line"><span class="label">Total matta &raquo;&raquo;</span><span class="val mono" id="mtTotalVal" style="color:#3B6B35;"></span></div>
       </div>
 
-      <div class="form-row no-print" style="margin-top:12px;">
+      <div class="form-row no-print" id="mtTargetFormRow" style="display:none;">
         <input type="number" inputmode="decimal" placeholder="Target matta" id="mtTargetInput" style="flex:1;" />
       </div>
 
@@ -668,17 +685,27 @@ document.getElementById("mtExportBtn").addEventListener("click", ()=>window.prin
 
 // ---------- MACHINE TEAM STATE ----------
 let mtSelectedDate = fmtDate(new Date());
-let mtWorkers = {};
+let mtWorkers = [];
 let mtSectionsData = {};
 let mtTarget = "";
 let mtOpening = 0;
-SECTION_KEYS.forEach(k=>{ mtSectionsData[k] = {amount:0, name:""}; });
+let mtEditMode = false;
+SECTION_KEYS.forEach(k=>{ mtSectionsData[k] = []; });
 
 function mtTotals(){
-  const sumSections = SECTION_KEYS.reduce((s,k)=>s+(Number(mtSectionsData[k].amount)||0),0);
+  let sumSections = 0;
+  SECTION_KEYS.forEach(k=>{
+    sumSections += mtSectionsData[k].reduce((s,e)=>s+(Number(e.amount)||0),0);
+  });
   const totalMatta = mtOpening + sumSections;
   const totalBalance = totalMatta - (Number(mtTarget)||0);
   return {sumSections, totalMatta, totalBalance};
+}
+
+function mtEmptySections(){
+  const obj = {};
+  SECTION_KEYS.forEach(k=>{ obj[k] = []; });
+  return obj;
 }
 
 function mtLoadDay(dateStr){
@@ -686,11 +713,11 @@ function mtLoadDay(dateStr){
   db.collection("machineTeam").doc(dateStr).get().then((doc)=>{
     if(doc.exists){
       const data = doc.data();
-      mtWorkers = data.workers || {};
-      mtSectionsData = {};
+      mtWorkers = Array.isArray(data.workers) ? data.workers : [];
+      mtSectionsData = mtEmptySections();
       SECTION_KEYS.forEach(k=>{
-        const s = (data.sections && data.sections[k]) || {amount:0,name:""};
-        mtSectionsData[k] = {amount:Number(s.amount)||0, name:s.name||""};
+        const arr = (data.sections && Array.isArray(data.sections[k])) ? data.sections[k] : [];
+        mtSectionsData[k] = arr.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||""}));
       });
       mtTarget = data.target != null ? String(data.target) : "";
       mtOpening = Number(data.opening)||0;
@@ -703,22 +730,21 @@ function mtLoadDay(dateStr){
           const prev = snap.docs[0].data();
           opening = Number(prev.balance)||0;
         }
-        mtWorkers = {};
-        mtSectionsData = {};
-        SECTION_KEYS.forEach(k=>{ mtSectionsData[k] = {amount:0, name:""}; });
+        mtWorkers = [];
+        mtSectionsData = mtEmptySections();
         mtTarget = "";
         mtOpening = opening;
         document.getElementById("mtSaveNote").textContent = "";
         mtRender();
       }).catch(()=>{
-        mtWorkers = {}; mtSectionsData = {}; SECTION_KEYS.forEach(k=>{ mtSectionsData[k]={amount:0,name:""}; });
+        mtWorkers = []; mtSectionsData = mtEmptySections();
         mtTarget = ""; mtOpening = 0;
         document.getElementById("mtSaveNote").textContent = "Couldn't load previous balance.";
         mtRender();
       });
     }
   }).catch((e)=>{
-    mtWorkers = {}; mtSectionsData = {}; SECTION_KEYS.forEach(k=>{ mtSectionsData[k]={amount:0,name:""}; });
+    mtWorkers = []; mtSectionsData = mtEmptySections();
     mtTarget = ""; mtOpening = 0;
     document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
     mtRender();
@@ -745,7 +771,7 @@ function mtPersist(){
 }
 
 function mtRenderTotalsOnly(){
-  const {sumSections, totalMatta, totalBalance} = mtTotals();
+  const {totalMatta, totalBalance} = mtTotals();
   document.getElementById("mtOpeningVal").textContent = rupee(mtOpening);
   document.getElementById("mtTotalVal").textContent = rupee(totalMatta);
   document.getElementById("mtBalanceVal").textContent = rupee(totalBalance);
@@ -754,11 +780,12 @@ function mtRenderTotalsOnly(){
 
   const personMap = {};
   SECTION_KEYS.forEach(k=>{
-    const s = mtSectionsData[k];
-    const nm = (s.name||"").trim();
-    if(nm && Number(s.amount)>0){
-      personMap[nm] = (personMap[nm]||0) + Number(s.amount);
-    }
+    mtSectionsData[k].forEach(e=>{
+      const nm = (e.name||"").trim();
+      if(nm && Number(e.amount)>0){
+        personMap[nm] = (personMap[nm]||0) + Number(e.amount);
+      }
+    });
   });
   const ptDiv = document.getElementById("mtPersonTotals");
   ptDiv.innerHTML = "";
@@ -770,55 +797,112 @@ function mtRenderTotalsOnly(){
   });
 }
 
+function mtRenderWorkerCount(){
+  document.getElementById("mtWorkersCount").textContent = `Workers today: ${mtWorkers.length}`;
+}
+
 function mtRender(){
   document.getElementById("mtNiceDate").textContent = fmtNice(mtSelectedDate);
   document.getElementById("mtTargetInput").value = mtTarget;
 
+  // Workers list
   const wList = document.getElementById("mtWorkersList");
   wList.innerHTML = "";
-  WORKER_NAMES.forEach(name=>{
-    const row = document.createElement("label");
-    row.className = "worker-row";
-    row.innerHTML = `<input type="checkbox" data-name="${escapeHtml(name)}" ${mtWorkers[name] ? "checked" : ""} class="no-print" /> ${escapeHtml(name.toUpperCase())}`;
-    wList.appendChild(row);
-  });
-  wList.querySelectorAll("input[type=checkbox]").forEach(cb=>{
-    cb.addEventListener("change", (e)=>{
-      mtWorkers[e.target.dataset.name] = e.target.checked;
-      mtPersist();
-      mtRenderWorkerCount();
+  if(mtWorkers.length===0){
+    wList.innerHTML = '<p class="empty">No workers added yet today.</p>';
+  } else {
+    mtWorkers.forEach(w=>{
+      const row = document.createElement("div");
+      row.className = "ledger-row display";
+      const icon = mtEditMode ? `<button class="idel no-print" data-wid="${w.id}">&#128465;</button>` : "";
+      row.innerHTML = `<div class="iname">${escapeHtml(w.name.toUpperCase())}</div>${icon}`;
+      wList.appendChild(row);
     });
-  });
+    wList.querySelectorAll(".idel").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        mtWorkers = mtWorkers.filter(w=>w.id!==btn.dataset.wid);
+        mtPersist();
+        mtRender();
+      });
+    });
+  }
   mtRenderWorkerCount();
 
+  // Sections A-E, each with its own multi-entry list
   const list = document.getElementById("mtSectionsList");
   list.innerHTML = "";
   SECTION_KEYS.forEach(k=>{
-    const s = mtSectionsData[k];
+    const entries = mtSectionsData[k];
+    const sectionTotal = entries.reduce((s,e)=>s+(Number(e.amount)||0),0);
     const card = document.createElement("div");
     card.className = "mt-card";
+    let rowsHtml = "";
+    if(entries.length===0){
+      rowsHtml = `<p class="empty" style="margin:4px 0;">No matta added yet.</p>`;
+    } else {
+      entries.forEach(e=>{
+        const icon = mtEditMode ? `<button class="idel no-print" data-sec="${k}" data-eid="${e.id}">&#128465;</button>` : "";
+        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml((e.name||"—").toUpperCase())}</div><div class="iprice mono" style="font-size:14px;">${rupee(e.amount)}</div>${icon}</div>`;
+      });
+    }
+    const formHtml = mtEditMode ? `
+      <div class="form-row no-print" style="margin:8px 0 0;">
+        <input type="number" inputmode="decimal" placeholder="Matta" class="mt-entry-amount" data-sec="${k}" style="flex:1;" />
+        <input type="text" placeholder="Name" class="mt-entry-name" data-sec="${k}" style="flex:1;" />
+        <button class="fadd mt-entry-add" data-sec="${k}">+ Add</button>
+      </div>` : "";
     card.innerHTML = `
-      <span class="sec-name">${k} &raquo;</span>
-      <input type="number" inputmode="decimal" placeholder="Matta" value="${s.amount||''}" class="no-print" data-sec="${k}" data-field="amount" />
-      <input type="text" placeholder="Name" value="${escapeHtml(s.name||'')}" class="no-print" data-sec="${k}" data-field="name" />`;
+      <div class="mt-card-head">
+        <span class="sec-name display">Section ${k}</span>
+        <span class="sec-balance">${rupee(sectionTotal)}</span>
+      </div>
+      ${rowsHtml}
+      ${formHtml}`;
     list.appendChild(card);
   });
-  list.querySelectorAll("input[data-sec]").forEach(inp=>{
-    inp.addEventListener("input", (e)=>{
-      const k = e.target.dataset.sec, field = e.target.dataset.field;
-      mtSectionsData[k][field] = field==="amount" ? (Number(e.target.value)||0) : e.target.value;
+
+  list.querySelectorAll(".idel").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = btn.dataset.sec, eid = btn.dataset.eid;
+      mtSectionsData[k] = mtSectionsData[k].filter(e=>e.id!==eid);
       mtPersist();
-      mtRenderTotalsOnly();
+      mtRender();
+    });
+  });
+  list.querySelectorAll(".mt-entry-add").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = btn.dataset.sec;
+      const amountInput = list.querySelector(`.mt-entry-amount[data-sec="${k}"]`);
+      const nameInput = list.querySelector(`.mt-entry-name[data-sec="${k}"]`);
+      const amount = Number(amountInput.value)||0;
+      const name = nameInput.value.trim();
+      if(amount<=0) return;
+      mtSectionsData[k].push({id:Date.now().toString(36), amount, name});
+      mtPersist();
+      mtRender();
     });
   });
 
   mtRenderTotalsOnly();
 }
 
-function mtRenderWorkerCount(){
-  const count = WORKER_NAMES.filter(n=>mtWorkers[n]).length;
-  document.getElementById("mtWorkersCount").textContent = `Workers present: ${count}/${WORKER_NAMES.length}`;
-}
+document.getElementById("mtToggleEdit").addEventListener("click", ()=>{
+  mtEditMode = !mtEditMode;
+  document.getElementById("mtToggleEdit").innerHTML = mtEditMode ? "&#10003; Done" : "&#9998; Edit";
+  document.getElementById("mtWorkerFormRow").style.display = mtEditMode ? "flex" : "none";
+  document.getElementById("mtTargetFormRow").style.display = mtEditMode ? "flex" : "none";
+  mtRender();
+});
+
+document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
+  const input = document.getElementById("mtWorkerNameInput");
+  const name = input.value.trim();
+  if(!name) return;
+  mtWorkers.push({id:Date.now().toString(36), name});
+  mtPersist();
+  input.value="";
+  mtRender();
+});
 
 document.getElementById("mtTargetInput").addEventListener("input", (e)=>{
   mtTarget = e.target.value;
