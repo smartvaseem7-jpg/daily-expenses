@@ -13,7 +13,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap');
+  * { box-sizing: border-box; }
   body { margin:0; font-family:'Inter',system-ui,sans-serif; background:#EFE7D3; color:#3A2E1E; }
   .mono { font-family:'IBM Plex Mono', monospace; }
   .display { font-family:'Fraunces', serif; }
@@ -717,7 +718,10 @@ function mtLoadDay(dateStr){
       });
     }
   }).catch((e)=>{
-    document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet.";
+    mtWorkers = {}; mtSectionsData = {}; SECTION_KEYS.forEach(k=>{ mtSectionsData[k]={amount:0,name:""}; });
+    mtTarget = ""; mtOpening = 0;
+    document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
+    mtRender();
   });
 }
 
@@ -810,32 +814,24 @@ function mtRender(){
 
   mtRenderTotalsOnly();
 }
-function exportPDF(filename) {
-    const element = document.getElementById("mainCard");
 
-    html2pdf().set({
-        margin: 0.5,
-        filename: filename,
-        image: { type: "jpeg", quality: 1 },
-        html2canvas: { scale: 2 },
-        jsPDF: {
-            unit: "in",
-            format: "a4",
-            orientation: "portrait"
-        }
-    }).from(element).save();
+function mtRenderWorkerCount(){
+  const count = WORKER_NAMES.filter(n=>mtWorkers[n]).length;
+  document.getElementById("mtWorkersCount").textContent = `Workers present: ${count}/${WORKER_NAMES.length}`;
 }
 
-document.getElementById("exportDayBtn").addEventListener("click", () => {
-    exportPDF(`Daily-Expenses-${selectedDate}.pdf`);
+document.getElementById("mtTargetInput").addEventListener("input", (e)=>{
+  mtTarget = e.target.value;
+  mtPersist();
+  mtRenderTotalsOnly();
 });
-
-document.getElementById("exportMonthBtn").addEventListener("click", () => {
-    exportPDF(`Monthly-Report-${monthKey(selectedDate)}.pdf`);
+document.getElementById("mtPrevDay").addEventListener("click", ()=>{
+  const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
+  mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
 });
-
-document.getElementById("mtExportBtn").addEventListener("click", () => {
-    exportPDF(`Machine-Team-${mtSelectedDate}.pdf`);
+document.getElementById("mtNextDay").addEventListener("click", ()=>{
+  const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
+  mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
 });
 
 if("serviceWorker" in navigator){
