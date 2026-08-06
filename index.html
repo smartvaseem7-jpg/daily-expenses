@@ -85,9 +85,11 @@
   .lock-error { color:#B33A3A; font-size:13px; min-height:18px; }
   .worker-row { display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px dotted #B8A87E; font-size:14px; font-weight:600; }
   .worker-row input[type=checkbox] { width:18px; height:18px; accent-color:#3B6B35; }
-  .mt-card { background:#EFE7D3; border:1px solid #D8C89A; border-radius:10px; padding:10px 14px; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
-  .mt-card .sec-name { font-family:'Fraunces',serif; font-size:15px; font-weight:700; color:#4A3B28; min-width:66px; }
-  .mt-card input { flex:1; min-width:70px; padding:7px 8px; border-radius:6px; border:1px solid #C9BC9C; font-size:13px; }
+  .mt-card { background:#EFE7D3; border:1px solid #D8C89A; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+  .mt-card-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .mt-card-head .sec-name { font-family:'Fraunces',serif; font-size:16px; font-weight:700; color:#4A3B28; }
+  .mt-card-head .sec-balance { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700; color:#3B6B35; }
+  .mt-opening { font-size:12px; color:#8A7A5E; margin-bottom:6px; }
   .person-row { display:flex; justify-content:space-between; padding:6px 2px; font-size:13px; color:#4A3B28; }
   @media print {
     .no-print { display:none !important; }
@@ -245,10 +247,6 @@
       <div class="totals">
         <div class="line"><span class="label">Opening &raquo;&raquo;</span><span class="val mono" id="mtOpeningVal"></span></div>
         <div class="line"><span class="label">Total matta &raquo;&raquo;</span><span class="val mono" id="mtTotalVal" style="color:#3B6B35;"></span></div>
-      </div>
-
-      <div class="form-row no-print" id="mtTargetFormRow" style="display:none;">
-        <input type="number" inputmode="decimal" placeholder="Target matta" id="mtTargetInput" style="flex:1;" />
       </div>
 
       <div class="totals">
@@ -687,25 +685,34 @@ document.getElementById("mtExportBtn").addEventListener("click", ()=>window.prin
 let mtSelectedDate = fmtDate(new Date());
 let mtWorkers = [];
 let mtSectionsData = {};
-let mtTarget = "";
-let mtOpening = 0;
 let mtEditMode = false;
-SECTION_KEYS.forEach(k=>{ mtSectionsData[k] = []; });
 
-function mtTotals(){
-  let sumSections = 0;
-  SECTION_KEYS.forEach(k=>{
-    sumSections += mtSectionsData[k].reduce((s,e)=>s+(Number(e.amount)||0),0);
-  });
-  const totalMatta = mtOpening + sumSections;
-  const totalBalance = totalMatta - (Number(mtTarget)||0);
-  return {sumSections, totalMatta, totalBalance};
+function mtEmptySections(openings){
+  const obj = {};
+  SECTION_KEYS.forEach(k=>{ obj[k] = {opening:(openings&&openings[k])||0, entries:[], cut:0, balance:(openings&&openings[k])||0}; });
+  return obj;
+}
+SECTION_KEYS.forEach(k=>{}); // no-op, kept for readability
+mtSectionsData = mtEmptySections();
+
+function mtRecalc(k){
+  const s = mtSectionsData[k];
+  const added = s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0);
+  s.balance = (Number(s.opening)||0) + added - (Number(s.cut)||0);
 }
 
-function mtEmptySections(){
-  const obj = {};
-  SECTION_KEYS.forEach(k=>{ obj[k] = []; });
-  return obj;
+function mtTotals(){
+  let totalOpening=0, totalAdded=0, totalCut=0, totalBalance=0;
+  SECTION_KEYS.forEach(k=>{
+    mtRecalc(k);
+    const s = mtSectionsData[k];
+    totalOpening += Number(s.opening)||0;
+    totalAdded += s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0);
+    totalCut += Number(s.cut)||0;
+    totalBalance += s.balance;
+  });
+  const totalMatta = totalOpening + totalAdded;
+  return {totalOpening, totalAdded, totalCut, totalMatta, totalBalance};
 }
 
 function mtLoadDay(dateStr){
@@ -716,36 +723,39 @@ function mtLoadDay(dateStr){
       mtWorkers = Array.isArray(data.workers) ? data.workers : [];
       mtSectionsData = mtEmptySections();
       SECTION_KEYS.forEach(k=>{
-        const arr = (data.sections && Array.isArray(data.sections[k])) ? data.sections[k] : [];
-        mtSectionsData[k] = arr.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||""}));
+        const s = (data.sections && data.sections[k]) || {};
+        const entries = Array.isArray(s.entries) ? s.entries : [];
+        mtSectionsData[k] = {
+          opening: Number(s.opening)||0,
+          entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||""})),
+          cut: Number(s.cut)||0,
+          balance: 0
+        };
       });
-      mtTarget = data.target != null ? String(data.target) : "";
-      mtOpening = Number(data.opening)||0;
       document.getElementById("mtSaveNote").textContent = "";
       mtRender();
     } else {
       db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(1).get().then((snap)=>{
-        let opening = 0;
+        const openings = {};
+        SECTION_KEYS.forEach(k=>openings[k]=0);
         if(!snap.empty){
           const prev = snap.docs[0].data();
-          opening = Number(prev.balance)||0;
+          SECTION_KEYS.forEach(k=>{
+            openings[k] = (prev.sections && prev.sections[k] && Number(prev.sections[k].balance)) || 0;
+          });
         }
         mtWorkers = [];
-        mtSectionsData = mtEmptySections();
-        mtTarget = "";
-        mtOpening = opening;
+        mtSectionsData = mtEmptySections(openings);
         document.getElementById("mtSaveNote").textContent = "";
         mtRender();
       }).catch(()=>{
         mtWorkers = []; mtSectionsData = mtEmptySections();
-        mtTarget = ""; mtOpening = 0;
         document.getElementById("mtSaveNote").textContent = "Couldn't load previous balance.";
         mtRender();
       });
     }
   }).catch((e)=>{
     mtWorkers = []; mtSectionsData = mtEmptySections();
-    mtTarget = ""; mtOpening = 0;
     document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
     mtRender();
   });
@@ -753,15 +763,12 @@ function mtLoadDay(dateStr){
 
 function mtPersist(){
   document.getElementById("mtSaveNote").textContent = "Saving...";
-  const {totalBalance} = mtTotals();
+  SECTION_KEYS.forEach(k=>mtRecalc(k));
   db.collection("machineTeam").doc(mtSelectedDate).set({
     date: mtSelectedDate,
     month: monthKey(mtSelectedDate),
     workers: mtWorkers,
-    sections: mtSectionsData,
-    target: Number(mtTarget)||0,
-    opening: mtOpening,
-    balance: totalBalance
+    sections: mtSectionsData
   }).then(()=>{
     document.getElementById("mtSaveNote").textContent = "Saved";
     setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
@@ -771,8 +778,8 @@ function mtPersist(){
 }
 
 function mtRenderTotalsOnly(){
-  const {totalMatta, totalBalance} = mtTotals();
-  document.getElementById("mtOpeningVal").textContent = rupee(mtOpening);
+  const {totalOpening, totalMatta, totalBalance} = mtTotals();
+  document.getElementById("mtOpeningVal").textContent = rupee(totalOpening);
   document.getElementById("mtTotalVal").textContent = rupee(totalMatta);
   document.getElementById("mtBalanceVal").textContent = rupee(totalBalance);
   const balEl = document.getElementById("mtBalanceVal");
@@ -780,7 +787,7 @@ function mtRenderTotalsOnly(){
 
   const personMap = {};
   SECTION_KEYS.forEach(k=>{
-    mtSectionsData[k].forEach(e=>{
+    mtSectionsData[k].entries.forEach(e=>{
       const nm = (e.name||"").trim();
       if(nm && Number(e.amount)>0){
         personMap[nm] = (personMap[nm]||0) + Number(e.amount);
@@ -803,7 +810,6 @@ function mtRenderWorkerCount(){
 
 function mtRender(){
   document.getElementById("mtNiceDate").textContent = fmtNice(mtSelectedDate);
-  document.getElementById("mtTargetInput").value = mtTarget;
 
   // Workers list
   const wList = document.getElementById("mtWorkersList");
@@ -828,43 +834,49 @@ function mtRender(){
   }
   mtRenderWorkerCount();
 
-  // Sections A-E, each with its own multi-entry list
+  // Sections A-E: opening + multi-entry added + cut + balance
   const list = document.getElementById("mtSectionsList");
   list.innerHTML = "";
   SECTION_KEYS.forEach(k=>{
-    const entries = mtSectionsData[k];
-    const sectionTotal = entries.reduce((s,e)=>s+(Number(e.amount)||0),0);
+    mtRecalc(k);
+    const s = mtSectionsData[k];
     const card = document.createElement("div");
     card.className = "mt-card";
     let rowsHtml = "";
-    if(entries.length===0){
+    if(s.entries.length===0){
       rowsHtml = `<p class="empty" style="margin:4px 0;">No matta added yet.</p>`;
     } else {
-      entries.forEach(e=>{
+      s.entries.forEach(e=>{
         const icon = mtEditMode ? `<button class="idel no-print" data-sec="${k}" data-eid="${e.id}">&#128465;</button>` : "";
-        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml((e.name||"—").toUpperCase())}</div><div class="iprice mono" style="font-size:14px;">${rupee(e.amount)}</div>${icon}</div>`;
+        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml((e.name||"—").toUpperCase())}</div><div class="iprice mono" style="font-size:14px;">+${rupee(e.amount)}</div>${icon}</div>`;
       });
     }
-    const formHtml = mtEditMode ? `
+    const addFormHtml = mtEditMode ? `
       <div class="form-row no-print" style="margin:8px 0 0;">
         <input type="number" inputmode="decimal" placeholder="Matta" class="mt-entry-amount" data-sec="${k}" style="flex:1;" />
         <input type="text" placeholder="Name" class="mt-entry-name" data-sec="${k}" style="flex:1;" />
         <button class="fadd mt-entry-add" data-sec="${k}">+ Add</button>
       </div>` : "";
+    const cutHtml = mtEditMode ? `
+      <div class="form-row no-print" style="margin:8px 0 0;">
+        <input type="number" inputmode="decimal" placeholder="Cut today" value="${s.cut||''}" class="mt-cut-input" data-sec="${k}" style="flex:1;" />
+      </div>` : `<div class="mt-opening" style="margin-top:6px;">Cut today: ${rupee(s.cut)}</div>`;
     card.innerHTML = `
       <div class="mt-card-head">
         <span class="sec-name display">Section ${k}</span>
-        <span class="sec-balance">${rupee(sectionTotal)}</span>
+        <span class="sec-balance">Balance ${rupee(s.balance)}</span>
       </div>
+      <div class="mt-opening">Opening: ${rupee(s.opening)}</div>
       ${rowsHtml}
-      ${formHtml}`;
+      ${addFormHtml}
+      ${cutHtml}`;
     list.appendChild(card);
   });
 
   list.querySelectorAll(".idel").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const k = btn.dataset.sec, eid = btn.dataset.eid;
-      mtSectionsData[k] = mtSectionsData[k].filter(e=>e.id!==eid);
+      mtSectionsData[k].entries = mtSectionsData[k].entries.filter(e=>e.id!==eid);
       mtPersist();
       mtRender();
     });
@@ -877,9 +889,20 @@ function mtRender(){
       const amount = Number(amountInput.value)||0;
       const name = nameInput.value.trim();
       if(amount<=0) return;
-      mtSectionsData[k].push({id:Date.now().toString(36), amount, name});
+      mtSectionsData[k].entries.push({id:Date.now().toString(36), amount, name});
       mtPersist();
       mtRender();
+    });
+  });
+  list.querySelectorAll(".mt-cut-input").forEach(inp=>{
+    inp.addEventListener("input", (e)=>{
+      const k = e.target.dataset.sec;
+      mtSectionsData[k].cut = Number(e.target.value)||0;
+      mtPersist();
+      mtRenderTotalsOnly();
+      mtRecalc(k);
+      const card = e.target.closest(".mt-card");
+      card.querySelector(".sec-balance").textContent = "Balance " + rupee(mtSectionsData[k].balance);
     });
   });
 
@@ -890,7 +913,6 @@ document.getElementById("mtToggleEdit").addEventListener("click", ()=>{
   mtEditMode = !mtEditMode;
   document.getElementById("mtToggleEdit").innerHTML = mtEditMode ? "&#10003; Done" : "&#9998; Edit";
   document.getElementById("mtWorkerFormRow").style.display = mtEditMode ? "flex" : "none";
-  document.getElementById("mtTargetFormRow").style.display = mtEditMode ? "flex" : "none";
   mtRender();
 });
 
@@ -904,11 +926,6 @@ document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
   mtRender();
 });
 
-document.getElementById("mtTargetInput").addEventListener("input", (e)=>{
-  mtTarget = e.target.value;
-  mtPersist();
-  mtRenderTotalsOnly();
-});
 document.getElementById("mtPrevDay").addEventListener("click", ()=>{
   const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
   mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
