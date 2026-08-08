@@ -1196,6 +1196,10 @@ function dtRender(){
           <button class="fadd dt-cash-add" data-wid="${w.id}">+ Add</button>
         </div>
         <div class="form-row no-print">
+          <input type="number" inputmode="decimal" placeholder="Loan opening" value="${w.loanOpening||''}" class="dt-loanopening-input" data-wid="${w.id}" style="flex:1;" />
+          <button class="fadd dt-loanopening-save" data-wid="${w.id}">&#10003; Save</button>
+        </div>
+        <div class="form-row no-print">
           <input type="number" inputmode="decimal" placeholder="Loan taken" value="${w.loanTaken||''}" class="dt-loantaken-input" data-wid="${w.id}" style="flex:1;" />
           <input type="number" inputmode="decimal" placeholder="Loan repaid" value="${w.loanRepaid||''}" class="dt-loanrepaid-input" data-wid="${w.id}" style="flex:1;" />
           <button class="fadd dt-loan-save" data-wid="${w.id}">&#10003; Save</button>
@@ -1249,6 +1253,15 @@ function dtRender(){
         const repaidInput = list.querySelector(`.dt-loanrepaid-input[data-wid="${btn.dataset.wid}"]`);
         w.loanTaken = Number(takenInput.value)||0;
         w.loanRepaid = Number(repaidInput.value)||0;
+        dtPersist();
+        dtRender();
+      });
+    });
+    list.querySelectorAll(".dt-loanopening-save").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = dtWorkers.find(w=>w.id===btn.dataset.wid);
+        const input = list.querySelector(`.dt-loanopening-input[data-wid="${btn.dataset.wid}"]`);
+        w.loanOpening = Number(input.value)||0;
         dtPersist();
         dtRender();
       });
