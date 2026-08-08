@@ -234,7 +234,9 @@
       <h3 class="sub-title display">Workers Today</h3>
       <div id="mtWorkersList"></div>
       <div class="form-row no-print" id="mtWorkerFormRow" style="display:none;">
-        <input type="text" placeholder="Worker name" id="mtWorkerNameInput" style="flex:2;" />
+        <input type="text" placeholder="Worker name" id="mtWorkerNameInput" style="flex:2;min-width:100px;" />
+        <input type="time" id="mtWorkerTimeIn" style="flex:1;min-width:90px;" />
+        <input type="time" id="mtWorkerTimeOut" style="flex:1;min-width:90px;" />
         <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
       </div>
       <p class="empty" id="mtWorkersCount"></p>
@@ -248,6 +250,8 @@
         <div class="line"><span class="label">Opening &raquo;&raquo;</span><span class="val mono" id="mtOpeningVal"></span></div>
         <div class="line"><span class="label">Total matta &raquo;&raquo;</span><span class="val mono" id="mtTotalVal" style="color:#3B6B35;"></span></div>
       </div>
+
+      <div id="mtCutBreakdown" style="margin:10px 0;"></div>
 
       <div class="totals">
         <div class="line"><span class="label">Total balance &raquo;&raquo;</span><span class="val mono" id="mtBalanceVal" style="color:#B5651D;"></span></div>
@@ -777,6 +781,21 @@ function mtPersist(){
   });
 }
 
+function hoursBetween(t1, t2){
+  if(!t1 || !t2) return null;
+  const [h1,m1] = t1.split(":").map(Number);
+  const [h2,m2] = t2.split(":").map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if(mins<0) mins += 24*60;
+  return mins/60;
+}
+function fmtHours(h){
+  if(h==null) return "—";
+  const hh = Math.floor(h);
+  const mm = Math.round((h-hh)*60);
+  return `${hh}h ${mm}m`;
+}
+
 function mtRenderTotalsOnly(){
   const {totalOpening, totalMatta, totalBalance} = mtTotals();
   document.getElementById("mtOpeningVal").textContent = rupee(totalOpening);
@@ -802,6 +821,30 @@ function mtRenderTotalsOnly(){
     row.innerHTML = `<span>${escapeHtml(nm.toUpperCase())} T.L</span><span class="mono" style="font-weight:700;">${rupee(personMap[nm])}</span>`;
     ptDiv.appendChild(row);
   });
+
+  const cutDiv = document.getElementById("mtCutBreakdown");
+  cutDiv.innerHTML = "";
+  let totalCut = 0;
+  SECTION_KEYS.forEach(k=>{
+    const cut = Number(mtSectionsData[k].cut)||0;
+    if(cut>0){
+      totalCut += cut;
+      const row = document.createElement("div");
+      row.className = "person-row display";
+      row.innerHTML = `<span>Section ${k} cut &raquo;&raquo;</span><span class="mono" style="font-weight:700;">${rupee(cut)}</span>`;
+      cutDiv.appendChild(row);
+    }
+  });
+  if(totalCut>0){
+    const totalRow = document.createElement("div");
+    totalRow.className = "person-row display";
+    totalRow.style.borderTop = "1px solid #C9BC9C";
+    totalRow.style.marginTop = "4px";
+    totalRow.style.paddingTop = "6px";
+    totalRow.style.fontWeight = "700";
+    totalRow.innerHTML = `<span>Total cut &raquo;&raquo;</span><span class="mono">${rupee(totalCut)}</span>`;
+    cutDiv.appendChild(totalRow);
+  }
 }
 
 function mtRenderWorkerCount(){
@@ -820,8 +863,10 @@ function mtRender(){
     mtWorkers.forEach(w=>{
       const row = document.createElement("div");
       row.className = "ledger-row display";
+      const hrs = hoursBetween(w.timeIn, w.timeOut);
+      const timeLabel = (w.timeIn||w.timeOut) ? `${w.timeIn||"—"} to ${w.timeOut||"—"} &middot; ${fmtHours(hrs)}` : "";
       const icon = mtEditMode ? `<button class="idel no-print" data-wid="${w.id}">&#128465;</button>` : "";
-      row.innerHTML = `<div class="iname">${escapeHtml(w.name.toUpperCase())}</div>${icon}`;
+      row.innerHTML = `<div class="iname">${escapeHtml(w.name.toUpperCase())}<div class="icat" style="font-family:'IBM Plex Mono',monospace;">${timeLabel}</div></div>${icon}`;
       wList.appendChild(row);
     });
     wList.querySelectorAll(".idel").forEach(btn=>{
@@ -859,14 +904,20 @@ function mtRender(){
       </div>` : "";
     const cutHtml = mtEditMode ? `
       <div class="form-row no-print" style="margin:8px 0 0;">
-        <input type="number" inputmode="decimal" placeholder="Cut today" value="${s.cut||''}" class="mt-cut-input" data-sec="${k}" style="flex:1;" />
-      </div>` : `<div class="mt-opening" style="margin-top:6px;">Cut today: ${rupee(s.cut)}</div>`;
+        <input type="number" inputmode="decimal" placeholder="Target (matta to cut today)" value="${s.cut||''}" class="mt-cut-input" data-sec="${k}" style="flex:1;" />
+        <button class="fadd mt-cut-add" data-sec="${k}">+ Add</button>
+      </div>` : `<div class="mt-opening" style="margin-top:6px;">Target &raquo;&raquo; ${rupee(s.cut)}</div>`;
+    const openingHtml = mtEditMode ? `
+      <div class="form-row no-print" style="margin:0 0 8px;">
+        <input type="number" inputmode="decimal" placeholder="Opening" value="${s.opening||''}" class="mt-opening-input" data-sec="${k}" style="flex:1;" />
+        <button class="fadd mt-opening-save" data-sec="${k}">&#10003; Save</button>
+      </div>` : `<div class="mt-opening">Opening: ${rupee(s.opening)}</div>`;
     card.innerHTML = `
       <div class="mt-card-head">
         <span class="sec-name display">Section ${k}</span>
         <span class="sec-balance">Balance ${rupee(s.balance)}</span>
       </div>
-      <div class="mt-opening">Opening: ${rupee(s.opening)}</div>
+      ${openingHtml}
       ${rowsHtml}
       ${addFormHtml}
       ${cutHtml}`;
@@ -894,14 +945,29 @@ function mtRender(){
       mtRender();
     });
   });
-  list.querySelectorAll(".mt-cut-input").forEach(inp=>{
-    inp.addEventListener("input", (e)=>{
-      const k = e.target.dataset.sec;
-      mtSectionsData[k].cut = Number(e.target.value)||0;
+  list.querySelectorAll(".mt-cut-add").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = btn.dataset.sec;
+      const cutInput = list.querySelector(`.mt-cut-input[data-sec="${k}"]`);
+      const val = Number(cutInput.value)||0;
+      mtSectionsData[k].cut = val;
+      mtRecalc(k);
       mtPersist();
       mtRenderTotalsOnly();
+      const card = btn.closest(".mt-card");
+      card.querySelector(".sec-balance").textContent = "Balance " + rupee(mtSectionsData[k].balance);
+    });
+  });
+  list.querySelectorAll(".mt-opening-save").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = btn.dataset.sec;
+      const openInput = list.querySelector(`.mt-opening-input[data-sec="${k}"]`);
+      const val = Number(openInput.value)||0;
+      mtSectionsData[k].opening = val;
       mtRecalc(k);
-      const card = e.target.closest(".mt-card");
+      mtPersist();
+      mtRenderTotalsOnly();
+      const card = btn.closest(".mt-card");
       card.querySelector(".sec-balance").textContent = "Balance " + rupee(mtSectionsData[k].balance);
     });
   });
@@ -918,11 +984,13 @@ document.getElementById("mtToggleEdit").addEventListener("click", ()=>{
 
 document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
   const input = document.getElementById("mtWorkerNameInput");
+  const timeInInput = document.getElementById("mtWorkerTimeIn");
+  const timeOutInput = document.getElementById("mtWorkerTimeOut");
   const name = input.value.trim();
   if(!name) return;
-  mtWorkers.push({id:Date.now().toString(36), name});
+  mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value});
   mtPersist();
-  input.value="";
+  input.value=""; timeInInput.value=""; timeOutInput.value="";
   mtRender();
 });
 
