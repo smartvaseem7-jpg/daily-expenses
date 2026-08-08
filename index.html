@@ -89,7 +89,7 @@
   .mt-card-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
   .mt-card-head .sec-name { font-family:'Fraunces',serif; font-size:16px; font-weight:700; color:#4A3B28; }
   .mt-card-head .sec-balance { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700; color:#3B6B35; }
-  .mt-opening { font-size:12px; color:#8A7A5E; margin-bottom:6px; }
+  .mt-opening { font-size:14px; color:#4A3B28; font-weight:600; margin-bottom:6px; }
   .person-row { display:flex; justify-content:space-between; padding:6px 2px; font-size:13px; color:#4A3B28; }
   @media print {
     .no-print { display:none !important; }
@@ -261,6 +261,7 @@
 
       <div class="actions no-print">
         <button class="btn-export" id="mtExportBtn" style="flex:1;">&#128424; Export day (PDF)</button>
+        <button class="btn-clear" id="mtClearBtn">&#8635; Clear</button>
       </div>
     </div>
 
@@ -684,6 +685,16 @@ function renderMonth(){
 document.getElementById("exportDayBtn").addEventListener("click", ()=>window.print());
 document.getElementById("exportMonthBtn").addEventListener("click", ()=>window.print());
 document.getElementById("mtExportBtn").addEventListener("click", ()=>window.print());
+document.getElementById("mtClearBtn").addEventListener("click", ()=>{
+  mtWorkers = [];
+  SECTION_KEYS.forEach(k=>{
+    mtSectionsData[k].entries = [];
+    mtSectionsData[k].cut = 0;
+    mtRecalc(k);
+  });
+  mtPersist();
+  mtRender();
+});
 
 // ---------- MACHINE TEAM STATE ----------
 let mtSelectedDate = fmtDate(new Date());
@@ -932,9 +943,9 @@ function mtRender(){
       </div>` : "";
     const cutHtml = mtEditMode ? `
       <div class="form-row no-print" style="margin:8px 0 0;">
-        <input type="number" inputmode="decimal" placeholder="Target (matta to cut today)" value="${s.cut||''}" class="mt-cut-input" data-sec="${k}" style="flex:1;" />
+        <input type="number" inputmode="decimal" placeholder="Target cutting" value="${s.cut||''}" class="mt-cut-input" data-sec="${k}" style="flex:1;" />
         <button class="fadd mt-cut-add" data-sec="${k}">+ Add</button>
-      </div>` : `<div class="mt-opening" style="margin-top:6px;">Target &raquo;&raquo; ${rupee(s.cut)}</div>`;
+      </div>` : `<div class="mt-opening" style="margin-top:6px;">Target cutting &raquo;&raquo; ${rupee(s.cut)}</div>`;
     const openingHtml = mtEditMode ? `
       <div class="form-row no-print" style="margin:0 0 8px;">
         <input type="number" inputmode="decimal" placeholder="Opening" value="${s.opening||''}" class="mt-opening-input" data-sec="${k}" style="flex:1;" />
