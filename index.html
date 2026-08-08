@@ -1398,11 +1398,20 @@ function loadLoanPage(){
   emptyNote.textContent = "Loading loan records...";
   container.innerHTML = "";
 
-  Promise.all([
+  Promise.allSettled([
     db.collection("workerLoans").get(),
     db.collection("machineTeam").get(),
     db.collection("dryerTeam").get()
-  ]).then(([loanSnap, mtSnap, dtSnap])=>{
+  ]).then((results)=>{
+    const errors = results.filter(r=>r.status==="rejected");
+    if(errors.length===3){
+      emptyNote.textContent = "Couldn't load: " + (errors[0].reason && errors[0].reason.message ? errors[0].reason.message : "check internet and try again.");
+      emptyNote.style.display = "block";
+      return;
+    }
+    const loanSnap = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
+    const mtSnap = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
+    const dtSnap = results[2].status==="fulfilled" ? results[2].value : {forEach:()=>{}};
     const balances = {}; // nameKey -> {name, loanBalance}
     loanSnap.forEach(doc=>{
       const d = doc.data();
@@ -1467,8 +1476,16 @@ function loadLoanPage(){
       container.appendChild(card);
     });
   }).catch((e)=>{
-    emptyNote.textContent = "Couldn't load. Check internet and try again.";
+    emptyNote.innerHTML = "Couldn't load. Check internet and try again.";
     emptyNote.style.display = "block";
+    const retryBtn = document.createElement("button");
+    retryBtn.textContent = "Retry";
+    retryBtn.className = "btn-clear no-print";
+    retryBtn.style.display = "block";
+    retryBtn.style.margin = "10px auto";
+    retryBtn.addEventListener("click", loadLoanPage);
+    container.innerHTML = "";
+    container.appendChild(retryBtn);
   });
 }
 
