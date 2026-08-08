@@ -690,6 +690,7 @@ let mtSelectedDate = fmtDate(new Date());
 let mtWorkers = [];
 let mtSectionsData = {};
 let mtEditMode = false;
+let editingWorkerId = null;
 
 function mtEmptySections(openings){
   const obj = {};
@@ -861,17 +862,44 @@ function mtRender(){
     wList.innerHTML = '<p class="empty">No workers added yet today.</p>';
   } else {
     mtWorkers.forEach(w=>{
-      const row = document.createElement("div");
-      row.className = "ledger-row display";
-      const hrs = hoursBetween(w.timeIn, w.timeOut);
-      const timeLabel = (w.timeIn||w.timeOut) ? `${w.timeIn||"—"} to ${w.timeOut||"—"} &middot; ${fmtHours(hrs)}` : "";
-      const icon = mtEditMode ? `<button class="idel no-print" data-wid="${w.id}">&#128465;</button>` : "";
-      row.innerHTML = `<div class="iname">${escapeHtml(w.name.toUpperCase())}<div class="icat" style="font-family:'IBM Plex Mono',monospace;">${timeLabel}</div></div>${icon}`;
-      wList.appendChild(row);
+      if(editingWorkerId === w.id){
+        const row = document.createElement("div");
+        row.className = "edit-row no-print";
+        row.innerHTML = `<input type="text" value="${escapeHtml(w.name)}" data-edit-w-name="${w.id}" style="flex:1.4;" /><input type="time" value="${w.timeIn||''}" data-edit-w-in="${w.id}" /><input type="time" value="${w.timeOut||''}" data-edit-w-out="${w.id}" /><button class="isave" data-save-w="${w.id}">&#10003; Save</button>`;
+        wList.appendChild(row);
+      } else {
+        const row = document.createElement("div");
+        row.className = "ledger-row display";
+        const hrs = hoursBetween(w.timeIn, w.timeOut);
+        const timeLabel = (w.timeIn||w.timeOut) ? `${w.timeIn||"—"} to ${w.timeOut||"—"} &middot; ${fmtHours(hrs)}` : "";
+        const icons = mtEditMode ? `<button class="iedit no-print" data-editwid="${w.id}">&#9998;</button><button class="idel no-print" data-wid="${w.id}">&#128465;</button>` : "";
+        row.innerHTML = `<div class="iname">${escapeHtml(w.name.toUpperCase())}<div class="icat" style="font-family:'IBM Plex Mono',monospace;">${timeLabel}</div></div>${icons}`;
+        wList.appendChild(row);
+      }
     });
     wList.querySelectorAll(".idel").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         mtWorkers = mtWorkers.filter(w=>w.id!==btn.dataset.wid);
+        mtPersist();
+        mtRender();
+      });
+    });
+    wList.querySelectorAll(".iedit").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        editingWorkerId = btn.dataset.editwid;
+        mtRender();
+      });
+    });
+    wList.querySelectorAll("[data-save-w]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const id = btn.dataset.saveW;
+        const nameInput = wList.querySelector(`[data-edit-w-name="${id}"]`);
+        const inInput = wList.querySelector(`[data-edit-w-in="${id}"]`);
+        const outInput = wList.querySelector(`[data-edit-w-out="${id}"]`);
+        const name = nameInput.value.trim();
+        if(!name) return;
+        mtWorkers = mtWorkers.map(w=> w.id===id ? {...w, name, timeIn:inInput.value, timeOut:outInput.value} : w);
+        editingWorkerId = null;
         mtPersist();
         mtRender();
       });
@@ -977,6 +1005,7 @@ function mtRender(){
 
 document.getElementById("mtToggleEdit").addEventListener("click", ()=>{
   mtEditMode = !mtEditMode;
+  editingWorkerId = null;
   document.getElementById("mtToggleEdit").innerHTML = mtEditMode ? "&#10003; Done" : "&#9998; Edit";
   document.getElementById("mtWorkerFormRow").style.display = mtEditMode ? "flex" : "none";
   mtRender();
