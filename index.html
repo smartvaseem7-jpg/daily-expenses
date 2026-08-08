@@ -1420,7 +1420,7 @@ function loadLoanPage(){
 
     const txByName = {}; // nameKey -> [{date, team, taken, repaid}]
     function addTx(name, date, team, taken, repaid){
-      if(!name || !name.trim()) return;
+      if(!name || typeof name !== "string" || !name.trim()) return;
       if((Number(taken)||0)===0 && (Number(repaid)||0)===0) return;
       const key = nameKey(name);
       if(!txByName[key]) txByName[key] = [];
@@ -1430,13 +1430,15 @@ function loadLoanPage(){
 
     mtSnap.forEach(doc=>{
       const d = doc.data();
-      (d.workers||[]).forEach(w=>{
+      const arr = Array.isArray(d.workers) ? d.workers : [];
+      arr.forEach(w=>{
         addTx(w.name, doc.id, "Machine Team", w.loanTaken, w.loanRepaid);
       });
     });
     dtSnap.forEach(doc=>{
       const d = doc.data();
-      (d.workers||[]).forEach(w=>{
+      const arr = Array.isArray(d.workers) ? d.workers : [];
+      arr.forEach(w=>{
         addTx(w.name, doc.id, "Dryer Team", w.loanTaken, w.loanRepaid);
       });
     });
@@ -1476,7 +1478,7 @@ function loadLoanPage(){
       container.appendChild(card);
     });
   }).catch((e)=>{
-    emptyNote.innerHTML = "Couldn't load. Check internet and try again.";
+    emptyNote.textContent = "Couldn't load: " + (e && e.message ? e.message : "unknown error");
     emptyNote.style.display = "block";
     const retryBtn = document.createElement("button");
     retryBtn.textContent = "Retry";
