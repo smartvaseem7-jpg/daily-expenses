@@ -144,6 +144,7 @@
         <button class="home-btn" id="goMachine"><span class="icon">&#9881;&#65039;</span>Machine Team</button>
         <button class="home-btn" id="goDryer"><span class="icon">&#127788;&#65039;</span>Dryer Team</button>
         <button class="home-btn soon" id="goStore"><span class="icon">&#127974;&#65039;</span>Store</button>
+        <button class="home-btn" id="goLoan" style="grid-column:span 2;"><span class="icon">&#128176;</span>Loan</button>
       </div>
     </div>
 
@@ -322,6 +323,17 @@
       </div>
       <p class="empty">Idhu innum build panala. Idhula enna track pannanumnu sollunga, apram add pannuven.</p>
     </div>
+
+    <!-- ===== LOAN ===== -->
+    <div id="loanSection" style="display:none;">
+      <div class="section-header">
+        <button class="back-btn no-print" data-home>&#8592; Home</button>
+        <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
+        <h2 class="section-title">LOAN</h2>
+      </div>
+      <p class="empty" id="loanEmptyNote" style="display:none;">Loading loan records...</p>
+      <div id="loanWorkersList"></div>
+    </div>
   </div>
 </div>
 
@@ -398,7 +410,7 @@ if(localStorage.getItem("sham-unlocked") === "true"){
 }
 
 // ---------- SCREEN NAVIGATION ----------
-const SCREENS = ["homeScreen","expensesSection","machineSection","dryerSection","storeSection"];
+const SCREENS = ["homeScreen","expensesSection","machineSection","dryerSection","storeSection","loanSection"];
 function showScreen(id){
   SCREENS.forEach(s=>{
     document.getElementById(s).style.display = (s===id) ? "block" : "none";
@@ -424,6 +436,11 @@ document.getElementById("goDryer").addEventListener("click", ()=>{
   if(!dtLoadedOnce){ dtLoadedOnce = true; dtLoadDay(dtSelectedDate); }
 });
 document.getElementById("goStore").addEventListener("click", ()=>showScreen("storeSection"));
+let loanLoadedOnce = false;
+document.getElementById("goLoan").addEventListener("click", ()=>{
+  showScreen("loanSection");
+  loadLoanPage();
+});
 
 // ---------- EXPENSES STATE ----------
 let selectedDate = fmtDate(new Date());
@@ -758,6 +775,10 @@ function mtRecalc(k){
   s.balance = (Number(s.opening)||0) + added - (Number(s.cut)||0);
 }
 
+function mtRecalcWorkerLoan(w){
+  w.loanBalance = (Number(w.loanOpening)||0) + (Number(w.loanTaken)||0) - (Number(w.loanRepaid)||0);
+}
+
 function mtTotals(){
   let totalOpening=0, totalAdded=0, totalCut=0, totalBalance=0;
   SECTION_KEYS.forEach(k=>{
@@ -821,6 +842,7 @@ function mtLoadDay(dateStr){
 function mtPersist(){
   document.getElementById("mtSaveNote").textContent = "Saving...";
   SECTION_KEYS.forEach(k=>mtRecalc(k));
+  mtWorkers.forEach(mtRecalcWorkerLoan);
   db.collection("machineTeam").doc(mtSelectedDate).set({
     date: mtSelectedDate,
     month: monthKey(mtSelectedDate),
@@ -829,6 +851,11 @@ function mtPersist(){
   }).then(()=>{
     document.getElementById("mtSaveNote").textContent = "Saved";
     setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
+    mtWorkers.forEach(w=>{
+      if(w.name && w.name.trim()){
+        db.collection("workerLoans").doc(nameKey(w.name)).set({name:w.name.trim(), loanBalance:w.loanBalance}).catch(()=>{});
+      }
+    });
   }).catch((e)=>{
     document.getElementById("mtSaveNote").textContent = "Couldn't save. Check internet.";
   });
@@ -914,19 +941,37 @@ function mtRender(){
     wList.innerHTML = '<p class="empty">No workers added yet today.</p>';
   } else {
     mtWorkers.forEach(w=>{
+      mtRecalcWorkerLoan(w);
       if(editingWorkerId === w.id){
         const row = document.createElement("div");
         row.className = "edit-row no-print";
         row.innerHTML = `<input type="text" value="${escapeHtml(w.name)}" data-edit-w-name="${w.id}" style="flex:1.4;" /><input type="time" value="${w.timeIn||''}" data-edit-w-in="${w.id}" /><input type="time" value="${w.timeOut||''}" data-edit-w-out="${w.id}" /><button class="isave" data-save-w="${w.id}">&#10003; Save</button>`;
         wList.appendChild(row);
       } else {
-        const row = document.createElement("div");
-        row.className = "ledger-row display";
         const hrs = hoursBetween(w.timeIn, w.timeOut);
-        const timeLabel = (w.timeIn||w.timeOut) ? `${w.timeIn||"—"} to ${w.timeOut||"—"} &middot; ${fmtHours(hrs)}` : "";
+        const timeLabel = (w.timeIn||w.timeOut) ? `${w.timeIn||"—"} to ${w.timeOut||"—"} &middot; ${fmtHours(hrs)}` : "No time logged";
         const icons = mtEditMode ? `<button class="iedit no-print" data-editwid="${w.id}">&#9998;</button><button class="idel no-print" data-wid="${w.id}">&#128465;</button>` : "";
-        row.innerHTML = `<div class="iname">${escapeHtml(w.name.toUpperCase())}<div class="icat" style="font-family:'IBM Plex Mono',monospace;">${timeLabel}</div></div>${icons}`;
-        wList.appendChild(row);
+        const loanFormHtml = mtEditMode ? `
+          <div class="form-row no-print" style="margin-top:8px;">
+            <input type="number" inputmode="decimal" placeholder="Loan opening" value="${w.loanOpening||''}" class="mt-loanopening-input" data-wid="${w.id}" style="flex:1;" />
+            <button class="fadd mt-loanopening-save" data-wid="${w.id}">&#10003; Save</button>
+          </div>
+          <div class="form-row no-print">
+            <input type="number" inputmode="decimal" placeholder="Loan taken" value="${w.loanTaken||''}" class="mt-loantaken-input" data-wid="${w.id}" style="flex:1;" />
+            <input type="number" inputmode="decimal" placeholder="Loan repaid" value="${w.loanRepaid||''}" class="mt-loanrepaid-input" data-wid="${w.id}" style="flex:1;" />
+            <button class="fadd mt-loan-save" data-wid="${w.id}">&#10003; Save</button>
+          </div>` : "";
+        const card = document.createElement("div");
+        card.className = "mt-card";
+        card.innerHTML = `
+          <div class="mt-card-head">
+            <span class="sec-name display">${escapeHtml(w.name.toUpperCase())}</span>
+            ${icons}
+          </div>
+          <div class="mt-opening" style="font-family:'IBM Plex Mono',monospace;">${timeLabel}</div>
+          <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
+          ${loanFormHtml}`;
+        wList.appendChild(card);
       }
     });
     wList.querySelectorAll(".idel").forEach(btn=>{
@@ -952,6 +997,26 @@ function mtRender(){
         if(!name) return;
         mtWorkers = mtWorkers.map(w=> w.id===id ? {...w, name, timeIn:inInput.value, timeOut:outInput.value} : w);
         editingWorkerId = null;
+        mtPersist();
+        mtRender();
+      });
+    });
+    wList.querySelectorAll(".mt-loanopening-save").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = mtWorkers.find(w=>w.id===btn.dataset.wid);
+        const input = wList.querySelector(`.mt-loanopening-input[data-wid="${btn.dataset.wid}"]`);
+        w.loanOpening = Number(input.value)||0;
+        mtPersist();
+        mtRender();
+      });
+    });
+    wList.querySelectorAll(".mt-loan-save").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = mtWorkers.find(w=>w.id===btn.dataset.wid);
+        const takenInput = wList.querySelector(`.mt-loantaken-input[data-wid="${btn.dataset.wid}"]`);
+        const repaidInput = wList.querySelector(`.mt-loanrepaid-input[data-wid="${btn.dataset.wid}"]`);
+        w.loanTaken = Number(takenInput.value)||0;
+        w.loanRepaid = Number(repaidInput.value)||0;
         mtPersist();
         mtRender();
       });
@@ -1069,10 +1134,18 @@ document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
   const timeOutInput = document.getElementById("mtWorkerTimeOut");
   const name = input.value.trim();
   if(!name) return;
-  mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value});
-  mtPersist();
-  input.value=""; timeInInput.value=""; timeOutInput.value="";
-  mtRender();
+  db.collection("workerLoans").doc(nameKey(name)).get().then((doc)=>{
+    const loanOpening = doc.exists ? (Number(doc.data().loanBalance)||0) : 0;
+    mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, loanOpening, loanTaken:0, loanRepaid:0, loanBalance:loanOpening});
+    mtPersist();
+    input.value=""; timeInInput.value=""; timeOutInput.value="";
+    mtRender();
+  }).catch(()=>{
+    mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, loanOpening:0, loanTaken:0, loanRepaid:0, loanBalance:0});
+    mtPersist();
+    input.value=""; timeInInput.value=""; timeOutInput.value="";
+    mtRender();
+  });
 });
 
 document.getElementById("mtPrevDay").addEventListener("click", ()=>{
@@ -1149,7 +1222,7 @@ function dtPersist(){
     // keep each worker's running loan balance so future days can pick it up
     dtWorkers.forEach(w=>{
       if(w.name.trim()){
-        db.collection("dryerWorkers").doc(nameKey(w.name)).set({name:w.name.trim(), loanBalance:w.loanBalance}).catch(()=>{});
+        db.collection("workerLoans").doc(nameKey(w.name)).set({name:w.name.trim(), loanBalance:w.loanBalance}).catch(()=>{});
       }
     });
   }).catch(()=>{
@@ -1287,7 +1360,7 @@ document.getElementById("dtAddWorkerBtn").addEventListener("click", ()=>{
   const input = document.getElementById("dtWorkerNameInput");
   const name = input.value.trim();
   if(!name) return;
-  db.collection("dryerWorkers").doc(nameKey(name)).get().then((doc)=>{
+  db.collection("workerLoans").doc(nameKey(name)).get().then((doc)=>{
     const loanOpening = doc.exists ? (Number(doc.data().loanBalance)||0) : 0;
     dtWorkers.push({id:Date.now().toString(36), name, extraCash:[], loanOpening, loanTaken:0, loanRepaid:0, loanBalance:loanOpening, share:0, salaryBalance:0});
     dtPersist();
@@ -1316,6 +1389,88 @@ document.getElementById("dtClearBtn").addEventListener("click", ()=>{
   dtPersist();
   dtRender();
 });
+
+// ---------- LOAN PAGE (aggregated from Machine Team + Dryer Team) ----------
+function loadLoanPage(){
+  const emptyNote = document.getElementById("loanEmptyNote");
+  const container = document.getElementById("loanWorkersList");
+  emptyNote.style.display = "block";
+  emptyNote.textContent = "Loading loan records...";
+  container.innerHTML = "";
+
+  Promise.all([
+    db.collection("workerLoans").get(),
+    db.collection("machineTeam").get(),
+    db.collection("dryerTeam").get()
+  ]).then(([loanSnap, mtSnap, dtSnap])=>{
+    const balances = {}; // nameKey -> {name, loanBalance}
+    loanSnap.forEach(doc=>{
+      const d = doc.data();
+      balances[doc.id] = {name:d.name||doc.id, loanBalance:Number(d.loanBalance)||0};
+    });
+
+    const txByName = {}; // nameKey -> [{date, team, taken, repaid}]
+    function addTx(name, date, team, taken, repaid){
+      if(!name || !name.trim()) return;
+      if((Number(taken)||0)===0 && (Number(repaid)||0)===0) return;
+      const key = nameKey(name);
+      if(!txByName[key]) txByName[key] = [];
+      txByName[key].push({date, team, taken:Number(taken)||0, repaid:Number(repaid)||0});
+      if(!balances[key]) balances[key] = {name:name.trim(), loanBalance:0};
+    }
+
+    mtSnap.forEach(doc=>{
+      const d = doc.data();
+      (d.workers||[]).forEach(w=>{
+        addTx(w.name, doc.id, "Machine Team", w.loanTaken, w.loanRepaid);
+      });
+    });
+    dtSnap.forEach(doc=>{
+      const d = doc.data();
+      (d.workers||[]).forEach(w=>{
+        addTx(w.name, doc.id, "Dryer Team", w.loanTaken, w.loanRepaid);
+      });
+    });
+
+    const names = Object.keys(balances);
+    container.innerHTML = "";
+    if(names.length===0){
+      emptyNote.textContent = "No loan records yet.";
+      emptyNote.style.display = "block";
+      return;
+    }
+    emptyNote.style.display = "none";
+
+    names.sort((a,b)=> (balances[a].name||"").localeCompare(balances[b].name||""));
+    names.forEach(key=>{
+      const info = balances[key];
+      const txs = (txByName[key]||[]).sort((a,b)=>b.date.localeCompare(a.date));
+      const card = document.createElement("div");
+      card.className = "mt-card";
+      let txHtml = "";
+      if(txs.length===0){
+        txHtml = `<p class="empty" style="margin:4px 0;">No taken/repaid history yet.</p>`;
+      } else {
+        txs.forEach(t=>{
+          const parts = [];
+          if(t.taken>0) parts.push(`Taken +${rupee(t.taken)}`);
+          if(t.repaid>0) parts.push(`Repaid -${rupee(t.repaid)}`);
+          txHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:13px;">${fmtNice(t.date)} &middot; ${t.team}</div><div class="iprice mono" style="font-size:13px;">${parts.join(" / ")}</div></div>`;
+        });
+      }
+      card.innerHTML = `
+        <div class="mt-card-head">
+          <span class="sec-name display">${escapeHtml(info.name.toUpperCase())}</span>
+          <span class="sec-balance" style="color:${info.loanBalance>0?'#B33A3A':'#3B6B35'};">Balance ${rupee(info.loanBalance)}</span>
+        </div>
+        ${txHtml}`;
+      container.appendChild(card);
+    });
+  }).catch((e)=>{
+    emptyNote.textContent = "Couldn't load. Check internet and try again.";
+    emptyNote.style.display = "block";
+  });
+}
 
 if("serviceWorker" in navigator){
   navigator.serviceWorker.register("sw-1-1.js").catch(()=>{});
