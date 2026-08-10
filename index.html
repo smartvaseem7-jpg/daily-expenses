@@ -955,6 +955,10 @@ function mtRender(){
         const icons = mtEditMode ? `<button class="iedit no-print" data-editwid="${w.id}">&#9998;</button><button class="idel no-print" data-wid="${w.id}">&#128465;</button>` : "";
         const loanFormHtml = mtEditMode ? `
           <div class="form-row no-print" style="margin-top:8px;">
+            <input type="number" inputmode="decimal" placeholder="Salary" value="${w.salary||''}" class="mt-salary-input" data-wid="${w.id}" style="flex:1;" />
+            <button class="fadd mt-salary-save" data-wid="${w.id}">&#10003; Save</button>
+          </div>
+          <div class="form-row no-print">
             <input type="number" inputmode="decimal" placeholder="Loan opening" value="${w.loanOpening||''}" class="mt-loanopening-input" data-wid="${w.id}" style="flex:1;" />
             <button class="fadd mt-loanopening-save" data-wid="${w.id}">&#10003; Save</button>
           </div>
@@ -965,7 +969,7 @@ function mtRender(){
           </div>` : "";
         const detailsHtml = isExpanded ? `
           <div class="mt-opening" style="font-family:'IBM Plex Mono',monospace;margin-top:8px;">${timeLabel}</div>
-          <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan repaid: ${rupee(w.loanRepaid)}</div>
+          <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan repaid: ${rupee(w.loanRepaid)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
           ${loanFormHtml}` : "";
         const card = document.createElement("div");
         card.className = "mt-card";
@@ -975,12 +979,21 @@ function mtRender(){
               <span style="width:26px;height:26px;border-radius:50%;background:#4A3B28;color:#F3ECD9;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">&#128100;</span>
               ${escapeHtml(w.name.toUpperCase())}
             </span>
-            <span class="sec-balance" style="color:${w.loanBalance>0?'#B33A3A':'#3B6B35'};">Loan bal ${rupee(w.loanBalance)} ${isExpanded?"&#9650;":"&#9660;"}</span>
+            <span class="sec-balance">Salary ${rupee(w.salary)} ${isExpanded?"&#9650;":"&#9660;"}</span>
           </div>
           ${icons ? `<div class="no-print" style="text-align:right;margin-top:4px;">${icons}</div>` : ""}
           ${detailsHtml}`;
         wList.appendChild(card);
       }
+    });
+    wList.querySelectorAll(".mt-salary-save").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = mtWorkers.find(w=>w.id===btn.dataset.wid);
+        const input = wList.querySelector(`.mt-salary-input[data-wid="${btn.dataset.wid}"]`);
+        w.salary = Number(input.value)||0;
+        mtPersist();
+        mtRender();
+      });
     });
     wList.querySelectorAll(".worker-toggle").forEach(el=>{
       el.addEventListener("click", ()=>{
