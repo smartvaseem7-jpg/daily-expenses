@@ -760,6 +760,7 @@ let mtWorkers = [];
 let mtSectionsData = {};
 let mtEditMode = false;
 let editingWorkerId = null;
+let mtExpandedWorkers = new Set();
 
 function mtEmptySections(openings){
   const obj = {};
@@ -948,6 +949,7 @@ function mtRender(){
         row.innerHTML = `<input type="text" value="${escapeHtml(w.name)}" data-edit-w-name="${w.id}" style="flex:1.4;" /><input type="time" value="${w.timeIn||''}" data-edit-w-in="${w.id}" /><input type="time" value="${w.timeOut||''}" data-edit-w-out="${w.id}" /><button class="isave" data-save-w="${w.id}">&#10003; Save</button>`;
         wList.appendChild(row);
       } else {
+        const isExpanded = mtExpandedWorkers.has(w.id);
         const hrs = hoursBetween(w.timeIn, w.timeOut);
         const timeLabel = (w.timeIn||w.timeOut) ? `${w.timeIn||"—"} to ${w.timeOut||"—"} &middot; ${fmtHours(hrs)}` : "No time logged";
         const icons = mtEditMode ? `<button class="iedit no-print" data-editwid="${w.id}">&#9998;</button><button class="idel no-print" data-wid="${w.id}">&#128465;</button>` : "";
@@ -961,21 +963,36 @@ function mtRender(){
             <input type="number" inputmode="decimal" placeholder="Loan repaid" value="${w.loanRepaid||''}" class="mt-loanrepaid-input" data-wid="${w.id}" style="flex:1;" />
             <button class="fadd mt-loan-save" data-wid="${w.id}">&#10003; Save</button>
           </div>` : "";
+        const detailsHtml = isExpanded ? `
+          <div class="mt-opening" style="font-family:'IBM Plex Mono',monospace;margin-top:8px;">${timeLabel}</div>
+          <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan repaid: ${rupee(w.loanRepaid)}</div>
+          ${loanFormHtml}` : "";
         const card = document.createElement("div");
         card.className = "mt-card";
         card.innerHTML = `
-          <div class="mt-card-head">
-            <span class="sec-name display">${escapeHtml(w.name.toUpperCase())}</span>
-            ${icons}
+          <div class="mt-card-head worker-toggle" data-toggle="${w.id}" style="cursor:pointer;">
+            <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
+              <span style="width:26px;height:26px;border-radius:50%;background:#4A3B28;color:#F3ECD9;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">&#128100;</span>
+              ${escapeHtml(w.name.toUpperCase())}
+            </span>
+            <span class="sec-balance" style="color:${w.loanBalance>0?'#B33A3A':'#3B6B35'};">Loan bal ${rupee(w.loanBalance)} ${isExpanded?"&#9650;":"&#9660;"}</span>
           </div>
-          <div class="mt-opening" style="font-family:'IBM Plex Mono',monospace;">${timeLabel}</div>
-          <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
-          ${loanFormHtml}`;
+          ${icons ? `<div class="no-print" style="text-align:right;margin-top:4px;">${icons}</div>` : ""}
+          ${detailsHtml}`;
         wList.appendChild(card);
       }
     });
+    wList.querySelectorAll(".worker-toggle").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const id = el.dataset.toggle;
+        if(mtExpandedWorkers.has(id)) mtExpandedWorkers.delete(id);
+        else mtExpandedWorkers.add(id);
+        mtRender();
+      });
+    });
     wList.querySelectorAll(".idel").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
+      btn.addEventListener("click", (ev)=>{
+        ev.stopPropagation();
         mtWorkers = mtWorkers.filter(w=>w.id!==btn.dataset.wid);
         mtPersist();
         mtRender();
