@@ -969,7 +969,7 @@ function mtRender(){
           </div>` : "";
         const detailsHtml = isExpanded ? `
           <div class="mt-opening" style="font-family:'IBM Plex Mono',monospace;margin-top:8px;">${timeLabel}</div>
-          <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan repaid: ${rupee(w.loanRepaid)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
+          <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan taken: ${rupee(w.loanTaken)} &nbsp;|&nbsp; Loan repaid: ${rupee(w.loanRepaid)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
           ${loanFormHtml}` : "";
         const card = document.createElement("div");
         card.className = "mt-card";
@@ -1313,7 +1313,7 @@ function dtRender(){
       const detailsHtml = isExpanded ? `
         <div class="mt-opening">Share of group earnings: ${rupee(w.share)}</div>
         ${cashRowsHtml}
-        <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan repaid: ${rupee(w.loanRepaid)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
+        <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan taken: ${rupee(w.loanTaken)} &nbsp;|&nbsp; Loan repaid: ${rupee(w.loanRepaid)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
         ${editBody}
         ${icons ? `<div class="no-print" style="text-align:right;margin-top:4px;">${icons}</div>` : ""}` : "";
       card.innerHTML = `
