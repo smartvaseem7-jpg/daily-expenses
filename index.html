@@ -1194,6 +1194,7 @@ let dtLoadedOnce = false;
 let dtEditMode = false;
 let dtKg = 0;
 let dtWorkers = []; // {id, name, extraCash:[{id,label,amount}], loanOpening, loanTaken, loanRepaid, loanBalance, share, salaryBalance}
+let dtExpandedWorkers = new Set();
 
 function nameKey(name){ return name.trim().toLowerCase().replace(/\s+/g,"_"); }
 
@@ -1285,6 +1286,7 @@ function dtRender(){
   } else {
     dtWorkers.forEach(w=>{
       dtRecalc(w);
+      const isExpanded = dtExpandedWorkers.has(w.id);
       const card = document.createElement("div");
       card.className = "mt-card";
       let cashRowsHtml = "";
@@ -1292,6 +1294,7 @@ function dtRender(){
         const icon = dtEditMode ? `<button class="idel no-print" data-wid="${w.id}" data-cid="${c.id}">&#128465;</button>` : "";
         cashRowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml(c.label||"Cash")}</div><div class="iprice mono" style="font-size:14px;">+${rupee(c.amount)}</div>${icon}</div>`;
       });
+      const icons = dtEditMode ? `<button class="idel no-print" data-delworker="${w.id}">&#128465;</button>` : "";
       const editBody = dtEditMode ? `
         <div class="form-row no-print" style="margin-top:8px;">
           <input type="text" placeholder="Cash label" class="dt-cash-label" data-wid="${w.id}" style="flex:1;" />
@@ -1306,23 +1309,36 @@ function dtRender(){
           <input type="number" inputmode="decimal" placeholder="Loan taken" value="${w.loanTaken||''}" class="dt-loantaken-input" data-wid="${w.id}" style="flex:1;" />
           <input type="number" inputmode="decimal" placeholder="Loan repaid" value="${w.loanRepaid||''}" class="dt-loanrepaid-input" data-wid="${w.id}" style="flex:1;" />
           <button class="fadd dt-loan-save" data-wid="${w.id}">&#10003; Save</button>
-        </div>
-        <button class="idel no-print" data-delworker="${w.id}" style="margin-top:4px;">&#128465; Remove worker</button>
-      ` : "";
-      card.innerHTML = `
-        <div class="mt-card-head">
-          <span class="sec-name display">${escapeHtml(w.name.toUpperCase())}</span>
-          <span class="sec-balance">${rupee(w.salaryBalance)}</span>
-        </div>
+        </div>` : "";
+      const detailsHtml = isExpanded ? `
         <div class="mt-opening">Share of group earnings: ${rupee(w.share)}</div>
         ${cashRowsHtml}
-        <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
-        ${editBody}`;
+        <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan repaid: ${rupee(w.loanRepaid)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
+        ${editBody}
+        ${icons ? `<div class="no-print" style="text-align:right;margin-top:4px;">${icons}</div>` : ""}` : "";
+      card.innerHTML = `
+        <div class="mt-card-head worker-toggle" data-toggle="${w.id}" style="cursor:pointer;">
+          <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
+            <span style="width:26px;height:26px;border-radius:50%;background:#4A3B28;color:#F3ECD9;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">&#128100;</span>
+            ${escapeHtml(w.name.toUpperCase())}
+          </span>
+          <span class="sec-balance">Salary ${rupee(w.salaryBalance)} ${isExpanded?"&#9650;":"&#9660;"}</span>
+        </div>
+        ${detailsHtml}`;
       list.appendChild(card);
     });
 
+    list.querySelectorAll(".worker-toggle").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const id = el.dataset.toggle;
+        if(dtExpandedWorkers.has(id)) dtExpandedWorkers.delete(id);
+        else dtExpandedWorkers.add(id);
+        dtRender();
+      });
+    });
     list.querySelectorAll("[data-delworker]").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
+      btn.addEventListener("click", (ev)=>{
+        ev.stopPropagation();
         dtWorkers = dtWorkers.filter(w=>w.id!==btn.dataset.delworker);
         dtPersist();
         dtRender();
@@ -1473,7 +1489,11 @@ function loadLoanPage(){
       });
     });
 
-    const names = Object.keys(balances);
+    const names = Object.keys(balances).filter(key=>{
+      const info = balances[key];
+      const hasTaken = (txByName[key]||[]).some(t=>t.taken>0);
+      return (Number(info.loanBalance)||0) !== 0 || hasTaken;
+    });
     container.innerHTML = "";
     if(names.length===0){
       emptyNote.textContent = "No loan records yet.";
