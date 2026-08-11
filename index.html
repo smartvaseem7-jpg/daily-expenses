@@ -843,11 +843,12 @@ function mtLoadDay(dateStr){
   });
 }
 
+let mtPersistPromise = Promise.resolve();
 function mtPersist(){
   document.getElementById("mtSaveNote").textContent = "Saving...";
   SECTION_KEYS.forEach(k=>mtRecalc(k));
   mtWorkers.forEach(mtRecalcWorkerLoan);
-  db.collection("machineTeam").doc(mtSelectedDate).set({
+  mtPersistPromise = db.collection("machineTeam").doc(mtSelectedDate).set({
     date: mtSelectedDate,
     month: monthKey(mtSelectedDate),
     workers: mtWorkers,
@@ -1186,12 +1187,18 @@ document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
 });
 
 document.getElementById("mtPrevDay").addEventListener("click", ()=>{
-  const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
-  mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
+  document.getElementById("mtSaveNote").textContent = "Please wait...";
+  mtPersistPromise.then(()=>{
+    const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
+    mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
+  });
 });
 document.getElementById("mtNextDay").addEventListener("click", ()=>{
-  const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
-  mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
+  document.getElementById("mtSaveNote").textContent = "Please wait...";
+  mtPersistPromise.then(()=>{
+    const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
+    mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
+  });
 });
 
 // ---------- DRYER TEAM STATE ----------
