@@ -762,9 +762,9 @@ let mtEditMode = false;
 let editingWorkerId = null;
 let mtExpandedWorkers = new Set();
 
-function mtEmptySections(openings){
+function mtEmptySections(openings, owners){
   const obj = {};
-  SECTION_KEYS.forEach(k=>{ obj[k] = {opening:(openings&&openings[k])||0, entries:[], cut:0, balance:(openings&&openings[k])||0}; });
+  SECTION_KEYS.forEach(k=>{ obj[k] = {opening:(openings&&openings[k])||0, entries:[], cut:0, balance:(openings&&openings[k])||0, ownerName:(owners&&owners[k])||""}; });
   return obj;
 }
 SECTION_KEYS.forEach(k=>{}); // no-op, kept for readability
@@ -808,7 +808,8 @@ function mtLoadDay(dateStr){
           opening: Number(s.opening)||0,
           entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||""})),
           cut: Number(s.cut)||0,
-          balance: 0
+          balance: 0,
+          ownerName: s.ownerName || ""
         };
       });
       document.getElementById("mtSaveNote").textContent = "";
@@ -816,15 +817,17 @@ function mtLoadDay(dateStr){
     } else {
       db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(1).get().then((snap)=>{
         const openings = {};
-        SECTION_KEYS.forEach(k=>openings[k]=0);
+        const owners = {};
+        SECTION_KEYS.forEach(k=>{ openings[k]=0; owners[k]=""; });
         if(!snap.empty){
           const prev = snap.docs[0].data();
           SECTION_KEYS.forEach(k=>{
             openings[k] = (prev.sections && prev.sections[k] && Number(prev.sections[k].balance)) || 0;
+            owners[k] = (prev.sections && prev.sections[k] && prev.sections[k].ownerName) || "";
           });
         }
         mtWorkers = [];
-        mtSectionsData = mtEmptySections(openings);
+        mtSectionsData = mtEmptySections(openings, owners);
         document.getElementById("mtSaveNote").textContent = "";
         mtRender();
       }).catch(()=>{
@@ -1085,8 +1088,9 @@ function mtRender(){
     const openingHtml = mtEditMode ? `
       <div class="form-row no-print" style="margin:0 0 8px;">
         <input type="number" inputmode="decimal" placeholder="Opening" value="${s.opening||''}" class="mt-opening-input" data-sec="${k}" style="flex:1;" />
+        <input type="text" placeholder="Owner name" value="${escapeHtml(s.ownerName||'')}" class="mt-opening-owner-input" data-sec="${k}" style="flex:1;" />
         <button class="fadd mt-opening-save" data-sec="${k}">&#10003; Save</button>
-      </div>` : `<div class="mt-opening">Opening: ${rupee(s.opening)}</div>`;
+      </div>` : `<div class="mt-opening">Opening (${s.ownerName ? escapeHtml(s.ownerName.toUpperCase()) : "—"}): ${rupee(s.opening)}</div>`;
     card.innerHTML = `
       <div class="mt-card-head">
         <span class="sec-name display">Section ${k}</span>
@@ -1116,6 +1120,7 @@ function mtRender(){
       const name = nameInput.value.trim();
       if(amount<=0) return;
       mtSectionsData[k].entries.push({id:Date.now().toString(36), amount, name});
+      if(name) mtSectionsData[k].ownerName = name;
       mtPersist();
       mtRender();
     });
@@ -1137,8 +1142,10 @@ function mtRender(){
     btn.addEventListener("click", ()=>{
       const k = btn.dataset.sec;
       const openInput = list.querySelector(`.mt-opening-input[data-sec="${k}"]`);
+      const ownerInput = list.querySelector(`.mt-opening-owner-input[data-sec="${k}"]`);
       const val = Number(openInput.value)||0;
       mtSectionsData[k].opening = val;
+      mtSectionsData[k].ownerName = ownerInput.value.trim();
       mtRecalc(k);
       mtPersist();
       mtRenderTotalsOnly();
