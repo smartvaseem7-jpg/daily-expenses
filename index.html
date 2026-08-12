@@ -764,7 +764,7 @@ let mtExpandedWorkers = new Set();
 
 function mtEmptySections(openings, owners){
   const obj = {};
-  SECTION_KEYS.forEach(k=>{ obj[k] = {opening:(openings&&openings[k])||0, entries:[], cut:0, balance:(openings&&openings[k])||0, ownerName:(owners&&owners[k])||""}; });
+  SECTION_KEYS.forEach(k=>{ obj[k] = {opening:(openings&&openings[k])||0, entries:[], cut:0, balance:(openings&&openings[k])||0, ownerName:(owners&&owners[k])||"", openingManual:false}; });
   return obj;
 }
 SECTION_KEYS.forEach(k=>{}); // no-op, kept for readability
@@ -796,7 +796,19 @@ function mtTotals(){
 
 function mtLoadDay(dateStr){
   document.getElementById("mtSaveNote").textContent = "Loading...";
-  db.collection("machineTeam").doc(dateStr).get().then((doc)=>{
+  Promise.all([
+    db.collection("machineTeam").doc(dateStr).get(),
+    db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(1).get()
+  ]).then(([doc, snap])=>{
+    const prevOpenings = {}, prevOwners = {};
+    SECTION_KEYS.forEach(k=>{ prevOpenings[k]=0; prevOwners[k]=""; });
+    if(!snap.empty){
+      const prev = snap.docs[0].data();
+      SECTION_KEYS.forEach(k=>{
+        prevOpenings[k] = (prev.sections && prev.sections[k] && Number(prev.sections[k].balance)) || 0;
+        prevOwners[k] = (prev.sections && prev.sections[k] && prev.sections[k].ownerName) || "";
+      });
+    }
     if(doc.exists){
       const data = doc.data();
       mtWorkers = Array.isArray(data.workers) ? data.workers : [];
@@ -804,38 +816,22 @@ function mtLoadDay(dateStr){
       SECTION_KEYS.forEach(k=>{
         const s = (data.sections && data.sections[k]) || {};
         const entries = Array.isArray(s.entries) ? s.entries : [];
+        const manual = !!s.openingManual;
         mtSectionsData[k] = {
-          opening: Number(s.opening)||0,
+          opening: manual ? (Number(s.opening)||0) : prevOpenings[k],
           entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||""})),
           cut: Number(s.cut)||0,
           balance: 0,
-          ownerName: s.ownerName || ""
+          ownerName: manual ? (s.ownerName || "") : (prevOwners[k] || s.ownerName || ""),
+          openingManual: manual
         };
       });
-      document.getElementById("mtSaveNote").textContent = "";
-      mtRender();
     } else {
-      db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(1).get().then((snap)=>{
-        const openings = {};
-        const owners = {};
-        SECTION_KEYS.forEach(k=>{ openings[k]=0; owners[k]=""; });
-        if(!snap.empty){
-          const prev = snap.docs[0].data();
-          SECTION_KEYS.forEach(k=>{
-            openings[k] = (prev.sections && prev.sections[k] && Number(prev.sections[k].balance)) || 0;
-            owners[k] = (prev.sections && prev.sections[k] && prev.sections[k].ownerName) || "";
-          });
-        }
-        mtWorkers = [];
-        mtSectionsData = mtEmptySections(openings, owners);
-        document.getElementById("mtSaveNote").textContent = "";
-        mtRender();
-      }).catch(()=>{
-        mtWorkers = []; mtSectionsData = mtEmptySections();
-        document.getElementById("mtSaveNote").textContent = "Couldn't load previous balance.";
-        mtRender();
-      });
+      mtWorkers = [];
+      mtSectionsData = mtEmptySections(prevOpenings, prevOwners);
     }
+    document.getElementById("mtSaveNote").textContent = "";
+    mtRender();
   }).catch((e)=>{
     mtWorkers = []; mtSectionsData = mtEmptySections();
     document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
@@ -1147,6 +1143,7 @@ function mtRender(){
       const val = Number(openInput.value)||0;
       mtSectionsData[k].opening = val;
       mtSectionsData[k].ownerName = ownerInput.value.trim();
+      mtSectionsData[k].openingManual = true;
       mtRecalc(k);
       mtPersist();
       mtRenderTotalsOnly();
