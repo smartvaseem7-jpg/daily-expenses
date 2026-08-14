@@ -144,7 +144,8 @@
         <button class="home-btn" id="goMachine"><span class="icon">&#9881;&#65039;</span>Machine Team</button>
         <button class="home-btn" id="goDryer"><span class="icon">&#127788;&#65039;</span>Dryer Team</button>
         <button class="home-btn soon" id="goStore"><span class="icon">&#127974;&#65039;</span>Store</button>
-        <button class="home-btn" id="goLoan" style="grid-column:span 2;"><span class="icon">&#128176;</span>Loan</button>
+        <button class="home-btn" id="goLoan"><span class="icon">&#128176;</span>Loan</button>
+        <button class="home-btn" id="goSalary"><span class="icon">&#128181;</span>Salary</button>
       </div>
     </div>
 
@@ -334,6 +335,46 @@
       <p class="empty" id="loanEmptyNote" style="display:none;">Loading loan records...</p>
       <div id="loanWorkersList"></div>
     </div>
+
+    <!-- ===== SALARY ===== -->
+    <div id="salarySection" style="display:none;">
+      <div class="section-header">
+        <button class="back-btn no-print" data-home>&#8592; Home</button>
+        <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
+        <h2 class="section-title">SALARY</h2>
+      </div>
+
+      <nav class="tabs no-print">
+        <button id="salTabCurrent" class="active">Current</button>
+        <button id="salTabHistory">History</button>
+      </nav>
+
+      <div id="salCurrentView">
+        <p class="empty" id="salEmptyNote" style="display:none;">Loading salary records...</p>
+
+        <h3 class="sub-title display">Machine Team Salary</h3>
+        <div id="salMachineList"></div>
+        <div class="totals" style="margin-bottom:16px;">
+          <div class="line"><span class="label">Machine total &raquo;&raquo;</span><span class="val mono" id="salMachineTotal" style="color:#3B6B35;"></span></div>
+        </div>
+
+        <h3 class="sub-title display">Dryer Team Salary</h3>
+        <div id="salDryerList"></div>
+        <div class="totals">
+          <div class="line"><span class="label">Dryer total &raquo;&raquo;</span><span class="val mono" id="salDryerTotal" style="color:#3B6B35;"></span></div>
+        </div>
+
+        <div class="save-note no-print" id="salSaveNote"></div>
+
+        <div class="actions no-print">
+          <button class="btn-export" id="salPayBtn" style="flex:1;">&#128181; Pay Salary (mark as paid)</button>
+        </div>
+      </div>
+
+      <div id="salHistoryView" style="display:none;">
+        <div id="salHistoryList"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -410,7 +451,7 @@ if(localStorage.getItem("sham-unlocked") === "true"){
 }
 
 // ---------- SCREEN NAVIGATION ----------
-const SCREENS = ["homeScreen","expensesSection","machineSection","dryerSection","storeSection","loanSection"];
+const SCREENS = ["homeScreen","expensesSection","machineSection","dryerSection","storeSection","loanSection","salarySection"];
 function showScreen(id){
   SCREENS.forEach(s=>{
     document.getElementById(s).style.display = (s===id) ? "block" : "none";
@@ -440,6 +481,24 @@ let loanLoadedOnce = false;
 document.getElementById("goLoan").addEventListener("click", ()=>{
   showScreen("loanSection");
   loadLoanPage();
+});
+
+document.getElementById("goSalary").addEventListener("click", ()=>{
+  showScreen("salarySection");
+  loadSalaryCurrent();
+});
+document.getElementById("salTabCurrent").addEventListener("click", ()=>{
+  document.getElementById("salCurrentView").style.display="block";
+  document.getElementById("salHistoryView").style.display="none";
+  document.getElementById("salTabCurrent").classList.add("active");
+  document.getElementById("salTabHistory").classList.remove("active");
+});
+document.getElementById("salTabHistory").addEventListener("click", ()=>{
+  document.getElementById("salCurrentView").style.display="none";
+  document.getElementById("salHistoryView").style.display="block";
+  document.getElementById("salTabCurrent").classList.remove("active");
+  document.getElementById("salTabHistory").classList.add("active");
+  loadSalaryHistory();
 });
 
 // ---------- EXPENSES STATE ----------
@@ -1549,6 +1608,155 @@ function loadLoanPage(){
     retryBtn.addEventListener("click", loadLoanPage);
     container.innerHTML = "";
     container.appendChild(retryBtn);
+  });
+}
+
+// ---------- SALARY PAGE ----------
+let salMachineAgg = {map:{}, maxDate:""};
+let salDryerAgg = {map:{}, maxDate:""};
+
+function computeSalaryAccumulation(snapshot, salaryField){
+  const map = {};
+  let maxDate = "";
+  snapshot.forEach(doc=>{
+    const d = doc.data();
+    const arr = Array.isArray(d.workers) ? d.workers : [];
+    arr.forEach(w=>{
+      const val = Number(w[salaryField])||0;
+      if(val>0 && w.name && w.name.trim()){
+        const nm = w.name.trim();
+        if(!map[nm]) map[nm] = {workingDays:0, totalSalary:0};
+        map[nm].workingDays += 1;
+        map[nm].totalSalary += val;
+      }
+    });
+    if(doc.id > maxDate) maxDate = doc.id;
+  });
+  return {map, maxDate};
+}
+
+function renderSalaryTable(listId, totalId, map){
+  const container = document.getElementById(listId);
+  container.innerHTML = "";
+  const names = Object.keys(map);
+  let total = 0;
+  if(names.length===0){
+    container.innerHTML = '<p class="empty">No unpaid salary yet.</p>';
+  } else {
+    names.sort();
+    names.forEach(name=>{
+      const info = map[name];
+      total += info.totalSalary;
+      const row = document.createElement("div");
+      row.className = "ledger-row display";
+      row.innerHTML = `<div class="iname">${escapeHtml(name.toUpperCase())}<div class="icat">${info.workingDays} day${info.workingDays>1?"s":""}</div></div><div class="iprice mono">${rupee(info.totalSalary)}</div>`;
+      container.appendChild(row);
+    });
+  }
+  document.getElementById(totalId).textContent = rupee(total);
+}
+
+function loadSalaryCurrent(){
+  const note = document.getElementById("salEmptyNote");
+  note.style.display = "block";
+  note.textContent = "Loading salary records...";
+  document.getElementById("salMachineList").innerHTML = "";
+  document.getElementById("salDryerList").innerHTML = "";
+
+  db.collection("salaryState").doc("state").get().then((stateDoc)=>{
+    const state = stateDoc.exists ? stateDoc.data() : {};
+    const machineLastPaid = state.machineLastPaid || "";
+    const dryerLastPaid = state.dryerLastPaid || "";
+
+    Promise.allSettled([
+      db.collection("machineTeam").where("date",">",machineLastPaid).get(),
+      db.collection("dryerTeam").where("date",">",dryerLastPaid).get()
+    ]).then((results)=>{
+      note.style.display = "none";
+      const mtResult = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
+      const dtResult = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
+
+      salMachineAgg = computeSalaryAccumulation(mtResult, "salary");
+      salDryerAgg = computeSalaryAccumulation(dtResult, "salaryBalance");
+
+      renderSalaryTable("salMachineList","salMachineTotal", salMachineAgg.map);
+      renderSalaryTable("salDryerList","salDryerTotal", salDryerAgg.map);
+    }).catch(()=>{
+      note.textContent = "Couldn't load. Check internet and try again.";
+    });
+  }).catch(()=>{
+    note.textContent = "Couldn't load. Check internet and try again.";
+  });
+}
+
+document.getElementById("salPayBtn").addEventListener("click", ()=>{
+  const note = document.getElementById("salSaveNote");
+  const machineNames = Object.keys(salMachineAgg.map);
+  const dryerNames = Object.keys(salDryerAgg.map);
+  if(machineNames.length===0 && dryerNames.length===0){
+    note.textContent = "Nothing to pay right now.";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    return;
+  }
+  note.textContent = "Saving...";
+  const paidDate = fmtDate(new Date());
+  const writes = [];
+  machineNames.forEach(name=>{
+    const info = salMachineAgg.map[name];
+    writes.push(db.collection("salaryHistory").add({team:"Machine Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
+  });
+  dryerNames.forEach(name=>{
+    const info = salDryerAgg.map[name];
+    writes.push(db.collection("salaryHistory").add({team:"Dryer Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
+  });
+  Promise.all(writes).then(()=>{
+    return db.collection("salaryState").doc("state").set({
+      machineLastPaid: salMachineAgg.maxDate || paidDate,
+      dryerLastPaid: salDryerAgg.maxDate || paidDate
+    }, {merge:true});
+  }).then(()=>{
+    note.textContent = "Salary paid — saved to history!";
+    setTimeout(()=>{ note.textContent=""; }, 2000);
+    loadSalaryCurrent();
+  }).catch(()=>{
+    note.textContent = "Couldn't save. Check internet.";
+  });
+});
+
+function loadSalaryHistory(){
+  const container = document.getElementById("salHistoryList");
+  container.innerHTML = '<p class="empty">Loading...</p>';
+  db.collection("salaryHistory").orderBy("paidDate","desc").get().then((snap)=>{
+    container.innerHTML = "";
+    if(snap.empty){
+      container.innerHTML = '<p class="empty">No salary history yet.</p>';
+      return;
+    }
+    const groups = {};
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const key = d.paidDate + "|" + d.team;
+      if(!groups[key]) groups[key] = {paidDate:d.paidDate, team:d.team, rows:[], total:0};
+      groups[key].rows.push({name:d.name||"", workingDays:Number(d.workingDays)||0, totalSalary:Number(d.totalSalary)||0});
+      groups[key].total += Number(d.totalSalary)||0;
+    });
+    Object.values(groups).forEach(g=>{
+      const card = document.createElement("div");
+      card.className = "mt-card";
+      let rowsHtml = "";
+      g.rows.forEach(r=>{
+        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml(r.name.toUpperCase())}<div class="icat">${r.workingDays} days</div></div><div class="iprice mono" style="font-size:14px;">${rupee(r.totalSalary)}</div></div>`;
+      });
+      card.innerHTML = `
+        <div class="mt-card-head">
+          <span class="sec-name display">${fmtNice(g.paidDate)} &middot; ${g.team}</span>
+          <span class="sec-balance">${rupee(g.total)}</span>
+        </div>
+        ${rowsHtml}`;
+      container.appendChild(card);
+    });
+  }).catch(()=>{
+    container.innerHTML = '<p class="empty">Couldn\'t load history. Check internet.</p>';
   });
 }
 
