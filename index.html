@@ -121,6 +121,7 @@
   </div>
 </div>
 
+<datalist id="workerNamesList"></datalist>
 <div class="wrap" id="appRoot" style="display:none;">
   <div class="card" id="mainCard">
     <div class="leaf-corner tl">&#127811;</div>
@@ -242,7 +243,7 @@
       <h3 class="sub-title display">Workers Today</h3>
       <div id="mtWorkersList"></div>
       <div class="form-row no-print" id="mtWorkerFormRow" style="display:none;">
-        <input type="text" placeholder="Worker name" id="mtWorkerNameInput" style="flex:2;min-width:100px;" />
+        <input type="text" placeholder="Worker name" id="mtWorkerNameInput" list="workerNamesList" style="flex:2;min-width:100px;" />
         <input type="time" id="mtWorkerTimeIn" style="flex:1;min-width:90px;" />
         <input type="time" id="mtWorkerTimeOut" style="flex:1;min-width:90px;" />
         <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
@@ -304,7 +305,7 @@
 
       <div id="dtWorkersList"></div>
       <div class="form-row no-print" id="dtWorkerFormRow" style="display:none;">
-        <input type="text" placeholder="Worker name" id="dtWorkerNameInput" style="flex:2;min-width:110px;" />
+        <input type="text" placeholder="Worker name" id="dtWorkerNameInput" list="workerNamesList" style="flex:2;min-width:110px;" />
         <button class="fadd" id="dtAddWorkerBtn">+ Add</button>
       </div>
 
@@ -448,9 +449,24 @@ function showApp(){
   document.getElementById("appRoot").style.display="block";
   auth.signInAnonymously().then(()=>{
     showScreen("homeScreen");
+    loadWorkerNamesList();
   }).catch((e)=>{
     alert("Connection error. Check internet.");
   });
+}
+
+function loadWorkerNamesList(){
+  db.collection("workerLoans").get().then((snap)=>{
+    const dl = document.getElementById("workerNamesList");
+    dl.innerHTML = "";
+    snap.forEach(doc=>{
+      const name = (doc.data().name || "").trim();
+      if(!name) return;
+      const opt = document.createElement("option");
+      opt.value = name;
+      dl.appendChild(opt);
+    });
+  }).catch(()=>{});
 }
 
 if(localStorage.getItem("sham-unlocked") === "true"){
@@ -464,8 +480,17 @@ function showScreen(id){
     document.getElementById(s).style.display = (s===id) ? "block" : "none";
   });
 }
+function waitForPendingSaves(){
+  return Promise.all([
+    typeof mtPersistPromise !== "undefined" ? mtPersistPromise : Promise.resolve(),
+    typeof dtPersistPromise !== "undefined" ? dtPersistPromise : Promise.resolve()
+  ]).catch(()=>{});
+}
+
 document.querySelectorAll("[data-home]").forEach(btn=>{
-  btn.addEventListener("click", ()=>showScreen("homeScreen"));
+  btn.addEventListener("click", ()=>{
+    waitForPendingSaves().then(()=>showScreen("homeScreen"));
+  });
 });
 
 let expensesLoadedOnce = false;
@@ -495,13 +520,17 @@ document.getElementById("goDryer").addEventListener("click", ()=>{
 document.getElementById("goStore").addEventListener("click", ()=>showScreen("storeSection"));
 let loanLoadedOnce = false;
 document.getElementById("goLoan").addEventListener("click", ()=>{
-  showScreen("loanSection");
-  loadLoanPage();
+  waitForPendingSaves().then(()=>{
+    showScreen("loanSection");
+    loadLoanPage();
+  });
 });
 
 document.getElementById("goSalary").addEventListener("click", ()=>{
-  showScreen("salarySection");
-  loadSalaryCurrent();
+  waitForPendingSaves().then(()=>{
+    showScreen("salarySection");
+    loadSalaryCurrent();
+  });
 });
 document.getElementById("salTabCurrent").addEventListener("click", ()=>{
   document.getElementById("salCurrentView").style.display="block";
@@ -1022,7 +1051,7 @@ function mtRender(){
       if(editingWorkerId === w.id){
         const row = document.createElement("div");
         row.className = "edit-row no-print";
-        row.innerHTML = `<input type="text" value="${escapeHtml(w.name)}" data-edit-w-name="${w.id}" style="flex:1.4;" /><input type="time" value="${w.timeIn||''}" data-edit-w-in="${w.id}" /><input type="time" value="${w.timeOut||''}" data-edit-w-out="${w.id}" /><button class="isave" data-save-w="${w.id}">&#10003; Save</button>`;
+        row.innerHTML = `<input type="text" value="${escapeHtml(w.name)}" data-edit-w-name="${w.id}" list="workerNamesList" style="flex:1.4;" /><input type="time" value="${w.timeIn||''}" data-edit-w-in="${w.id}" /><input type="time" value="${w.timeOut||''}" data-edit-w-out="${w.id}" /><button class="isave" data-save-w="${w.id}">&#10003; Save</button>`;
         wList.appendChild(row);
       } else {
         const isExpanded = mtExpandedWorkers.has(w.id);
@@ -1101,7 +1130,7 @@ function mtRender(){
         const outInput = wList.querySelector(`[data-edit-w-out="${id}"]`);
         const name = nameInput.value.trim();
         if(!name) return;
-        const autoSalary = (inInput.value && outInput.value) ? mtDailyRate : 0;
+        const autoSalary = mtDailyRate;
         mtWorkers = mtWorkers.map(w=> w.id===id ? {...w, name, timeIn:inInput.value, timeOut:outInput.value, salary:autoSalary} : w);
         editingWorkerId = null;
         mtPersist();
@@ -1259,11 +1288,12 @@ document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
   const timeOutInput = document.getElementById("mtWorkerTimeOut");
   const name = input.value.trim();
   if(!name) return;
-  const autoSalary = (timeInInput.value && timeOutInput.value) ? mtDailyRate : 0;
+  const autoSalary = mtDailyRate;
   db.collection("workerLoans").doc(nameKey(name)).get().then((doc)=>{
     const loanOpening = doc.exists ? (Number(doc.data().loanBalance)||0) : 0;
     mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, salary:autoSalary, loanOpening, loanTaken:0, loanRepaid:0, loanBalance:loanOpening});
     mtPersist();
+    loadWorkerNamesList();
     input.value=""; timeInInput.value=""; timeOutInput.value="";
     mtRender();
   }).catch(()=>{
@@ -1341,10 +1371,11 @@ function dtLoadDay(dateStr){
   });
 }
 
+let dtPersistPromise = Promise.resolve();
 function dtPersist(){
   document.getElementById("dtSaveNote").textContent = "Saving...";
   dtWorkers.forEach(dtRecalc);
-  db.collection("dryerTeam").doc(dtSelectedDate).set({
+  dtPersistPromise = db.collection("dryerTeam").doc(dtSelectedDate).set({
     date: dtSelectedDate,
     month: monthKey(dtSelectedDate),
     kg: dtKg,
@@ -1512,6 +1543,7 @@ document.getElementById("dtAddWorkerBtn").addEventListener("click", ()=>{
     const loanOpening = doc.exists ? (Number(doc.data().loanBalance)||0) : 0;
     dtWorkers.push({id:Date.now().toString(36), name, extraCash:[], loanOpening, loanTaken:0, loanRepaid:0, loanBalance:loanOpening, share:0, salaryBalance:0});
     dtPersist();
+    loadWorkerNamesList();
     input.value="";
     dtRender();
   }).catch(()=>{
