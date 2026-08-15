@@ -233,6 +233,12 @@
 
       <button class="btn-clear no-print" id="mtToggleEdit" style="width:100%;margin-bottom:14px;">&#9998; Edit</button>
 
+      <div class="form-row no-print" id="mtRateFormRow" style="display:none;">
+        <input type="number" inputmode="decimal" placeholder="Daily rate per worker" id="mtRateInput" style="flex:1;" />
+        <button class="fadd" id="mtRateSaveBtn">&#10003; Save rate</button>
+      </div>
+      <p class="empty" id="mtRateDisplay" style="display:none;"></p>
+
       <h3 class="sub-title display">Workers Today</h3>
       <div id="mtWorkersList"></div>
       <div class="form-row no-print" id="mtWorkerFormRow" style="display:none;">
@@ -368,6 +374,8 @@
 
         <div class="actions no-print">
           <button class="btn-export" id="salPayBtn" style="flex:1;">&#128181; Pay Salary (mark as paid)</button>
+          <button class="btn-clear" id="salClearBtn">&#8635; Clear</button>
+          <button class="btn-clear" id="salClearBtn">&#8635; Clear</button>
         </div>
       </div>
 
@@ -470,7 +478,16 @@ document.getElementById("goExpenses").addEventListener("click", ()=>{
 });
 document.getElementById("goMachine").addEventListener("click", ()=>{
   showScreen("machineSection");
-  if(!mtLoadedOnce){ mtLoadedOnce = true; mtLoadDay(mtSelectedDate); }
+  if(!mtLoadedOnce){
+    mtLoadedOnce = true;
+    db.collection("settings").doc("machineRate").get().then((doc)=>{
+      mtDailyRate = doc.exists ? (Number(doc.data().rate)||0) : 0;
+      document.getElementById("mtRateInput").value = mtDailyRate || "";
+      document.getElementById("mtRateDisplay").textContent = "Daily rate: " + rupee(mtDailyRate) + " per worker";
+      document.getElementById("mtRateDisplay").style.display = "block";
+    }).catch(()=>{});
+    mtLoadDay(mtSelectedDate);
+  }
 });
 document.getElementById("goDryer").addEventListener("click", ()=>{
   showScreen("dryerSection");
@@ -818,6 +835,7 @@ let mtSelectedDate = fmtDate(new Date());
 let mtWorkers = [];
 let mtSectionsData = {};
 let mtEditMode = false;
+let mtDailyRate = 0;
 let editingWorkerId = null;
 let mtExpandedWorkers = new Set();
 
@@ -1084,7 +1102,8 @@ function mtRender(){
         const outInput = wList.querySelector(`[data-edit-w-out="${id}"]`);
         const name = nameInput.value.trim();
         if(!name) return;
-        mtWorkers = mtWorkers.map(w=> w.id===id ? {...w, name, timeIn:inInput.value, timeOut:outInput.value} : w);
+        const autoSalary = (inInput.value && outInput.value) ? mtDailyRate : 0;
+        mtWorkers = mtWorkers.map(w=> w.id===id ? {...w, name, timeIn:inInput.value, timeOut:outInput.value, salary:autoSalary} : w);
         editingWorkerId = null;
         mtPersist();
         mtRender();
@@ -1219,7 +1238,20 @@ document.getElementById("mtToggleEdit").addEventListener("click", ()=>{
   editingWorkerId = null;
   document.getElementById("mtToggleEdit").innerHTML = mtEditMode ? "&#10003; Done" : "&#9998; Edit";
   document.getElementById("mtWorkerFormRow").style.display = mtEditMode ? "flex" : "none";
+  document.getElementById("mtRateFormRow").style.display = mtEditMode ? "flex" : "none";
+  document.getElementById("mtRateDisplay").style.display = mtEditMode ? "none" : "block";
   mtRender();
+});
+
+document.getElementById("mtRateSaveBtn").addEventListener("click", ()=>{
+  mtDailyRate = Number(document.getElementById("mtRateInput").value)||0;
+  db.collection("settings").doc("machineRate").set({rate:mtDailyRate}).then(()=>{
+    document.getElementById("mtRateDisplay").textContent = "Daily rate: " + rupee(mtDailyRate) + " per worker";
+    document.getElementById("mtSaveNote").textContent = "Rate saved";
+    setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
+  }).catch(()=>{
+    document.getElementById("mtSaveNote").textContent = "Couldn't save rate.";
+  });
 });
 
 document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
@@ -1228,14 +1260,15 @@ document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
   const timeOutInput = document.getElementById("mtWorkerTimeOut");
   const name = input.value.trim();
   if(!name) return;
+  const autoSalary = (timeInInput.value && timeOutInput.value) ? mtDailyRate : 0;
   db.collection("workerLoans").doc(nameKey(name)).get().then((doc)=>{
     const loanOpening = doc.exists ? (Number(doc.data().loanBalance)||0) : 0;
-    mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, loanOpening, loanTaken:0, loanRepaid:0, loanBalance:loanOpening});
+    mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, salary:autoSalary, loanOpening, loanTaken:0, loanRepaid:0, loanBalance:loanOpening});
     mtPersist();
     input.value=""; timeInInput.value=""; timeOutInput.value="";
     mtRender();
   }).catch(()=>{
-    mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, loanOpening:0, loanTaken:0, loanRepaid:0, loanBalance:0});
+    mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, salary:autoSalary, loanOpening:0, loanTaken:0, loanRepaid:0, loanBalance:0});
     mtPersist();
     input.value=""; timeInInput.value=""; timeOutInput.value="";
     mtRender();
@@ -1614,6 +1647,7 @@ function loadLoanPage(){
 // ---------- SALARY PAGE ----------
 let salMachineAgg = {map:{}, maxDate:""};
 let salDryerAgg = {map:{}, maxDate:""};
+let salExpanded = new Set();
 
 function computeSalaryAccumulation(snapshot, salaryField){
   const map = {};
@@ -1625,17 +1659,19 @@ function computeSalaryAccumulation(snapshot, salaryField){
       const val = Number(w[salaryField])||0;
       if(val>0 && w.name && w.name.trim()){
         const nm = w.name.trim();
-        if(!map[nm]) map[nm] = {workingDays:0, totalSalary:0};
+        if(!map[nm]) map[nm] = {workingDays:0, totalSalary:0, days:[]};
         map[nm].workingDays += 1;
         map[nm].totalSalary += val;
+        map[nm].days.push({date:doc.id, amount:val});
       }
     });
     if(doc.id > maxDate) maxDate = doc.id;
   });
+  Object.values(map).forEach(info=>{ info.days.sort((a,b)=>a.date.localeCompare(b.date)); });
   return {map, maxDate};
 }
 
-function renderSalaryTable(listId, totalId, map){
+function renderSalaryTable(listId, totalId, map, prefix){
   const container = document.getElementById(listId);
   container.innerHTML = "";
   const names = Object.keys(map);
@@ -1647,10 +1683,35 @@ function renderSalaryTable(listId, totalId, map){
     names.forEach(name=>{
       const info = map[name];
       total += info.totalSalary;
-      const row = document.createElement("div");
-      row.className = "ledger-row display";
-      row.innerHTML = `<div class="iname">${escapeHtml(name.toUpperCase())}<div class="icat">${info.workingDays} day${info.workingDays>1?"s":""}</div></div><div class="iprice mono">${rupee(info.totalSalary)}</div>`;
-      container.appendChild(row);
+      const expandKey = prefix + ":" + name;
+      const isExpanded = salExpanded.has(expandKey);
+      let daysHtml = "";
+      if(isExpanded){
+        info.days.forEach(dinfo=>{
+          daysHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:13px;">${fmtNice(dinfo.date)}</div><div class="iprice mono" style="font-size:13px;">${rupee(dinfo.amount)}</div></div>`;
+        });
+      }
+      const card = document.createElement("div");
+      card.className = "mt-card";
+      card.innerHTML = `
+        <div class="mt-card-head worker-toggle" data-expandkey="${expandKey}" style="cursor:pointer;">
+          <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
+            <span style="width:26px;height:26px;border-radius:50%;background:#4A3B28;color:#F3ECD9;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">&#128100;</span>
+            ${escapeHtml(name.toUpperCase())}
+          </span>
+          <span class="sec-balance">${info.workingDays} day${info.workingDays>1?"s":""} &middot; ${rupee(info.totalSalary)} ${isExpanded?"&#9650;":"&#9660;"}</span>
+        </div>
+        ${daysHtml}`;
+      container.appendChild(card);
+    });
+    container.querySelectorAll(".worker-toggle").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const key = el.dataset.expandkey;
+        if(salExpanded.has(key)) salExpanded.delete(key);
+        else salExpanded.add(key);
+        renderSalaryTable(listId, totalId, map, prefix);
+        document.getElementById(totalId).textContent = rupee(total);
+      });
     });
   }
   document.getElementById(totalId).textContent = rupee(total);
@@ -1679,8 +1740,8 @@ function loadSalaryCurrent(){
       salMachineAgg = computeSalaryAccumulation(mtResult, "salary");
       salDryerAgg = computeSalaryAccumulation(dtResult, "salaryBalance");
 
-      renderSalaryTable("salMachineList","salMachineTotal", salMachineAgg.map);
-      renderSalaryTable("salDryerList","salDryerTotal", salDryerAgg.map);
+      renderSalaryTable("salMachineList","salMachineTotal", salMachineAgg.map, "machine");
+      renderSalaryTable("salDryerList","salDryerTotal", salDryerAgg.map, "dryer");
     }).catch(()=>{
       note.textContent = "Couldn't load. Check internet and try again.";
     });
@@ -1720,6 +1781,24 @@ document.getElementById("salPayBtn").addEventListener("click", ()=>{
     loadSalaryCurrent();
   }).catch(()=>{
     note.textContent = "Couldn't save. Check internet.";
+  });
+});
+
+document.getElementById("salClearBtn").addEventListener("click", ()=>{
+  const note = document.getElementById("salSaveNote");
+  note.textContent = "Clearing...";
+  const today = fmtDate(new Date());
+  const newMachineLastPaid = salMachineAgg.maxDate || today;
+  const newDryerLastPaid = salDryerAgg.maxDate || today;
+  db.collection("salaryState").doc("state").set({
+    machineLastPaid: newMachineLastPaid,
+    dryerLastPaid: newDryerLastPaid
+  }, {merge:true}).then(()=>{
+    note.textContent = "Cleared.";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    loadSalaryCurrent();
+  }).catch(()=>{
+    note.textContent = "Couldn't clear. Check internet.";
   });
 });
 
