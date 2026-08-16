@@ -1676,30 +1676,32 @@ function loadLoanPage(){
 }
 
 // ---------- SALARY PAGE ----------
-let salMachineAgg = {map:{}, maxDate:""};
-let salDryerAgg = {map:{}, maxDate:""};
+let salMachineAgg = {map:{}, dayDocs:{}};
+let salDryerAgg = {map:{}, dayDocs:{}};
 let salExpanded = new Set();
 
 function computeSalaryAccumulation(snapshot, salaryField){
   const map = {};
-  let maxDate = "";
+  const dayDocs = {};
   snapshot.forEach(doc=>{
     const d = doc.data();
     const arr = Array.isArray(d.workers) ? d.workers : [];
+    let touched = false;
     arr.forEach(w=>{
       const val = Number(w[salaryField])||0;
-      if(val>0 && w.name && w.name.trim()){
+      if(val>0 && !w.salaryPaid && w.name && w.name.trim()){
         const nm = w.name.trim();
         if(!map[nm]) map[nm] = {workingDays:0, totalSalary:0, days:[]};
         map[nm].workingDays += 1;
         map[nm].totalSalary += val;
         map[nm].days.push({date:doc.id, amount:val});
+        touched = true;
       }
     });
-    if(doc.id > maxDate) maxDate = doc.id;
+    if(touched) dayDocs[doc.id] = d;
   });
   Object.values(map).forEach(info=>{ info.days.sort((a,b)=>a.date.localeCompare(b.date)); });
-  return {map, maxDate};
+  return {map, dayDocs};
 }
 
 function renderSalaryTable(listId, totalId, map, prefix){
@@ -1755,30 +1757,39 @@ function loadSalaryCurrent(){
   document.getElementById("salMachineList").innerHTML = "";
   document.getElementById("salDryerList").innerHTML = "";
 
-  db.collection("salaryState").doc("state").get().then((stateDoc)=>{
-    const state = stateDoc.exists ? stateDoc.data() : {};
-    const machineLastPaid = state.machineLastPaid || "";
-    const dryerLastPaid = state.dryerLastPaid || "";
+  Promise.allSettled([
+    db.collection("machineTeam").get(),
+    db.collection("dryerTeam").get()
+  ]).then((results)=>{
+    note.style.display = "none";
+    const mtResult = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
+    const dtResult = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
 
-    Promise.allSettled([
-      db.collection("machineTeam").where("date",">",machineLastPaid).get(),
-      db.collection("dryerTeam").where("date",">",dryerLastPaid).get()
-    ]).then((results)=>{
-      note.style.display = "none";
-      const mtResult = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
-      const dtResult = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
+    salMachineAgg = computeSalaryAccumulation(mtResult, "salary");
+    salDryerAgg = computeSalaryAccumulation(dtResult, "salaryBalance");
 
-      salMachineAgg = computeSalaryAccumulation(mtResult, "salary");
-      salDryerAgg = computeSalaryAccumulation(dtResult, "salaryBalance");
-
-      renderSalaryTable("salMachineList","salMachineTotal", salMachineAgg.map, "machine");
-      renderSalaryTable("salDryerList","salDryerTotal", salDryerAgg.map, "dryer");
-    }).catch(()=>{
-      note.textContent = "Couldn't load. Check internet and try again.";
-    });
+    renderSalaryTable("salMachineList","salMachineTotal", salMachineAgg.map, "machine");
+    renderSalaryTable("salDryerList","salDryerTotal", salDryerAgg.map, "dryer");
   }).catch(()=>{
     note.textContent = "Couldn't load. Check internet and try again.";
   });
+}
+
+function paySalaryTeam(collectionName, agg, salaryField){
+  const docIds = Object.keys(agg.dayDocs);
+  const writes = docIds.map(docId=>{
+    const d = agg.dayDocs[docId];
+    const arr = Array.isArray(d.workers) ? d.workers : [];
+    const updatedWorkers = arr.map(w=>{
+      const val = Number(w[salaryField])||0;
+      if(val>0 && !w.salaryPaid){
+        return {...w, salaryPaid:true};
+      }
+      return w;
+    });
+    return db.collection(collectionName).doc(docId).update({workers: updatedWorkers});
+  });
+  return Promise.all(writes);
 }
 
 document.getElementById("salPayBtn").addEventListener("click", ()=>{
@@ -1792,21 +1803,20 @@ document.getElementById("salPayBtn").addEventListener("click", ()=>{
   }
   note.textContent = "Saving...";
   const paidDate = fmtDate(new Date());
-  const writes = [];
+  const historyWrites = [];
   machineNames.forEach(name=>{
     const info = salMachineAgg.map[name];
-    writes.push(db.collection("salaryHistory").add({team:"Machine Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
+    historyWrites.push(db.collection("salaryHistory").add({team:"Machine Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
   });
   dryerNames.forEach(name=>{
     const info = salDryerAgg.map[name];
-    writes.push(db.collection("salaryHistory").add({team:"Dryer Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
+    historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
   });
-  Promise.all(writes).then(()=>{
-    return db.collection("salaryState").doc("state").set({
-      machineLastPaid: salMachineAgg.maxDate || paidDate,
-      dryerLastPaid: salDryerAgg.maxDate || paidDate
-    }, {merge:true});
-  }).then(()=>{
+  Promise.all([
+    paySalaryTeam("machineTeam", salMachineAgg, "salary"),
+    paySalaryTeam("dryerTeam", salDryerAgg, "salaryBalance"),
+    ...historyWrites
+  ]).then(()=>{
     note.textContent = "Salary paid — saved to history!";
     setTimeout(()=>{ note.textContent=""; }, 2000);
     loadSalaryCurrent();
@@ -1817,14 +1827,18 @@ document.getElementById("salPayBtn").addEventListener("click", ()=>{
 
 document.getElementById("salClearBtn").addEventListener("click", ()=>{
   const note = document.getElementById("salSaveNote");
+  const machineNames = Object.keys(salMachineAgg.map);
+  const dryerNames = Object.keys(salDryerAgg.map);
+  if(machineNames.length===0 && dryerNames.length===0){
+    note.textContent = "Nothing to clear.";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    return;
+  }
   note.textContent = "Clearing...";
-  const today = fmtDate(new Date());
-  const newMachineLastPaid = salMachineAgg.maxDate || today;
-  const newDryerLastPaid = salDryerAgg.maxDate || today;
-  db.collection("salaryState").doc("state").set({
-    machineLastPaid: newMachineLastPaid,
-    dryerLastPaid: newDryerLastPaid
-  }, {merge:true}).then(()=>{
+  Promise.all([
+    paySalaryTeam("machineTeam", salMachineAgg, "salary"),
+    paySalaryTeam("dryerTeam", salDryerAgg, "salaryBalance")
+  ]).then(()=>{
     note.textContent = "Cleared.";
     setTimeout(()=>{ note.textContent=""; }, 1500);
     loadSalaryCurrent();
