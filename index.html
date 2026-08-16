@@ -255,6 +255,9 @@
 
       <div id="mtPersonTotals" style="margin:6px 0 10px;"></div>
 
+      <h3 class="sub-title display">Full Matta Details</h3>
+      <div id="mtFullLog" style="margin-bottom:10px;"></div>
+
       <div class="totals">
         <div class="line"><span class="label">Opening &raquo;&raquo;</span><span class="val mono" id="mtOpeningVal"></span></div>
         <div class="line"><span class="label">Total matta &raquo;&raquo;</span><span class="val mono" id="mtTotalVal" style="color:#3B6B35;"></span></div>
@@ -1008,6 +1011,26 @@ function mtRenderTotalsOnly(){
     ptDiv.appendChild(row);
   });
 
+  const logRows = [];
+  SECTION_KEYS.forEach(k=>{
+    mtSectionsData[k].entries.forEach(e=>{
+      logRows.push({time:e.time||"", section:k, name:e.name||"—", amount:e.amount});
+    });
+  });
+  logRows.sort((a,b)=> a.time.localeCompare(b.time));
+  const logDiv = document.getElementById("mtFullLog");
+  logDiv.innerHTML = "";
+  if(logRows.length===0){
+    logDiv.innerHTML = '<p class="empty">No matta added yet today.</p>';
+  } else {
+    logRows.forEach(r=>{
+      const row = document.createElement("div");
+      row.className = "ledger-row display";
+      row.innerHTML = `<div class="iname" style="font-size:13px;">${r.time ? r.time+" &middot; " : ""}Section ${r.section} &middot; ${escapeHtml(r.name.toUpperCase())}</div><div class="iprice mono" style="font-size:13px;">+${rupee(r.amount)}</div>`;
+      logDiv.appendChild(row);
+    });
+  }
+
   const cutDiv = document.getElementById("mtCutBreakdown");
   cutDiv.innerHTML = "";
   let totalCut = 0;
@@ -1174,7 +1197,8 @@ function mtRender(){
     } else {
       s.entries.forEach(e=>{
         const icon = mtEditMode ? `<button class="idel no-print" data-sec="${k}" data-eid="${e.id}">&#128465;</button>` : "";
-        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml((e.name||"—").toUpperCase())}</div><div class="iprice mono" style="font-size:14px;">+${rupee(e.amount)}</div>${icon}</div>`;
+        const timeLabel = e.time ? `<div class="icat" style="font-family:'IBM Plex Mono',monospace;">${e.time}</div>` : "";
+        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml((e.name||"—").toUpperCase())}${timeLabel}</div><div class="iprice mono" style="font-size:14px;">+${rupee(e.amount)}</div>${icon}</div>`;
       });
     }
     const addFormHtml = mtEditMode ? `
@@ -1194,9 +1218,13 @@ function mtRender(){
         <input type="text" placeholder="Owner name" value="${escapeHtml(s.ownerName||'')}" class="mt-opening-owner-input" data-sec="${k}" style="flex:1;" />
         <button class="fadd mt-opening-save" data-sec="${k}">&#10003; Save</button>
       </div>` : `<div class="mt-opening">Opening (${s.ownerName ? escapeHtml(s.ownerName.toUpperCase()) : "—"}): ${rupee(s.opening)}</div>`;
+    const badgeColors = {A:"#3B6B35", B:"#2E6E9E", C:"#B5651D", D:"#7A4FA0", E:"#B3396B"};
     card.innerHTML = `
       <div class="mt-card-head">
-        <span class="sec-name display">Section ${k}</span>
+        <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
+          <span style="width:24px;height:24px;border-radius:6px;background:${badgeColors[k]};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${k}</span>
+          Section ${k}
+        </span>
         <span class="sec-balance">Balance ${rupee(s.balance)}</span>
       </div>
       ${openingHtml}
@@ -1222,7 +1250,8 @@ function mtRender(){
       const amount = Number(amountInput.value)||0;
       const name = nameInput.value.trim();
       if(amount<=0) return;
-      mtSectionsData[k].entries.push({id:Date.now().toString(36), amount, name});
+      const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+      mtSectionsData[k].entries.push({id:Date.now().toString(36), amount, name, time:timeLabel});
       if(name) mtSectionsData[k].ownerName = name;
       mtPersist();
       mtRender();
