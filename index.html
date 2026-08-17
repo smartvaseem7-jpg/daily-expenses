@@ -931,7 +931,9 @@ function mtLoadDay(dateStr){
   ]).then(([doc, snap])=>{
     const prevOpenings = {}, prevOwners = {};
     SECTION_KEYS.forEach(k=>{ prevOpenings[k]=0; prevOwners[k]=[]; });
+    let debugMsg = "";
     if(!snap.empty){
+      const prevDocId = snap.docs[0].id;
       const prev = snap.docs[0].data();
       SECTION_KEYS.forEach(k=>{
         prevOpenings[k] = (prev.sections && prev.sections[k] && Number(prev.sections[k].balance)) || 0;
@@ -940,6 +942,9 @@ function mtLoadDay(dateStr){
           prevOwners[k] = Array.isArray(prevSec.ownerNames) ? prevSec.ownerNames.slice() : (prevSec.ownerName ? [prevSec.ownerName] : []);
         }
       });
+      debugMsg = "Found previous day: " + prevDocId + " (A opening=" + prevOpenings.A + ")";
+    } else {
+      debugMsg = "No previous machine team day found before " + dateStr;
     }
     if(doc.exists){
       const data = doc.data();
@@ -964,7 +969,7 @@ function mtLoadDay(dateStr){
       mtWorkers = [];
       mtSectionsData = mtEmptySections(prevOpenings, prevOwners);
     }
-    document.getElementById("mtSaveNote").textContent = "";
+    document.getElementById("mtSaveNote").textContent = "DEBUG: " + debugMsg;
     mtRender();
   }).catch((e)=>{
     mtWorkers = []; mtSectionsData = mtEmptySections();
