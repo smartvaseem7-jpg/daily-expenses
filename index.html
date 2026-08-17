@@ -1327,12 +1327,14 @@ function mtRender(){
         <button class="fadd mt-cut-add" data-sec="${k}">+ Add</button>
       </div>` : `<div class="mt-opening" style="margin-top:6px;">Target cutting &raquo;&raquo; ${rupee(s.cut)}</div>`;
     const namesStr = (s.ownerNames && s.ownerNames.length) ? s.ownerNames.map(n=>escapeHtml(n.toUpperCase())).join(", ") : "—";
+    const lockNote = s.openingManual ? `<span style="color:#B33A3A;font-weight:600;"> &#128274; manual</span> <button class="mt-opening-unlock no-print" data-sec="${k}" style="border:none;background:none;color:#3B6B35;text-decoration:underline;font-size:11px;cursor:pointer;">&#128275; Use automatic</button>` : "";
     const openingHtml = mtEditMode ? `
-      <div class="form-row no-print" style="margin:0 0 8px;">
+      <div class="form-row no-print" style="margin:0 0 2px;">
         <input type="number" inputmode="decimal" placeholder="Opening" value="${s.opening||''}" class="mt-opening-input" data-sec="${k}" style="flex:1;" />
         <input type="text" placeholder="Owner names (comma separated)" value="${escapeHtml((s.ownerNames||[]).join(', '))}" class="mt-opening-owner-input" data-sec="${k}" style="flex:1;" />
         <button class="fadd mt-opening-save" data-sec="${k}">&#10003; Save</button>
-      </div>` : `<div class="mt-opening">Opening (${namesStr}): ${rupee(s.opening)}</div>`;
+      </div>
+      <div class="no-print" style="margin:0 0 8px;font-size:11px;">${lockNote}</div>` : `<div class="mt-opening">Opening (${namesStr}): ${rupee(s.opening)}</div>`;
     const badgeColors = {A:"#3B6B35", B:"#2E6E9E", C:"#B5651D", D:"#7A4FA0", E:"#B3396B"};
     card.innerHTML = `
       <div class="mt-card-head">
@@ -1402,6 +1404,14 @@ function mtRender(){
       mtRenderTotalsOnly();
       const card = btn.closest(".mt-card");
       card.querySelector(".sec-balance").textContent = "Balance " + rupee(mtSectionsData[k].balance);
+    });
+  });
+  list.querySelectorAll(".mt-opening-unlock").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = btn.dataset.sec;
+      mtSectionsData[k].openingManual = false;
+      mtPersist();
+      mtLoadDay(mtSelectedDate);
     });
   });
 
