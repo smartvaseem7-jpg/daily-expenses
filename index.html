@@ -91,6 +91,26 @@
   .mt-card-head .sec-balance { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700; color:#3B6B35; }
   .mt-opening { font-size:14px; color:#4A3B28; font-weight:600; margin-bottom:6px; }
   .person-row { display:flex; justify-content:space-between; padding:6px 2px; font-size:13px; color:#4A3B28; }
+  /* ===== DASHBOARD (distinct professional style) ===== */
+  #dashboardSection { margin: -26px -22px; }
+  .dash-header { background: linear-gradient(135deg, #1F3D24, #2E5233); padding: 20px 18px; display:flex; align-items:center; gap:12px; border-radius:14px 14px 0 0; }
+  .dash-title { color:#fff; font-family:'Fraunces',serif; font-size:16px; font-weight:900; letter-spacing:0.02em; }
+  .dash-subtitle { color:#B9D6BC; font-size:11px; margin-top:2px; }
+  .dash-body { background:#F4F6F5; padding:18px 16px 24px; }
+  .dash-section-label { font-size:12px; font-weight:800; color:#1F3D24; letter-spacing:0.03em; margin:18px 0 8px; }
+  .dash-badge-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .dash-badge { background:#fff; border:1px solid #E1E6E2; border-radius:10px; padding:10px 8px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+  .dash-kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; }
+  .dash-kpi { background:#fff; border:1px solid #E1E6E2; border-radius:10px; padding:10px 8px; display:flex; flex-direction:column; gap:4px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+  .dash-kpi-label { font-size:10px; font-weight:700; color:#6B7A6D; text-transform:uppercase; letter-spacing:0.03em; }
+  .dash-kpi-val { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:800; }
+  .dash-total-box { display:flex; justify-content:space-between; align-items:center; background:#EAF3EC; border:1px solid #BFDCC4; border-radius:10px; padding:14px 16px; margin-top:8px; }
+  .dash-total-box span:first-child { font-size:12px; font-weight:800; color:#1F3D24; letter-spacing:0.03em; }
+  .dash-total-box span:last-child { font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:900; color:#1F3D24; }
+  .dash-table { background:#fff; border:1px solid #E1E6E2; border-radius:10px; overflow:hidden; }
+  .dash-table .person-row { padding:10px 12px; font-size:13px; border-bottom:1px solid #EEF1EE; }
+  .dash-table .person-row:last-child { border-bottom:none; }
+  .dash-table .person-row:nth-child(even) { background:#FAFBFA; }
   @media print {
     .no-print { display:none !important; }
     body { background:white; }
@@ -403,40 +423,50 @@
 
     <!-- ===== DASHBOARD ===== -->
     <div id="dashboardSection" style="display:none;">
-      <div class="section-header">
-        <button class="back-btn no-print" data-home>&#8592; Home</button>
-        <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
-        <h2 class="section-title">DASHBOARD</h2>
-      </div>
-      <p class="empty" id="dashEmptyNote" style="display:none;">Loading dashboard...</p>
-
-      <h3 class="sub-title display">Matta Sanction (Today)</h3>
-      <div id="dashMattaBadges" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"></div>
-      <div class="totals" style="margin-bottom:16px;">
-        <div class="line"><span class="label">Total matta &raquo;&raquo;</span><span class="val mono" id="dashTotalMatta" style="color:#3B6B35;"></span></div>
-        <div class="line"><span class="label">Total cut &raquo;&raquo;</span><span class="val mono" id="dashTotalCut" style="color:#B33A3A;"></span></div>
-        <div class="line"><span class="label">Balance matta &raquo;&raquo;</span><span class="val mono" id="dashBalanceMatta" style="color:#B5651D;"></span></div>
+      <div class="dash-header">
+        <button class="back-btn no-print" data-home style="background:rgba(255,255,255,0.15);color:#fff;">&#8592; Home</button>
+        <img src="logo.png" alt="SHAM Coco Production logo" style="width:44px;height:44px;object-fit:contain;" />
+        <div>
+          <div class="dash-title">SHAM COCO PROTECTION</div>
+          <div class="dash-subtitle">Matta Management Dashboard</div>
+        </div>
       </div>
 
-      <h3 class="sub-title display">Person-wise Matta (Today)</h3>
-      <div id="dashPersonMatta" style="margin-bottom:16px;"></div>
+      <div class="dash-body">
+        <p class="empty" id="dashEmptyNote" style="display:none;">Loading dashboard...</p>
 
-      <h3 class="sub-title display">Salary Summary (Unpaid)</h3>
-      <div class="totals" style="margin-bottom:16px;">
-        <div class="line"><span class="label">Machine Team &raquo;&raquo;</span><span class="val mono" id="dashSalMachine" style="color:#3B6B35;"></span></div>
-        <div class="line"><span class="label">Dryer Team &raquo;&raquo;</span><span class="val mono" id="dashSalDryer" style="color:#3B6B35;"></span></div>
-        <div class="line"><span class="label">Food cash &raquo;&raquo;</span><span class="val mono" id="dashSalFood" style="color:#3B6B35;"></span></div>
-        <div class="line"><span class="label">Total salary &raquo;&raquo;</span><span class="val mono" id="dashSalTotal" style="color:#B5651D;font-weight:900;"></span></div>
-      </div>
+        <div class="dash-section-label">1&nbsp; MATTA SANCTION (TODAY)</div>
+        <div id="dashMattaBadges" class="dash-badge-grid"></div>
+        <div class="dash-kpi-row">
+          <div class="dash-kpi"><span class="dash-kpi-label">Total Matta</span><span class="dash-kpi-val" id="dashTotalMatta" style="color:#2E6E9E;"></span></div>
+          <div class="dash-kpi"><span class="dash-kpi-label">Total Cut</span><span class="dash-kpi-val" id="dashTotalCut" style="color:#B33A3A;"></span></div>
+          <div class="dash-kpi"><span class="dash-kpi-label">Balance</span><span class="dash-kpi-val" id="dashBalanceMatta" style="color:#3B6B35;"></span></div>
+        </div>
 
-      <h3 class="sub-title display">Loan Summary</h3>
-      <div class="totals">
-        <div class="line"><span class="label">Total loan balance &raquo;&raquo;</span><span class="val mono" id="dashLoanTotal" style="color:#B33A3A;"></span></div>
-      </div>
-      <p class="empty" style="margin-top:4px;">Loan is tracked per worker, shared across teams.</p>
+        <div class="dash-section-label">2&nbsp; PERSON-WISE MATTA (TODAY)</div>
+        <div class="dash-table" id="dashPersonMatta"></div>
 
-      <div class="actions no-print" style="margin-top:14px;">
-        <button class="btn-export" id="dashExportBtn" style="flex:1;">&#128424; Export dashboard (PDF)</button>
+        <div class="dash-section-label">3&nbsp; SALARY SUMMARY (UNPAID)</div>
+        <div class="dash-kpi-row">
+          <div class="dash-kpi"><span class="dash-kpi-label">Machine Team</span><span class="dash-kpi-val" id="dashSalMachine" style="color:#3B6B35;"></span></div>
+          <div class="dash-kpi"><span class="dash-kpi-label">Dryer Team</span><span class="dash-kpi-val" id="dashSalDryer" style="color:#3B6B35;"></span></div>
+          <div class="dash-kpi"><span class="dash-kpi-label">Food Cash</span><span class="dash-kpi-val" id="dashSalFood" style="color:#3B6B35;"></span></div>
+        </div>
+        <div class="dash-total-box">
+          <span>TOTAL SALARY</span>
+          <span id="dashSalTotal"></span>
+        </div>
+
+        <div class="dash-section-label">4&nbsp; LOAN SUMMARY</div>
+        <div class="dash-total-box" style="background:#FBEAEA;border-color:#E3B8B8;">
+          <span style="color:#8A2E2E;">TOTAL LOAN BALANCE</span>
+          <span id="dashLoanTotal" style="color:#B33A3A;"></span>
+        </div>
+        <p class="empty" style="margin-top:6px;">Loan is tracked per worker, shared across teams.</p>
+
+        <div class="actions no-print" style="margin-top:16px;">
+          <button class="btn-export" id="dashExportBtn" style="flex:1;">&#128424; Export dashboard (PDF)</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2144,7 +2174,7 @@ function loadDashboard(){
           if(nm && Number(e.amount)>0) personMap[nm] = (personMap[nm]||0) + Number(e.amount);
         });
         const badge = document.createElement("div");
-        badge.className = "mt-card";
+        badge.className = "dash-badge";
         badge.style.padding = "10px";
         badge.innerHTML = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><span style="width:20px;height:20px;border-radius:5px;background:${badgeColors[k]};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">${k}</span><span class="display" style="font-size:13px;font-weight:700;">${k} Area</span></div><div class="mono" style="font-size:16px;font-weight:700;color:#4A3B28;">${rupee(sectMatta)}</div>`;
         badgesDiv.appendChild(badge);
