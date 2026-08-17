@@ -499,7 +499,8 @@ function showScreen(id){
 function waitForPendingSaves(){
   return Promise.all([
     typeof mtPersistPromise !== "undefined" ? mtPersistPromise : Promise.resolve(),
-    typeof dtPersistPromise !== "undefined" ? dtPersistPromise : Promise.resolve()
+    typeof dtPersistPromise !== "undefined" ? dtPersistPromise : Promise.resolve(),
+    typeof expPersistPromise !== "undefined" ? expPersistPromise : Promise.resolve()
   ]).catch(()=>{});
 }
 
@@ -615,9 +616,10 @@ function loadDay(dateStr){
   });
 }
 
+let expPersistPromise = Promise.resolve();
 function persistDay(dateStr, nextCashEntries, nextItems){
   document.getElementById("saveNote").textContent = "Saving...";
-  db.collection("expenses").doc(dateStr).set({
+  expPersistPromise = db.collection("expenses").doc(dateStr).set({
     cashEntries: nextCashEntries,
     items: nextItems,
     opening: openingCash,
@@ -776,12 +778,18 @@ document.getElementById("addItemBtn").addEventListener("click", ()=>{
 });
 
 document.getElementById("prevDay").addEventListener("click", ()=>{
-  const d = new Date(selectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
-  selectedDate = fmtDate(d); loadDay(selectedDate);
+  document.getElementById("saveNote").textContent = "Please wait...";
+  expPersistPromise.then(()=>{
+    const d = new Date(selectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
+    selectedDate = fmtDate(d); loadDay(selectedDate);
+  });
 });
 document.getElementById("nextDay").addEventListener("click", ()=>{
-  const d = new Date(selectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
-  selectedDate = fmtDate(d); loadDay(selectedDate);
+  document.getElementById("saveNote").textContent = "Please wait...";
+  expPersistPromise.then(()=>{
+    const d = new Date(selectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
+    selectedDate = fmtDate(d); loadDay(selectedDate);
+  });
 });
 document.getElementById("clearDayBtn").addEventListener("click", ()=>{
   items=[]; cashEntries=[];
