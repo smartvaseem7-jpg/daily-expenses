@@ -927,24 +927,31 @@ function mtLoadDay(dateStr){
   document.getElementById("mtSaveNote").textContent = "Loading...";
   Promise.all([
     db.collection("machineTeam").doc(dateStr).get(),
-    db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(1).get()
+    db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(30).get()
   ]).then(([doc, snap])=>{
     const prevOpenings = {}, prevOwners = {};
     SECTION_KEYS.forEach(k=>{ prevOpenings[k]=0; prevOwners[k]=[]; });
-    let debugMsg = "";
-    if(!snap.empty){
-      const prevDocId = snap.docs[0].id;
-      const prev = snap.docs[0].data();
+    // Walk backwards through recent days and use the most recent one that
+    // actually has real data (non-zero balance or logged entries), so a
+    // stray "empty" day in between never breaks the carry-forward chain.
+    let chosen = null;
+    for(const docSnap of snap.docs){
+      const d = docSnap.data();
+      const hasData = SECTION_KEYS.some(k=>{
+        const s = d.sections && d.sections[k];
+        return s && (Number(s.balance)!==0 || (Array.isArray(s.entries) && s.entries.length>0) || Number(s.cut)!==0);
+      });
+      if(hasData){ chosen = d; break; }
+      if(!chosen) chosen = d; // fallback: most recent day even if empty
+    }
+    if(chosen){
       SECTION_KEYS.forEach(k=>{
-        prevOpenings[k] = (prev.sections && prev.sections[k] && Number(prev.sections[k].balance)) || 0;
-        const prevSec = prev.sections && prev.sections[k];
+        prevOpenings[k] = (chosen.sections && chosen.sections[k] && Number(chosen.sections[k].balance)) || 0;
+        const prevSec = chosen.sections && chosen.sections[k];
         if(prevSec){
           prevOwners[k] = Array.isArray(prevSec.ownerNames) ? prevSec.ownerNames.slice() : (prevSec.ownerName ? [prevSec.ownerName] : []);
         }
       });
-      debugMsg = "Found previous day: " + prevDocId + " (A opening=" + prevOpenings.A + ")";
-    } else {
-      debugMsg = "No previous machine team day found before " + dateStr;
     }
     if(doc.exists){
       const data = doc.data();
@@ -969,7 +976,7 @@ function mtLoadDay(dateStr){
       mtWorkers = [];
       mtSectionsData = mtEmptySections(prevOpenings, prevOwners);
     }
-    document.getElementById("mtSaveNote").textContent = "DEBUG: " + debugMsg;
+    document.getElementById("mtSaveNote").textContent = "";
     mtRender();
   }).catch((e)=>{
     mtWorkers = []; mtSectionsData = mtEmptySections();
