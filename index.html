@@ -1121,7 +1121,7 @@ function mtRenderTotalsOnly(){
   Object.keys(personMap).forEach(nm=>{
     const row = document.createElement("div");
     row.className = "person-row display";
-    row.innerHTML = `<span>${escapeHtml(nm.toUpperCase())} T.L</span><span class="mono" style="font-weight:700;">${rupee(personMap[nm])}</span>`;
+    row.innerHTML = `<span style="color:#B5651D;font-weight:600;">${escapeHtml(nm.toUpperCase())} T.L</span><span class="mono" style="font-weight:700;color:#3B6B35;">${rupee(personMap[nm])}</span>`;
     ptDiv.appendChild(row);
   });
 
@@ -1154,7 +1154,7 @@ function mtRenderTotalsOnly(){
       totalCut += cut;
       const row = document.createElement("div");
       row.className = "person-row display";
-      row.innerHTML = `<span>Section ${k} cut &raquo;&raquo;</span><span class="mono" style="font-weight:700;">${rupee(cut)}</span>`;
+      row.innerHTML = `<span>Section ${k} cut &raquo;&raquo;</span><span class="mono" style="font-weight:700;color:#B33A3A;">${rupee(cut)}</span>`;
       cutDiv.appendChild(row);
     }
   });
@@ -1165,7 +1165,7 @@ function mtRenderTotalsOnly(){
     totalRow.style.marginTop = "4px";
     totalRow.style.paddingTop = "6px";
     totalRow.style.fontWeight = "700";
-    totalRow.innerHTML = `<span>Total cut &raquo;&raquo;</span><span class="mono">${rupee(totalCut)}</span>`;
+    totalRow.innerHTML = `<span>Total cut &raquo;&raquo;</span><span class="mono" style="color:#B33A3A;">${rupee(totalCut)}</span>`;
     cutDiv.appendChild(totalRow);
   }
 }
@@ -1312,7 +1312,7 @@ function mtRender(){
       s.entries.forEach(e=>{
         const icon = mtEditMode ? `<button class="idel no-print" data-sec="${k}" data-eid="${e.id}">&#128465;</button>` : "";
         const timeLabel = e.time ? `<div class="icat" style="font-family:'IBM Plex Mono',monospace;">${e.time}</div>` : "";
-        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml((e.name||"—").toUpperCase())}${timeLabel}</div><div class="iprice mono" style="font-size:14px;">+${rupee(e.amount)}</div>${icon}</div>`;
+        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;color:#B5651D;">${escapeHtml((e.name||"—").toUpperCase())}${timeLabel}</div><div class="iprice mono" style="font-size:14px;color:#3B6B35;">+${rupee(e.amount)}</div>${icon}</div>`;
       });
     }
     const addFormHtml = mtEditMode ? `
@@ -1325,7 +1325,7 @@ function mtRender(){
       <div class="form-row no-print" style="margin:8px 0 0;">
         <input type="number" inputmode="decimal" placeholder="Target cutting" value="${s.cut||''}" class="mt-cut-input" data-sec="${k}" style="flex:1;" />
         <button class="fadd mt-cut-add" data-sec="${k}">+ Add</button>
-      </div>` : `<div class="mt-opening" style="margin-top:6px;">Target cutting &raquo;&raquo; ${rupee(s.cut)}</div>`;
+      </div>` : `<div class="mt-opening">Target cutting &raquo;&raquo; <span style="color:#B33A3A;font-weight:700;">${rupee(s.cut)}</span></div>`;
     const namesStr = (s.ownerNames && s.ownerNames.length) ? s.ownerNames.map(n=>escapeHtml(n.toUpperCase())).join(", ") : "—";
     const lockNote = s.openingManual ? `<span style="color:#B33A3A;font-weight:600;"> &#128274; manual</span> <button class="mt-opening-unlock no-print" data-sec="${k}" style="border:none;background:none;color:#3B6B35;text-decoration:underline;font-size:11px;cursor:pointer;">&#128275; Use automatic</button>` : "";
     const openingHtml = mtEditMode ? `
