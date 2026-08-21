@@ -1875,15 +1875,17 @@ function computeFoodCashAccumulation(snapshot){
       const evening = Number(e.evening)||0;
       if(!e.paid && e.name && e.name.trim() && (morning>0 || evening>0)){
         const nm = e.name.trim();
-        if(!map[nm]) map[nm] = {morning:0, evening:0, total:0};
+        if(!map[nm]) map[nm] = {morning:0, evening:0, total:0, days:[]};
         map[nm].morning += morning;
         map[nm].evening += evening;
         map[nm].total += morning+evening;
+        map[nm].days.push({date:doc.id, morning, evening, amount:morning+evening});
         touched = true;
       }
     });
     if(touched) dayDocs[doc.id] = d;
   });
+  Object.values(map).forEach(info=>{ info.days.sort((a,b)=>a.date.localeCompare(b.date)); });
   return {map, dayDocs};
 }
 
@@ -1945,10 +1947,34 @@ function renderFoodCashTable(){
     names.forEach(name=>{
       const info = salFoodAgg.map[name];
       total += info.total;
-      const row = document.createElement("div");
-      row.className = "ledger-row display";
-      row.innerHTML = `<div class="iname">${escapeHtml(name.toUpperCase())}<div class="icat">Morning ${rupee(info.morning)} &middot; Evening ${rupee(info.evening)}</div></div><div class="iprice mono">${rupee(info.total)}</div>`;
-      container.appendChild(row);
+      const expandKey = "food:" + name;
+      const isExpanded = salExpanded.has(expandKey);
+      let daysHtml = "";
+      if(isExpanded){
+        info.days.forEach(dinfo=>{
+          daysHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:13px;">${fmtNice(dinfo.date)}<div class="icat">Morning ${rupee(dinfo.morning)} &middot; Evening ${rupee(dinfo.evening)}</div></div><div class="iprice mono" style="font-size:13px;">${rupee(dinfo.amount)}</div></div>`;
+        });
+      }
+      const card = document.createElement("div");
+      card.className = "mt-card";
+      card.innerHTML = `
+        <div class="mt-card-head worker-toggle" data-expandkey="${expandKey}" style="cursor:pointer;">
+          <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
+            <span style="width:26px;height:26px;border-radius:50%;background:#4A3B28;color:#F3ECD9;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">&#128100;</span>
+            ${escapeHtml(name.toUpperCase())}
+          </span>
+          <span class="sec-balance">${info.days.length} day${info.days.length>1?"s":""} &middot; ${rupee(info.total)} ${isExpanded?"&#9650;":"&#9660;"}</span>
+        </div>
+        ${daysHtml}`;
+      container.appendChild(card);
+    });
+    container.querySelectorAll(".worker-toggle").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const key = el.dataset.expandkey;
+        if(salExpanded.has(key)) salExpanded.delete(key);
+        else salExpanded.add(key);
+        renderFoodCashTable();
+      });
     });
   }
   document.getElementById("salFoodTotal").textContent = rupee(total);
