@@ -259,13 +259,7 @@
         <input type="number" inputmode="decimal" placeholder="Daily rate per worker" id="mtRateInput" style="flex:1;" />
         <button class="fadd" id="mtRateSaveBtn">&#10003; Save rate</button>
       </div>
-      <div class="form-row no-print" id="mtFoodRateFormRow" style="display:none;">
-        <input type="number" inputmode="decimal" placeholder="Morning food rate" id="mtMorningRateInput" style="flex:1;" />
-        <input type="number" inputmode="decimal" placeholder="Evening food rate" id="mtEveningRateInput" style="flex:1;" />
-        <button class="fadd" id="mtFoodRateSaveBtn">&#10003; Save</button>
-      </div>
       <p class="empty" id="mtRateDisplay" style="display:none;"></p>
-      <p class="empty" id="mtFoodRateDisplay" style="display:none;"></p>
 
       <h3 class="sub-title display">Workers Today</h3>
       <div id="mtWorkersList"></div>
@@ -401,8 +395,15 @@
           <div class="line"><span class="label">Dryer total &raquo;&raquo;</span><span class="val mono" id="salDryerTotal" style="color:#3B6B35;"></span></div>
         </div>
 
-        <h3 class="sub-title display">Food Cash <span style="font-size:11px;font-weight:400;color:#8A7A5E;">(from Machine Team)</span></h3>
+        <h3 class="sub-title display">Food Cash</h3>
+        <button class="btn-clear no-print" id="salFoodToggleEdit" style="width:100%;margin-bottom:10px;">&#9998; Edit</button>
         <div id="salFoodList"></div>
+        <div class="form-row no-print" id="salFoodFormRow" style="display:none;">
+          <input type="text" placeholder="Worker name" id="salFoodNameInput" list="workerNamesList" style="flex:1.4;min-width:100px;" />
+          <input type="number" inputmode="decimal" placeholder="Morning" id="salFoodMorningInput" style="flex:1;min-width:80px;" />
+          <input type="number" inputmode="decimal" placeholder="Evening" id="salFoodEveningInput" style="flex:1;min-width:80px;" />
+          <button class="fadd" id="salFoodAddBtn">+ Add</button>
+        </div>
         <div class="totals">
           <div class="line"><span class="label">Food cash total &raquo;&raquo;</span><span class="val mono" id="salFoodTotal" style="color:#B5651D;"></span></div>
         </div>
@@ -595,15 +596,6 @@ document.getElementById("goMachine").addEventListener("click", ()=>{
       document.getElementById("mtRateInput").value = mtDailyRate || "";
       document.getElementById("mtRateDisplay").textContent = "Daily rate: " + rupee(mtDailyRate) + " per worker";
       document.getElementById("mtRateDisplay").style.display = "block";
-    }).catch(()=>{});
-    db.collection("settings").doc("machineFoodRates").get().then((doc)=>{
-      const d = doc.exists ? doc.data() : {};
-      mtMorningRate = Number(d.morning)||0;
-      mtEveningRate = Number(d.evening)||0;
-      document.getElementById("mtMorningRateInput").value = mtMorningRate || "";
-      document.getElementById("mtEveningRateInput").value = mtEveningRate || "";
-      document.getElementById("mtFoodRateDisplay").textContent = "Food rate: Morning " + rupee(mtMorningRate) + " · Evening " + rupee(mtEveningRate);
-      document.getElementById("mtFoodRateDisplay").style.display = "block";
     }).catch(()=>{});
     mtLoadDay(mtSelectedDate);
   }
@@ -972,8 +964,6 @@ let mtWorkers = [];
 let mtSectionsData = {};
 let mtEditMode = false;
 let mtDailyRate = 0;
-let mtMorningRate = 0;
-let mtEveningRate = 0;
 let editingWorkerId = null;
 let mtExpandedWorkers = new Set();
 
@@ -1434,9 +1424,7 @@ document.getElementById("mtToggleEdit").addEventListener("click", ()=>{
   document.getElementById("mtToggleEdit").innerHTML = mtEditMode ? "&#10003; Done" : "&#9998; Edit";
   document.getElementById("mtWorkerFormRow").style.display = mtEditMode ? "flex" : "none";
   document.getElementById("mtRateFormRow").style.display = mtEditMode ? "flex" : "none";
-  document.getElementById("mtFoodRateFormRow").style.display = mtEditMode ? "flex" : "none";
   document.getElementById("mtRateDisplay").style.display = mtEditMode ? "none" : "block";
-  document.getElementById("mtFoodRateDisplay").style.display = mtEditMode ? "none" : "block";
   mtRender();
 });
 
@@ -1451,30 +1439,6 @@ document.getElementById("mtRateSaveBtn").addEventListener("click", ()=>{
   });
 });
 
-document.getElementById("mtFoodRateSaveBtn").addEventListener("click", ()=>{
-  mtMorningRate = Number(document.getElementById("mtMorningRateInput").value)||0;
-  mtEveningRate = Number(document.getElementById("mtEveningRateInput").value)||0;
-  db.collection("settings").doc("machineFoodRates").set({morning:mtMorningRate, evening:mtEveningRate}).then(()=>{
-    document.getElementById("mtFoodRateDisplay").textContent = "Food rate: Morning " + rupee(mtMorningRate) + " · Evening " + rupee(mtEveningRate);
-    document.getElementById("mtSaveNote").textContent = "Food rate saved";
-    setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
-  }).catch(()=>{
-    document.getElementById("mtSaveNote").textContent = "Couldn't save rate.";
-  });
-});
-
-function mtSaveFoodCash(name, morning, evening){
-  const m = Number(morning)||0, e = Number(evening)||0;
-  if(m<=0 && e<=0) return Promise.resolve();
-  const dateStr = mtSelectedDate;
-  const docRef = db.collection("foodCash").doc(dateStr);
-  return docRef.get().then((doc)=>{
-    let entries = (doc.exists && Array.isArray(doc.data().entries)) ? doc.data().entries : [];
-    entries.push({id:Date.now().toString(36), name, morning:m, evening:e, paid:false});
-    return docRef.set({date:dateStr, month:monthKey(dateStr), entries}, {merge:true});
-  }).catch(()=>{});
-}
-
 document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
   const input = document.getElementById("mtWorkerNameInput");
   const timeInInput = document.getElementById("mtWorkerTimeIn");
@@ -1486,15 +1450,13 @@ document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
     const loanOpening = doc.exists ? (Number(doc.data().loanBalance)||0) : 0;
     mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, salary:autoSalary, loanOpening, loanTaken:0, loanRepaid:0, loanBalance:loanOpening});
     mtPersist();
-    mtSaveFoodCash(name, mtMorningRate, mtEveningRate);
     loadWorkerNamesList();
     input.value=""; timeInInput.value=""; timeOutInput.value="";
     mtRender();
   }).catch(()=>{
     mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, salary:autoSalary, loanOpening:0, loanTaken:0, loanRepaid:0, loanBalance:0});
     mtPersist();
-    mtSaveFoodCash(name, morningVal, eveningVal);
-    input.value=""; timeInInput.value=""; timeOutInput.value=""; morningInput.value=""; eveningInput.value="";
+    input.value=""; timeInInput.value=""; timeOutInput.value="";
     mtRender();
   });
 });
@@ -1913,17 +1875,15 @@ function computeFoodCashAccumulation(snapshot){
       const evening = Number(e.evening)||0;
       if(!e.paid && e.name && e.name.trim() && (morning>0 || evening>0)){
         const nm = e.name.trim();
-        if(!map[nm]) map[nm] = {morning:0, evening:0, total:0, days:[]};
+        if(!map[nm]) map[nm] = {morning:0, evening:0, total:0};
         map[nm].morning += morning;
         map[nm].evening += evening;
         map[nm].total += morning+evening;
-        map[nm].days.push({date:doc.id, morning, evening, amount:morning+evening});
         touched = true;
       }
     });
     if(touched) dayDocs[doc.id] = d;
   });
-  Object.values(map).forEach(info=>{ info.days.sort((a,b)=>a.date.localeCompare(b.date)); });
   return {map, dayDocs};
 }
 
@@ -1985,34 +1945,10 @@ function renderFoodCashTable(){
     names.forEach(name=>{
       const info = salFoodAgg.map[name];
       total += info.total;
-      const expandKey = "food:" + name;
-      const isExpanded = salExpanded.has(expandKey);
-      let daysHtml = "";
-      if(isExpanded){
-        info.days.forEach(dinfo=>{
-          daysHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:13px;">${fmtNice(dinfo.date)}<div class="icat">Morning ${rupee(dinfo.morning)} &middot; Evening ${rupee(dinfo.evening)}</div></div><div class="iprice mono" style="font-size:13px;">${rupee(dinfo.amount)}</div></div>`;
-        });
-      }
-      const card = document.createElement("div");
-      card.className = "mt-card";
-      card.innerHTML = `
-        <div class="mt-card-head worker-toggle" data-expandkey="${expandKey}" style="cursor:pointer;">
-          <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
-            <span style="width:26px;height:26px;border-radius:50%;background:#4A3B28;color:#F3ECD9;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">&#128100;</span>
-            ${escapeHtml(name.toUpperCase())}
-          </span>
-          <span class="sec-balance">${info.days.length} day${info.days.length>1?"s":""} &middot; ${rupee(info.total)} ${isExpanded?"&#9650;":"&#9660;"}</span>
-        </div>
-        ${daysHtml}`;
-      container.appendChild(card);
-    });
-    container.querySelectorAll(".worker-toggle").forEach(el=>{
-      el.addEventListener("click", ()=>{
-        const key = el.dataset.expandkey;
-        if(salExpanded.has(key)) salExpanded.delete(key);
-        else salExpanded.add(key);
-        renderFoodCashTable();
-      });
+      const row = document.createElement("div");
+      row.className = "ledger-row display";
+      row.innerHTML = `<div class="iname">${escapeHtml(name.toUpperCase())}<div class="icat">Morning ${rupee(info.morning)} &middot; Evening ${rupee(info.evening)}</div></div><div class="iprice mono">${rupee(info.total)}</div>`;
+      container.appendChild(row);
     });
   }
   document.getElementById("salFoodTotal").textContent = rupee(total);
