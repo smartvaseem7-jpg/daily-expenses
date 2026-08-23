@@ -259,7 +259,13 @@
         <input type="number" inputmode="decimal" placeholder="Daily rate per worker" id="mtRateInput" style="flex:1;" />
         <button class="fadd" id="mtRateSaveBtn">&#10003; Save rate</button>
       </div>
+      <div class="form-row no-print" id="mtFoodRateFormRow" style="display:none;">
+        <input type="number" inputmode="decimal" placeholder="Morning food rate" id="mtMorningRateInput" style="flex:1;" />
+        <input type="number" inputmode="decimal" placeholder="Evening food rate" id="mtEveningRateInput" style="flex:1;" />
+        <button class="fadd" id="mtFoodRateSaveBtn">&#10003; Save</button>
+      </div>
       <p class="empty" id="mtRateDisplay" style="display:none;"></p>
+      <p class="empty" id="mtFoodRateDisplay" style="display:none;"></p>
 
       <h3 class="sub-title display">Workers Today</h3>
       <div id="mtWorkersList"></div>
@@ -267,8 +273,6 @@
         <input type="text" placeholder="Worker name" id="mtWorkerNameInput" list="workerNamesList" style="flex:2;min-width:100px;" />
         <input type="time" id="mtWorkerTimeIn" style="flex:1;min-width:90px;" />
         <input type="time" id="mtWorkerTimeOut" style="flex:1;min-width:90px;" />
-        <input type="number" inputmode="decimal" placeholder="Morning food" id="mtWorkerMorningFood" style="flex:1;min-width:90px;" />
-        <input type="number" inputmode="decimal" placeholder="Evening food" id="mtWorkerEveningFood" style="flex:1;min-width:90px;" />
         <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
       </div>
       <p class="empty" id="mtWorkersCount"></p>
@@ -307,32 +311,44 @@
         <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
         <h2 class="section-title">DRYER TEAM</h2>
       </div>
-      <div class="mt-card">
-        <div class="mt-card-head"><span class="sec-name display">Weekly KG</span><span class="sec-balance">₹8 / kg</span></div>
-        <div class="form-row no-print" style="margin-bottom:8px;">
-          <button class="btn-clear" id="dtPrevWeek">&#8592; Week</button>
-          <input type="date" id="dtWeekPicker" style="flex:1;" />
-          <button class="btn-clear" id="dtNextWeek">Week &#8594;</button>
-        </div>
-        <div id="dtWeekCalendar" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;"></div>
-        <p class="save-note no-print" id="dtSaveNote"></p>
+
+      <div class="datenav">
+        <button id="dtPrevDay" class="no-print">&#8592;</button>
+        <span class="mono" id="dtNiceDate" style="font-size:13px;color:#6B5B45;"></span>
+        <button id="dtNextDay" class="no-print">&#8594;</button>
       </div>
-      <div id="dtSelectedDayTitle" class="sub-title display" style="text-align:center;"></div>
+
+      <button class="btn-clear no-print" id="dtToggleEdit" style="width:100%;margin-bottom:14px;">&#9998; Edit</button>
+
+      <div class="mt-card">
+        <div class="mt-card-head">
+          <span class="sec-name display">Kg dried today</span>
+          <span class="sec-balance" id="dtGroupEarnedVal"></span>
+        </div>
+        <div class="mt-opening" id="dtKgDisplay"></div>
+        <div class="form-row no-print" id="dtKgFormRow" style="display:none;">
+          <input type="number" inputmode="decimal" placeholder="Total kg dried (shared)" id="dtKgInput" style="flex:1;" />
+          <button class="fadd" id="dtKgSaveBtn">&#10003; Save</button>
+        </div>
+        <div class="mt-opening" id="dtShareDisplay"></div>
+      </div>
+
       <div id="dtWorkersList"></div>
-      <div class="form-row no-print" id="dtWorkerFormRow">
+      <div class="form-row no-print" id="dtWorkerFormRow" style="display:none;">
         <input type="text" placeholder="Worker name" id="dtWorkerNameInput" list="workerNamesList" style="flex:2;min-width:110px;" />
-        <input type="number" inputmode="decimal" placeholder="KG" id="dtWorkerKgInput" style="flex:1;min-width:80px;" />
         <button class="fadd" id="dtAddWorkerBtn">+ Add</button>
       </div>
+
       <div class="totals" style="margin-top:10px;">
-        <div class="line"><span class="label">Selected day KG &raquo;&raquo;</span><span class="val mono" id="dtDayKgVal"></span></div>
-        <div class="line"><span class="label">Selected day salary &raquo;&raquo;</span><span class="val mono" id="dtTotalSalaryVal" style="color:#3B6B35;"></span></div>
+        <div class="line"><span class="label">Total salary &raquo;&raquo;</span><span class="val mono" id="dtTotalSalaryVal" style="color:#3B6B35;"></span></div>
         <div class="line"><span class="label">Total loan balance &raquo;&raquo;</span><span class="val mono" id="dtTotalLoanVal" style="color:#B33A3A;"></span></div>
       </div>
-      <div class="mt-card" style="margin-top:12px;"><div class="sub-label">Selected week summary</div><div id="dtWeekSummary"></div></div>
+
+      <div class="save-note no-print" id="dtSaveNote"></div>
+
       <div class="actions no-print">
-        <button class="btn-export" id="dtExportBtn" style="flex:1;">&#128424; Export week (PDF)</button>
-        <button class="btn-clear" id="dtClearBtn">&#8635; Clear selected day</button>
+        <button class="btn-export" id="dtExportBtn" style="flex:1;">&#128424; Export day (PDF)</button>
+        <button class="btn-clear" id="dtClearBtn">&#8635; Clear</button>
       </div>
     </div>
 
@@ -385,8 +401,7 @@
           <div class="line"><span class="label">Dryer total &raquo;&raquo;</span><span class="val mono" id="salDryerTotal" style="color:#3B6B35;"></span></div>
         </div>
 
-        <h3 class="sub-title display">Machine Team Food</h3>
-        <p class="empty">Morning food + evening food are entered with each worker in Machine Team. Salary page is automatic.</p>
+        <h3 class="sub-title display">Food Cash <span style="font-size:11px;font-weight:400;color:#8A7A5E;">(from Machine Team)</span></h3>
         <div id="salFoodList"></div>
         <div class="totals">
           <div class="line"><span class="label">Food cash total &raquo;&raquo;</span><span class="val mono" id="salFoodTotal" style="color:#B5651D;"></span></div>
@@ -469,7 +484,6 @@ const firebaseConfig = {
 };
 const SECTION_KEYS = ["A","B","C","D","E"];
 const WORKER_NAMES = ["Vathanana","Saro","Jeso","Priya","Sumangala"];
-const MACHINE_DAILY_SALARY = 1500;
 // ======================
 
 firebase.initializeApp(firebaseConfig);
@@ -577,10 +591,19 @@ document.getElementById("goMachine").addEventListener("click", ()=>{
   if(!mtLoadedOnce){
     mtLoadedOnce = true;
     db.collection("settings").doc("machineRate").get().then((doc)=>{
-      mtDailyRate = doc.exists ? (Number(doc.data().rate)||MACHINE_DAILY_SALARY) : MACHINE_DAILY_SALARY;
+      mtDailyRate = doc.exists ? (Number(doc.data().rate)||0) : 0;
       document.getElementById("mtRateInput").value = mtDailyRate || "";
       document.getElementById("mtRateDisplay").textContent = "Daily rate: " + rupee(mtDailyRate) + " per worker";
       document.getElementById("mtRateDisplay").style.display = "block";
+    }).catch(()=>{});
+    db.collection("settings").doc("machineFoodRates").get().then((doc)=>{
+      const d = doc.exists ? doc.data() : {};
+      mtMorningRate = Number(d.morning)||0;
+      mtEveningRate = Number(d.evening)||0;
+      document.getElementById("mtMorningRateInput").value = mtMorningRate || "";
+      document.getElementById("mtEveningRateInput").value = mtEveningRate || "";
+      document.getElementById("mtFoodRateDisplay").textContent = "Food rate: Morning " + rupee(mtMorningRate) + " · Evening " + rupee(mtEveningRate);
+      document.getElementById("mtFoodRateDisplay").style.display = "block";
     }).catch(()=>{});
     mtLoadDay(mtSelectedDate);
   }
@@ -949,6 +972,8 @@ let mtWorkers = [];
 let mtSectionsData = {};
 let mtEditMode = false;
 let mtDailyRate = 0;
+let mtMorningRate = 0;
+let mtEveningRate = 0;
 let editingWorkerId = null;
 let mtExpandedWorkers = new Set();
 
@@ -1160,23 +1185,126 @@ function mtRenderWorkerCount(){
 }
 
 function mtRender(){
-  document.getElementById("mtNiceDate").textContent=fmtNice(mtSelectedDate);
-  const wList=document.getElementById("mtWorkersList"); wList.innerHTML="";
-  if(mtWorkers.length===0) wList.innerHTML='<p class="empty">No workers added yet today.</p>';
-  mtWorkers.forEach(w=>{
-    w.salary=MACHINE_DAILY_SALARY; w.morningFood=Number(w.morningFood)||0; w.eveningFood=Number(w.eveningFood)||0; mtRecalcWorkerLoan(w);
-    const expanded=mtExpandedWorkers.has(w.id), food=w.morningFood+w.eveningFood, total=MACHINE_DAILY_SALARY+food;
-    const icons=mtEditMode?`<button class="iedit no-print" data-editwid="${w.id}">&#9998;</button><button class="idel no-print" data-wid="${w.id}">&#128465;</button>`:"";
-    const details=expanded?`<div class="mt-opening">Salary: ${rupee(MACHINE_DAILY_SALARY)} &nbsp;|&nbsp; Morning food: ${rupee(w.morningFood)} &nbsp;|&nbsp; Evening food: ${rupee(w.eveningFood)}</div><div class="mt-opening">Daily total: <b>${rupee(total)}</b> &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
-      ${mtEditMode?`<div class="form-row no-print"><input type="number" placeholder="Morning food" value="${w.morningFood||''}" class="mt-morning-input" data-wid="${w.id}" /><input type="number" placeholder="Evening food" value="${w.eveningFood||''}" class="mt-evening-input" data-wid="${w.id}" /><button class="fadd mt-food-save" data-wid="${w.id}">&#10003; Save</button></div>`:""}`:"";
-    const card=document.createElement("div");card.className="mt-card";
-    card.innerHTML=`<div class="mt-card-head worker-toggle" data-toggle="${w.id}" style="cursor:pointer;"><span class="sec-name display">${escapeHtml(w.name.toUpperCase())}</span><span class="sec-balance">${rupee(total)} ${expanded?"&#9650;":"&#9660;"}</span></div>${icons?`<div class="no-print" style="text-align:right;">${icons}</div>`:""}${details}`;
-    wList.appendChild(card);
-  });
-  wList.querySelectorAll(".worker-toggle").forEach(el=>el.onclick=()=>{const id=el.dataset.toggle;if(mtExpandedWorkers.has(id))mtExpandedWorkers.delete(id);else mtExpandedWorkers.add(id);mtRender();});
-  wList.querySelectorAll(".idel").forEach(btn=>btn.onclick=ev=>{ev.stopPropagation();mtWorkers=mtWorkers.filter(w=>w.id!==btn.dataset.wid);mtPersist();mtRender();});
-  wList.querySelectorAll(".iedit").forEach(btn=>btn.onclick=()=>{editingWorkerId=btn.dataset.editwid;mtRender();});
-  wList.querySelectorAll(".mt-food-save").forEach(btn=>btn.onclick=()=>{const w=mtWorkers.find(x=>x.id===btn.dataset.wid);w.morningFood=Number(wList.querySelector(`.mt-morning-input[data-wid="${btn.dataset.wid}"]`).value)||0;w.eveningFood=Number(wList.querySelector(`.mt-evening-input[data-wid="${btn.dataset.wid}"]`).value)||0;mtPersist();mtRender();});
+  document.getElementById("mtNiceDate").textContent = fmtNice(mtSelectedDate);
+
+  // Workers list
+  const wList = document.getElementById("mtWorkersList");
+  wList.innerHTML = "";
+  if(mtWorkers.length===0){
+    wList.innerHTML = '<p class="empty">No workers added yet today.</p>';
+  } else {
+    mtWorkers.forEach(w=>{
+      mtRecalcWorkerLoan(w);
+      if(editingWorkerId === w.id){
+        const row = document.createElement("div");
+        row.className = "edit-row no-print";
+        row.innerHTML = `<input type="text" value="${escapeHtml(w.name)}" data-edit-w-name="${w.id}" list="workerNamesList" style="flex:1.4;" /><input type="time" value="${w.timeIn||''}" data-edit-w-in="${w.id}" /><input type="time" value="${w.timeOut||''}" data-edit-w-out="${w.id}" /><button class="isave" data-save-w="${w.id}">&#10003; Save</button>`;
+        wList.appendChild(row);
+      } else {
+        const isExpanded = mtExpandedWorkers.has(w.id);
+        const hrs = hoursBetween(w.timeIn, w.timeOut);
+        const timeLabel = (w.timeIn||w.timeOut) ? `${w.timeIn||"—"} to ${w.timeOut||"—"} &middot; ${fmtHours(hrs)}` : "No time logged";
+        const icons = mtEditMode ? `<button class="iedit no-print" data-editwid="${w.id}">&#9998;</button><button class="idel no-print" data-wid="${w.id}">&#128465;</button>` : "";
+        const loanFormHtml = mtEditMode ? `
+          <div class="form-row no-print" style="margin-top:8px;">
+            <input type="number" inputmode="decimal" placeholder="Salary" value="${w.salary||''}" class="mt-salary-input" data-wid="${w.id}" style="flex:1;" />
+            <button class="fadd mt-salary-save" data-wid="${w.id}">&#10003; Save</button>
+          </div>
+          <div class="form-row no-print">
+            <input type="number" inputmode="decimal" placeholder="Loan opening" value="${w.loanOpening||''}" class="mt-loanopening-input" data-wid="${w.id}" style="flex:1;" />
+            <button class="fadd mt-loanopening-save" data-wid="${w.id}">&#10003; Save</button>
+          </div>
+          <div class="form-row no-print">
+            <input type="number" inputmode="decimal" placeholder="Loan taken" value="${w.loanTaken||''}" class="mt-loantaken-input" data-wid="${w.id}" style="flex:1;" />
+            <input type="number" inputmode="decimal" placeholder="Loan repaid" value="${w.loanRepaid||''}" class="mt-loanrepaid-input" data-wid="${w.id}" style="flex:1;" />
+            <button class="fadd mt-loan-save" data-wid="${w.id}">&#10003; Save</button>
+          </div>` : "";
+        const detailsHtml = isExpanded ? `
+          <div class="mt-opening" style="font-family:'IBM Plex Mono',monospace;margin-top:8px;">${timeLabel}</div>
+          <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan taken: ${rupee(w.loanTaken)} &nbsp;|&nbsp; Loan repaid: ${rupee(w.loanRepaid)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
+          ${loanFormHtml}` : "";
+        const card = document.createElement("div");
+        card.className = "mt-card";
+        card.innerHTML = `
+          <div class="mt-card-head worker-toggle" data-toggle="${w.id}" style="cursor:pointer;">
+            <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
+              <span style="width:26px;height:26px;border-radius:50%;background:#4A3B28;color:#F3ECD9;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">&#128100;</span>
+              ${escapeHtml(w.name.toUpperCase())}
+            </span>
+            <span class="sec-balance">Salary ${rupee(w.salary)} ${isExpanded?"&#9650;":"&#9660;"}</span>
+          </div>
+          ${icons ? `<div class="no-print" style="text-align:right;margin-top:4px;">${icons}</div>` : ""}
+          ${detailsHtml}`;
+        wList.appendChild(card);
+      }
+    });
+    wList.querySelectorAll(".mt-salary-save").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = mtWorkers.find(w=>w.id===btn.dataset.wid);
+        const input = wList.querySelector(`.mt-salary-input[data-wid="${btn.dataset.wid}"]`);
+        w.salary = Number(input.value)||0;
+        mtPersist();
+        mtRender();
+      });
+    });
+    wList.querySelectorAll(".worker-toggle").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const id = el.dataset.toggle;
+        if(mtExpandedWorkers.has(id)) mtExpandedWorkers.delete(id);
+        else mtExpandedWorkers.add(id);
+        mtRender();
+      });
+    });
+    wList.querySelectorAll(".idel").forEach(btn=>{
+      btn.addEventListener("click", (ev)=>{
+        ev.stopPropagation();
+        mtWorkers = mtWorkers.filter(w=>w.id!==btn.dataset.wid);
+        mtPersist();
+        mtRender();
+      });
+    });
+    wList.querySelectorAll(".iedit").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        editingWorkerId = btn.dataset.editwid;
+        mtRender();
+      });
+    });
+    wList.querySelectorAll("[data-save-w]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const id = btn.dataset.saveW;
+        const nameInput = wList.querySelector(`[data-edit-w-name="${id}"]`);
+        const inInput = wList.querySelector(`[data-edit-w-in="${id}"]`);
+        const outInput = wList.querySelector(`[data-edit-w-out="${id}"]`);
+        const name = nameInput.value.trim();
+        if(!name) return;
+        const autoSalary = mtDailyRate;
+        mtWorkers = mtWorkers.map(w=> w.id===id ? {...w, name, timeIn:inInput.value, timeOut:outInput.value, salary:autoSalary} : w);
+        editingWorkerId = null;
+        mtPersist();
+        mtRender();
+      });
+    });
+    wList.querySelectorAll(".mt-loanopening-save").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = mtWorkers.find(w=>w.id===btn.dataset.wid);
+        const input = wList.querySelector(`.mt-loanopening-input[data-wid="${btn.dataset.wid}"]`);
+        w.loanOpening = Number(input.value)||0;
+        mtPersist();
+        mtRender();
+      });
+    });
+    wList.querySelectorAll(".mt-loan-save").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = mtWorkers.find(w=>w.id===btn.dataset.wid);
+        const takenInput = wList.querySelector(`.mt-loantaken-input[data-wid="${btn.dataset.wid}"]`);
+        const repaidInput = wList.querySelector(`.mt-loanrepaid-input[data-wid="${btn.dataset.wid}"]`);
+        w.loanTaken = Number(takenInput.value)||0;
+        w.loanRepaid = Number(repaidInput.value)||0;
+        mtPersist();
+        mtRender();
+      });
+    });
+  }
   mtRenderWorkerCount();
 
   // Sections A-E: opening + multi-entry added + cut + balance
@@ -1306,12 +1434,14 @@ document.getElementById("mtToggleEdit").addEventListener("click", ()=>{
   document.getElementById("mtToggleEdit").innerHTML = mtEditMode ? "&#10003; Done" : "&#9998; Edit";
   document.getElementById("mtWorkerFormRow").style.display = mtEditMode ? "flex" : "none";
   document.getElementById("mtRateFormRow").style.display = mtEditMode ? "flex" : "none";
+  document.getElementById("mtFoodRateFormRow").style.display = mtEditMode ? "flex" : "none";
   document.getElementById("mtRateDisplay").style.display = mtEditMode ? "none" : "block";
+  document.getElementById("mtFoodRateDisplay").style.display = mtEditMode ? "none" : "block";
   mtRender();
 });
 
 document.getElementById("mtRateSaveBtn").addEventListener("click", ()=>{
-  mtDailyRate = Number(document.getElementById("mtRateInput").value)||MACHINE_DAILY_SALARY;
+  mtDailyRate = Number(document.getElementById("mtRateInput").value)||0;
   db.collection("settings").doc("machineRate").set({rate:mtDailyRate}).then(()=>{
     document.getElementById("mtRateDisplay").textContent = "Daily rate: " + rupee(mtDailyRate) + " per worker";
     document.getElementById("mtSaveNote").textContent = "Rate saved";
@@ -1321,19 +1451,51 @@ document.getElementById("mtRateSaveBtn").addEventListener("click", ()=>{
   });
 });
 
-document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
-  const input=document.getElementById("mtWorkerNameInput");
-  const timeInInput=document.getElementById("mtWorkerTimeIn"), timeOutInput=document.getElementById("mtWorkerTimeOut");
-  const morningInput=document.getElementById("mtWorkerMorningFood"), eveningInput=document.getElementById("mtWorkerEveningFood");
-  const name=input.value.trim(); if(!name)return;
-  const morningFood=Number(morningInput.value)||0, eveningFood=Number(eveningInput.value)||0;
-  db.collection("workerLoans").doc(nameKey(name)).get().then(doc=>{
-    const loanOpening=doc.exists?(Number(doc.data().loanBalance)||0):0;
-    mtWorkers.push({id:Date.now().toString(36),name,timeIn:timeInInput.value,timeOut:timeOutInput.value,salary:MACHINE_DAILY_SALARY,morningFood,eveningFood,loanOpening,loanTaken:0,loanRepaid:0,loanBalance:loanOpening});
-    mtPersist();loadWorkerNamesList();input.value="";timeInInput.value="";timeOutInput.value="";morningInput.value="";eveningInput.value="";mtRender();
+document.getElementById("mtFoodRateSaveBtn").addEventListener("click", ()=>{
+  mtMorningRate = Number(document.getElementById("mtMorningRateInput").value)||0;
+  mtEveningRate = Number(document.getElementById("mtEveningRateInput").value)||0;
+  db.collection("settings").doc("machineFoodRates").set({morning:mtMorningRate, evening:mtEveningRate}).then(()=>{
+    document.getElementById("mtFoodRateDisplay").textContent = "Food rate: Morning " + rupee(mtMorningRate) + " · Evening " + rupee(mtEveningRate);
+    document.getElementById("mtSaveNote").textContent = "Food rate saved";
+    setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
   }).catch(()=>{
-    mtWorkers.push({id:Date.now().toString(36),name,timeIn:timeInInput.value,timeOut:timeOutInput.value,salary:MACHINE_DAILY_SALARY,morningFood,eveningFood,loanOpening:0,loanTaken:0,loanRepaid:0,loanBalance:0});
-    mtPersist();input.value="";timeInInput.value="";timeOutInput.value="";morningInput.value="";eveningInput.value="";mtRender();
+    document.getElementById("mtSaveNote").textContent = "Couldn't save rate.";
+  });
+});
+
+function mtSaveFoodCash(name, morning, evening){
+  const m = Number(morning)||0, e = Number(evening)||0;
+  if(m<=0 && e<=0) return Promise.resolve();
+  const dateStr = mtSelectedDate;
+  const docRef = db.collection("foodCash").doc(dateStr);
+  return docRef.get().then((doc)=>{
+    let entries = (doc.exists && Array.isArray(doc.data().entries)) ? doc.data().entries : [];
+    entries.push({id:Date.now().toString(36), name, morning:m, evening:e, paid:false});
+    return docRef.set({date:dateStr, month:monthKey(dateStr), entries}, {merge:true});
+  }).catch(()=>{});
+}
+
+document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
+  const input = document.getElementById("mtWorkerNameInput");
+  const timeInInput = document.getElementById("mtWorkerTimeIn");
+  const timeOutInput = document.getElementById("mtWorkerTimeOut");
+  const name = input.value.trim();
+  if(!name) return;
+  const autoSalary = mtDailyRate;
+  db.collection("workerLoans").doc(nameKey(name)).get().then((doc)=>{
+    const loanOpening = doc.exists ? (Number(doc.data().loanBalance)||0) : 0;
+    mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, salary:autoSalary, loanOpening, loanTaken:0, loanRepaid:0, loanBalance:loanOpening});
+    mtPersist();
+    mtSaveFoodCash(name, mtMorningRate, mtEveningRate);
+    loadWorkerNamesList();
+    input.value=""; timeInInput.value=""; timeOutInput.value="";
+    mtRender();
+  }).catch(()=>{
+    mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, salary:autoSalary, loanOpening:0, loanTaken:0, loanRepaid:0, loanBalance:0});
+    mtPersist();
+    mtSaveFoodCash(name, morningVal, eveningVal);
+    input.value=""; timeInInput.value=""; timeOutInput.value=""; morningInput.value=""; eveningInput.value="";
+    mtRender();
   });
 });
 
@@ -1353,45 +1515,255 @@ document.getElementById("mtNextDay").addEventListener("click", ()=>{
 });
 
 // ---------- DRYER TEAM STATE ----------
-const RATE_PER_KG=8;
-let dtSelectedDate=fmtDate(new Date()), dtLoadedOnce=false, dtWorkers=[], dtWeekStart=startOfWeek(dtSelectedDate);
-function startOfWeek(dateStr){const d=new Date(dateStr+"T00:00:00"),day=d.getDay();d.setDate(d.getDate()+(day===0?-6:1-day));return d;}
-function dtWeekDates(){const a=[];for(let i=0;i<7;i++){const d=new Date(dtWeekStart);d.setDate(d.getDate()+i);a.push(fmtDate(d));}return a;}
-function dtRecalc(w){const extra=(w.extraCash||[]).reduce((s,c)=>s+(Number(c.amount)||0),0);w.loanBalance=(Number(w.loanOpening)||0)+(Number(w.loanTaken)||0)-(Number(w.loanRepaid)||0);w.salaryBalance=(Number(w.kg)||0)*RATE_PER_KG+extra-(Number(w.loanRepaid)||0);}
+const RATE_PER_KG = 8;
+let dtSelectedDate = fmtDate(new Date());
+let dtLoadedOnce = false;
+let dtEditMode = false;
+let dtKg = 0;
+let dtWorkers = []; // {id, name, extraCash:[{id,label,amount}], loanOpening, loanTaken, loanRepaid, loanBalance, share, salaryBalance}
+let dtExpandedWorkers = new Set();
+
+function nameKey(name){ return name.trim().toLowerCase().replace(/\s+/g,"_"); }
+
+function dtGroupEarned(){ return (Number(dtKg)||0) * RATE_PER_KG; }
+function dtShareEach(){ return dtWorkers.length>0 ? dtGroupEarned()/dtWorkers.length : 0; }
+
+function dtRecalc(w){
+  const extra = (w.extraCash||[]).reduce((s,c)=>s+(Number(c.amount)||0),0);
+  w.loanBalance = (Number(w.loanOpening)||0) + (Number(w.loanTaken)||0) - (Number(w.loanRepaid)||0);
+  w.share = dtShareEach();
+  w.salaryBalance = w.share + extra - (Number(w.loanRepaid)||0);
+}
+
 function dtLoadDay(dateStr){
-  document.getElementById("dtSaveNote").textContent="Loading...";
-  db.collection("dryerTeam").doc(dateStr).get().then(doc=>{
-    dtWorkers=doc.exists?(Array.isArray(doc.data().workers)?doc.data().workers:[]).map(w=>({...w,kg:Number(w.kg)||0,loanOpening:Number(w.loanOpening)||0,loanTaken:Number(w.loanTaken)||0,loanRepaid:Number(w.loanRepaid)||0,extraCash:Array.isArray(w.extraCash)?w.extraCash:[]})):[];
-    document.getElementById("dtSaveNote").textContent="";dtRender();
-  }).catch(()=>{dtWorkers=[];document.getElementById("dtSaveNote").textContent="Couldn't load. Check internet.";dtRender();});
+  document.getElementById("dtSaveNote").textContent = "Loading...";
+  db.collection("dryerTeam").doc(dateStr).get().then((doc)=>{
+    if(doc.exists){
+      const data = doc.data();
+      dtKg = Number(data.kg)||0;
+      dtWorkers = (Array.isArray(data.workers) ? data.workers : []).map(w=>({
+        id: w.id || Date.now().toString(36),
+        name: w.name || "",
+        extraCash: Array.isArray(w.extraCash) ? w.extraCash.map(c=>({id:c.id||Date.now().toString(36), label:c.label||"", amount:Number(c.amount)||0})) : [],
+        loanOpening: Number(w.loanOpening)||0,
+        loanTaken: Number(w.loanTaken)||0,
+        loanRepaid: Number(w.loanRepaid)||0,
+        loanBalance:0, share:0, salaryBalance:0
+      }));
+      document.getElementById("dtSaveNote").textContent = "";
+      dtRender();
+    } else {
+      dtKg = 0;
+      dtWorkers = [];
+      document.getElementById("dtSaveNote").textContent = "";
+      dtRender();
+    }
+  }).catch(()=>{
+    dtKg = 0;
+    dtWorkers = [];
+    document.getElementById("dtSaveNote").textContent = "Couldn't load. Check internet and try again.";
+    dtRender();
+  });
 }
-let dtPersistPromise=Promise.resolve();
+
+let dtPersistPromise = Promise.resolve();
 function dtPersist(){
-  document.getElementById("dtSaveNote").textContent="Saving...";dtWorkers.forEach(dtRecalc);
-  dtPersistPromise=db.collection("dryerTeam").doc(dtSelectedDate).set({date:dtSelectedDate,month:monthKey(dtSelectedDate),workers:dtWorkers,totalKg:dtWorkers.reduce((s,w)=>s+(Number(w.kg)||0),0)}).then(()=>{document.getElementById("dtSaveNote").textContent="Saved";setTimeout(()=>document.getElementById("dtSaveNote").textContent="",1000);dtWorkers.forEach(w=>{if(w.name)db.collection("workerLoans").doc(nameKey(w.name)).set({name:w.name,loanBalance:w.loanBalance}).catch(()=>{});});}).catch(()=>document.getElementById("dtSaveNote").textContent="Couldn't save. Check internet.");
+  document.getElementById("dtSaveNote").textContent = "Saving...";
+  dtWorkers.forEach(dtRecalc);
+  dtPersistPromise = db.collection("dryerTeam").doc(dtSelectedDate).set({
+    date: dtSelectedDate,
+    month: monthKey(dtSelectedDate),
+    kg: dtKg,
+    workers: dtWorkers
+  }).then(()=>{
+    document.getElementById("dtSaveNote").textContent = "Saved";
+    setTimeout(()=>{ document.getElementById("dtSaveNote").textContent=""; }, 1200);
+    // keep each worker's running loan balance so future days can pick it up
+    dtWorkers.forEach(w=>{
+      if(w.name.trim()){
+        db.collection("workerLoans").doc(nameKey(w.name)).set({name:w.name.trim(), loanBalance:w.loanBalance}).catch(()=>{});
+      }
+    });
+  }).catch(()=>{
+    document.getElementById("dtSaveNote").textContent = "Couldn't save. Check internet.";
+  });
 }
-function dtRenderCalendar(){
-  const cal=document.getElementById("dtWeekCalendar");cal.innerHTML="";
-  dtWeekDates().forEach(date=>{const d=new Date(date+"T00:00:00"),b=document.createElement("button");b.className="btn-clear";b.style.padding="7px 2px";b.style.background=date===dtSelectedDate?"#4A3B28":"#E4D8B4";b.style.color=date===dtSelectedDate?"#fff":"#4A3B28";b.innerHTML=`<b>${d.toLocaleDateString("en-IN",{weekday:"short"})}</b><br><span style="font-size:11px">${d.getDate()}</span>`;b.onclick=()=>{dtSelectedDate=date;dtLoadDay(date);};cal.appendChild(b);});
+
+function dtRenderTotals(){
+  dtWorkers.forEach(dtRecalc);
+  const totalSalary = dtWorkers.reduce((s,w)=>s+w.salaryBalance,0);
+  const totalLoan = dtWorkers.reduce((s,w)=>s+w.loanBalance,0);
+  document.getElementById("dtTotalSalaryVal").textContent = rupee(totalSalary);
+  document.getElementById("dtTotalLoanVal").textContent = rupee(totalLoan);
+  document.getElementById("dtGroupEarnedVal").textContent = rupee(dtGroupEarned());
+  document.getElementById("dtKgDisplay").textContent = `${dtKg||0} kg × ₹${RATE_PER_KG} = ${rupee(dtGroupEarned())}`;
+  document.getElementById("dtShareDisplay").textContent = dtWorkers.length>0
+    ? `Split among ${dtWorkers.length} worker${dtWorkers.length>1?"s":""} = ${rupee(dtShareEach())} each`
+    : "Add workers below to split this among them";
 }
+
 function dtRender(){
-  document.getElementById("dtSelectedDayTitle").textContent=fmtNice(dtSelectedDate);document.getElementById("dtWeekPicker").value=dtSelectedDate;dtRenderCalendar();
-  const list=document.getElementById("dtWorkersList");list.innerHTML="";
-  if(!dtWorkers.length)list.innerHTML='<p class="empty">No workers added for this day.</p>';
-  dtWorkers.forEach(w=>{dtRecalc(w);const c=document.createElement("div");c.className="mt-card";c.innerHTML=`<div class="mt-card-head"><span class="sec-name display">${escapeHtml(w.name.toUpperCase())}</span><span class="sec-balance">${w.kg||0} kg &middot; ${rupee(w.salaryBalance)}</span></div><div class="person-row"><span>${w.kg||0} kg × ₹${RATE_PER_KG}</span><b>${rupee((Number(w.kg)||0)*RATE_PER_KG)}</b><button class="idel no-print" data-del="${w.id}">&#128465;</button></div>`;list.appendChild(c);});
-  list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{dtWorkers=dtWorkers.filter(w=>w.id!==b.dataset.del);dtPersist();dtRender();});
-  const kg=dtWorkers.reduce((s,w)=>s+(Number(w.kg)||0),0);document.getElementById("dtDayKgVal").textContent=kg+" kg";document.getElementById("dtTotalSalaryVal").textContent=rupee(dtWorkers.reduce((s,w)=>s+w.salaryBalance,0));document.getElementById("dtTotalLoanVal").textContent=rupee(dtWorkers.reduce((s,w)=>s+w.loanBalance,0));
-  const sum=document.getElementById("dtWeekSummary");sum.innerHTML="";dtWeekDates().forEach(date=>{const row=document.createElement("div");row.className="month-row";row.innerHTML=`<span>${fmtNice(date)}</span><span class="mono">${date===dtSelectedDate?kg+" kg":"Select day"}</span>`;sum.appendChild(row);});
+  document.getElementById("dtNiceDate").textContent = fmtNice(dtSelectedDate);
+  document.getElementById("dtKgFormRow").style.display = dtEditMode ? "flex" : "none";
+  document.getElementById("dtKgInput").value = dtKg || "";
+
+  const list = document.getElementById("dtWorkersList");
+  list.innerHTML = "";
+  if(dtWorkers.length===0){
+    list.innerHTML = '<p class="empty">No workers added yet today.</p>';
+  } else {
+    dtWorkers.forEach(w=>{
+      dtRecalc(w);
+      const isExpanded = dtExpandedWorkers.has(w.id);
+      const card = document.createElement("div");
+      card.className = "mt-card";
+      let cashRowsHtml = "";
+      (w.extraCash||[]).forEach(c=>{
+        const icon = dtEditMode ? `<button class="idel no-print" data-wid="${w.id}" data-cid="${c.id}">&#128465;</button>` : "";
+        cashRowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml(c.label||"Cash")}</div><div class="iprice mono" style="font-size:14px;">+${rupee(c.amount)}</div>${icon}</div>`;
+      });
+      const icons = dtEditMode ? `<button class="idel no-print" data-delworker="${w.id}">&#128465;</button>` : "";
+      const editBody = dtEditMode ? `
+        <div class="form-row no-print" style="margin-top:8px;">
+          <input type="text" placeholder="Cash label" class="dt-cash-label" data-wid="${w.id}" style="flex:1;" />
+          <input type="number" inputmode="decimal" placeholder="Amount" class="dt-cash-amount" data-wid="${w.id}" style="flex:1;" />
+          <button class="fadd dt-cash-add" data-wid="${w.id}">+ Add</button>
+        </div>
+        <div class="form-row no-print">
+          <input type="number" inputmode="decimal" placeholder="Loan opening" value="${w.loanOpening||''}" class="dt-loanopening-input" data-wid="${w.id}" style="flex:1;" />
+          <button class="fadd dt-loanopening-save" data-wid="${w.id}">&#10003; Save</button>
+        </div>
+        <div class="form-row no-print">
+          <input type="number" inputmode="decimal" placeholder="Loan taken" value="${w.loanTaken||''}" class="dt-loantaken-input" data-wid="${w.id}" style="flex:1;" />
+          <input type="number" inputmode="decimal" placeholder="Loan repaid" value="${w.loanRepaid||''}" class="dt-loanrepaid-input" data-wid="${w.id}" style="flex:1;" />
+          <button class="fadd dt-loan-save" data-wid="${w.id}">&#10003; Save</button>
+        </div>` : "";
+      const detailsHtml = isExpanded ? `
+        <div class="mt-opening">Share of group earnings: ${rupee(w.share)}</div>
+        ${cashRowsHtml}
+        <div class="mt-opening">Loan opening: ${rupee(w.loanOpening)} &nbsp;|&nbsp; Loan taken: ${rupee(w.loanTaken)} &nbsp;|&nbsp; Loan repaid: ${rupee(w.loanRepaid)} &nbsp;|&nbsp; Loan balance: ${rupee(w.loanBalance)}</div>
+        ${editBody}
+        ${icons ? `<div class="no-print" style="text-align:right;margin-top:4px;">${icons}</div>` : ""}` : "";
+      card.innerHTML = `
+        <div class="mt-card-head worker-toggle" data-toggle="${w.id}" style="cursor:pointer;">
+          <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
+            <span style="width:26px;height:26px;border-radius:50%;background:#4A3B28;color:#F3ECD9;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">&#128100;</span>
+            ${escapeHtml(w.name.toUpperCase())}
+          </span>
+          <span class="sec-balance">Salary ${rupee(w.salaryBalance)} ${isExpanded?"&#9650;":"&#9660;"}</span>
+        </div>
+        ${detailsHtml}`;
+      list.appendChild(card);
+    });
+
+    list.querySelectorAll(".worker-toggle").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const id = el.dataset.toggle;
+        if(dtExpandedWorkers.has(id)) dtExpandedWorkers.delete(id);
+        else dtExpandedWorkers.add(id);
+        dtRender();
+      });
+    });
+    list.querySelectorAll("[data-delworker]").forEach(btn=>{
+      btn.addEventListener("click", (ev)=>{
+        ev.stopPropagation();
+        dtWorkers = dtWorkers.filter(w=>w.id!==btn.dataset.delworker);
+        dtPersist();
+        dtRender();
+      });
+    });
+    list.querySelectorAll(".idel[data-cid]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = dtWorkers.find(w=>w.id===btn.dataset.wid);
+        w.extraCash = w.extraCash.filter(c=>c.id!==btn.dataset.cid);
+        dtPersist();
+        dtRender();
+      });
+    });
+    list.querySelectorAll(".dt-cash-add").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = dtWorkers.find(w=>w.id===btn.dataset.wid);
+        const labelInput = list.querySelector(`.dt-cash-label[data-wid="${btn.dataset.wid}"]`);
+        const amountInput = list.querySelector(`.dt-cash-amount[data-wid="${btn.dataset.wid}"]`);
+        const amount = Number(amountInput.value)||0;
+        if(amount<=0) return;
+        w.extraCash = w.extraCash||[];
+        w.extraCash.push({id:Date.now().toString(36), label:labelInput.value.trim()||"Cash", amount});
+        dtPersist();
+        dtRender();
+      });
+    });
+    list.querySelectorAll(".dt-loan-save").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = dtWorkers.find(w=>w.id===btn.dataset.wid);
+        const takenInput = list.querySelector(`.dt-loantaken-input[data-wid="${btn.dataset.wid}"]`);
+        const repaidInput = list.querySelector(`.dt-loanrepaid-input[data-wid="${btn.dataset.wid}"]`);
+        w.loanTaken = Number(takenInput.value)||0;
+        w.loanRepaid = Number(repaidInput.value)||0;
+        dtPersist();
+        dtRender();
+      });
+    });
+    list.querySelectorAll(".dt-loanopening-save").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const w = dtWorkers.find(w=>w.id===btn.dataset.wid);
+        const input = list.querySelector(`.dt-loanopening-input[data-wid="${btn.dataset.wid}"]`);
+        w.loanOpening = Number(input.value)||0;
+        dtPersist();
+        dtRender();
+      });
+    });
+  }
+  dtRenderTotals();
 }
-document.getElementById("dtPrevWeek").onclick=()=>{dtWeekStart.setDate(dtWeekStart.getDate()-7);dtSelectedDate=fmtDate(dtWeekStart);dtLoadDay(dtSelectedDate);};
-document.getElementById("dtNextWeek").onclick=()=>{dtWeekStart.setDate(dtWeekStart.getDate()+7);dtSelectedDate=fmtDate(dtWeekStart);dtLoadDay(dtSelectedDate);};
-document.getElementById("dtWeekPicker").onchange=e=>{dtSelectedDate=e.target.value;dtWeekStart=startOfWeek(dtSelectedDate);dtLoadDay(dtSelectedDate);};
-document.getElementById("dtAddWorkerBtn").onclick=()=>{
-  const name=document.getElementById("dtWorkerNameInput").value.trim(),kg=Number(document.getElementById("dtWorkerKgInput").value)||0;if(!name||kg<=0)return;
-  db.collection("workerLoans").doc(nameKey(name)).get().then(doc=>{const loanOpening=doc.exists?(Number(doc.data().loanBalance)||0):0;dtWorkers.push({id:Date.now().toString(36),name,kg,extraCash:[],loanOpening,loanTaken:0,loanRepaid:0,loanBalance:loanOpening,salaryBalance:0});dtPersist();document.getElementById("dtWorkerNameInput").value="";document.getElementById("dtWorkerKgInput").value="";dtRender();});
-};
-document.getElementById("dtExportBtn").onclick=()=>window.print();
-document.getElementById("dtClearBtn").onclick=()=>{dtWorkers=[];dtPersist();dtRender();};
+
+document.getElementById("dtToggleEdit").addEventListener("click", ()=>{
+  dtEditMode = !dtEditMode;
+  document.getElementById("dtToggleEdit").innerHTML = dtEditMode ? "&#10003; Done" : "&#9998; Edit";
+  document.getElementById("dtWorkerFormRow").style.display = dtEditMode ? "flex" : "none";
+  dtRender();
+});
+
+document.getElementById("dtKgSaveBtn").addEventListener("click", ()=>{
+  dtKg = Number(document.getElementById("dtKgInput").value)||0;
+  dtPersist();
+  dtRender();
+});
+
+document.getElementById("dtAddWorkerBtn").addEventListener("click", ()=>{
+  const input = document.getElementById("dtWorkerNameInput");
+  const name = input.value.trim();
+  if(!name) return;
+  db.collection("workerLoans").doc(nameKey(name)).get().then((doc)=>{
+    const loanOpening = doc.exists ? (Number(doc.data().loanBalance)||0) : 0;
+    dtWorkers.push({id:Date.now().toString(36), name, extraCash:[], loanOpening, loanTaken:0, loanRepaid:0, loanBalance:loanOpening, share:0, salaryBalance:0});
+    dtPersist();
+    loadWorkerNamesList();
+    input.value="";
+    dtRender();
+  }).catch(()=>{
+    dtWorkers.push({id:Date.now().toString(36), name, extraCash:[], loanOpening:0, loanTaken:0, loanRepaid:0, loanBalance:0, share:0, salaryBalance:0});
+    dtPersist();
+    input.value="";
+    dtRender();
+  });
+});
+
+document.getElementById("dtPrevDay").addEventListener("click", ()=>{
+  const d = new Date(dtSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
+  dtSelectedDate = fmtDate(d); dtLoadDay(dtSelectedDate);
+});
+document.getElementById("dtNextDay").addEventListener("click", ()=>{
+  const d = new Date(dtSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
+  dtSelectedDate = fmtDate(d); dtLoadDay(dtSelectedDate);
+});
+document.getElementById("dtExportBtn").addEventListener("click", ()=>window.print());
+document.getElementById("dtClearBtn").addEventListener("click", ()=>{
+  dtKg = 0;
+  dtWorkers = [];
+  dtPersist();
+  dtRender();
+});
 
 // ---------- LOAN PAGE (aggregated from Machine Team + Dryer Team) ----------
 function loadLoanPage(){
@@ -1506,12 +1878,27 @@ let salExpanded = new Set();
 let salFoodEditMode = false;
 
 function computeSalaryAccumulation(snapshot, salaryField){
-  const map={},dayDocs={};
-  snapshot.forEach(doc=>{const d=doc.data(),arr=Array.isArray(d.workers)?d.workers:[];let touched=false;
-    arr.forEach(w=>{const base=salaryField==="salary"?MACHINE_DAILY_SALARY:(Number(w[salaryField])||0),morning=salaryField==="salary"?(Number(w.morningFood)||0):0,evening=salaryField==="salary"?(Number(w.eveningFood)||0):0,val=base+morning+evening;
-      if(val>0&&!w.salaryPaid&&w.name&&w.name.trim()){const nm=w.name.trim();if(!map[nm])map[nm]={workingDays:0,totalSalary:0,days:[]};map[nm].workingDays++;map[nm].totalSalary+=val;map[nm].days.push({date:doc.id,amount:val,base,morning,evening});touched=true;}});
-    if(touched)dayDocs[doc.id]=d;
-  });Object.values(map).forEach(x=>x.days.sort((a,b)=>a.date.localeCompare(b.date)));return {map,dayDocs};
+  const map = {};
+  const dayDocs = {};
+  snapshot.forEach(doc=>{
+    const d = doc.data();
+    const arr = Array.isArray(d.workers) ? d.workers : [];
+    let touched = false;
+    arr.forEach(w=>{
+      const val = Number(w[salaryField])||0;
+      if(val>0 && !w.salaryPaid && w.name && w.name.trim()){
+        const nm = w.name.trim();
+        if(!map[nm]) map[nm] = {workingDays:0, totalSalary:0, days:[]};
+        map[nm].workingDays += 1;
+        map[nm].totalSalary += val;
+        map[nm].days.push({date:doc.id, amount:val});
+        touched = true;
+      }
+    });
+    if(touched) dayDocs[doc.id] = d;
+  });
+  Object.values(map).forEach(info=>{ info.days.sort((a,b)=>a.date.localeCompare(b.date)); });
+  return {map, dayDocs};
 }
 
 function computeFoodCashAccumulation(snapshot){
@@ -1624,8 +2011,7 @@ function renderFoodCashTable(){
         const key = el.dataset.expandkey;
         if(salExpanded.has(key)) salExpanded.delete(key);
         else salExpanded.add(key);
-        document.getElementById("salFoodList").innerHTML='<p class="empty">Food is included automatically in Machine Team salary.</p>';
-    document.getElementById("salFoodTotal").textContent="0";
+        renderFoodCashTable();
       });
     });
   }
@@ -1642,23 +2028,56 @@ function loadSalaryCurrent(){
 
   Promise.allSettled([
     db.collection("machineTeam").get(),
-    db.collection("dryerTeam").get()
+    db.collection("dryerTeam").get(),
+    db.collection("foodCash").get()
   ]).then((results)=>{
     note.style.display = "none";
     const mtResult = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
     const dtResult = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
+    const fcResult = results[2].status==="fulfilled" ? results[2].value : {forEach:()=>{}};
+
     salMachineAgg = computeSalaryAccumulation(mtResult, "salary");
     salDryerAgg = computeSalaryAccumulation(dtResult, "salaryBalance");
-    salFoodAgg = {map:{},dayDocs:{}};
+    salFoodAgg = computeFoodCashAccumulation(fcResult);
 
     renderSalaryTable("salMachineList","salMachineTotal", salMachineAgg.map, "machine");
     renderSalaryTable("salDryerList","salDryerTotal", salDryerAgg.map, "dryer");
-    document.getElementById("salFoodList").innerHTML='<p class="empty">Food is included automatically in Machine Team salary.</p>';
-    document.getElementById("salFoodTotal").textContent="0";
+    renderFoodCashTable();
   }).catch(()=>{
     note.textContent = "Couldn't load. Check internet and try again.";
   });
 }
+
+document.getElementById("salFoodToggleEdit").addEventListener("click", ()=>{
+  salFoodEditMode = !salFoodEditMode;
+  document.getElementById("salFoodToggleEdit").innerHTML = salFoodEditMode ? "&#10003; Done" : "&#9998; Edit";
+  document.getElementById("salFoodFormRow").style.display = salFoodEditMode ? "flex" : "none";
+});
+
+document.getElementById("salFoodAddBtn").addEventListener("click", ()=>{
+  const nameInput = document.getElementById("salFoodNameInput");
+  const morningInput = document.getElementById("salFoodMorningInput");
+  const eveningInput = document.getElementById("salFoodEveningInput");
+  const name = nameInput.value.trim();
+  const morning = Number(morningInput.value)||0;
+  const evening = Number(eveningInput.value)||0;
+  if(!name || (morning<=0 && evening<=0)) return;
+  const note = document.getElementById("salSaveNote");
+  note.textContent = "Saving...";
+  const today = fmtDate(new Date());
+  db.collection("foodCash").doc(today).get().then((doc)=>{
+    const existing = doc.exists && Array.isArray(doc.data().entries) ? doc.data().entries : [];
+    existing.push({id:Date.now().toString(36), name, morning, evening, paid:false});
+    return db.collection("foodCash").doc(today).set({date:today, month:monthKey(today), entries:existing});
+  }).then(()=>{
+    note.textContent = "Saved";
+    setTimeout(()=>{ note.textContent=""; }, 1200);
+    nameInput.value=""; morningInput.value=""; eveningInput.value="";
+    loadSalaryCurrent();
+  }).catch(()=>{
+    note.textContent = "Couldn't save. Check internet.";
+  });
+});
 
 function paySalaryTeam(collectionName, agg, salaryField){
   const docIds = Object.keys(agg.dayDocs);
@@ -1696,7 +2115,8 @@ document.getElementById("salPayBtn").addEventListener("click", ()=>{
   const note = document.getElementById("salSaveNote");
   const machineNames = Object.keys(salMachineAgg.map);
   const dryerNames = Object.keys(salDryerAgg.map);
-  if(machineNames.length===0 && dryerNames.length===0){
+  const foodNames = Object.keys(salFoodAgg.map);
+  if(machineNames.length===0 && dryerNames.length===0 && foodNames.length===0){
     note.textContent = "Nothing to pay right now.";
     setTimeout(()=>{ note.textContent=""; }, 1500);
     return;
@@ -1712,9 +2132,14 @@ document.getElementById("salPayBtn").addEventListener("click", ()=>{
     const info = salDryerAgg.map[name];
     historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
   });
+  foodNames.forEach(name=>{
+    const info = salFoodAgg.map[name];
+    historyWrites.push(db.collection("salaryHistory").add({team:"Food Cash", name, workingDays:0, totalSalary:info.total, paidDate}));
+  });
   Promise.all([
     paySalaryTeam("machineTeam", salMachineAgg, "salary"),
     paySalaryTeam("dryerTeam", salDryerAgg, "salaryBalance"),
+    payFoodCash(salFoodAgg),
     ...historyWrites
   ]).then(()=>{
     note.textContent = "Salary paid — saved to history!";
@@ -1729,7 +2154,8 @@ document.getElementById("salClearBtn").addEventListener("click", ()=>{
   const note = document.getElementById("salSaveNote");
   const machineNames = Object.keys(salMachineAgg.map);
   const dryerNames = Object.keys(salDryerAgg.map);
-  if(machineNames.length===0 && dryerNames.length===0){
+  const foodNames = Object.keys(salFoodAgg.map);
+  if(machineNames.length===0 && dryerNames.length===0 && foodNames.length===0){
     note.textContent = "Nothing to clear.";
     setTimeout(()=>{ note.textContent=""; }, 1500);
     return;
@@ -1737,7 +2163,8 @@ document.getElementById("salClearBtn").addEventListener("click", ()=>{
   note.textContent = "Clearing...";
   Promise.all([
     paySalaryTeam("machineTeam", salMachineAgg, "salary"),
-    paySalaryTeam("dryerTeam", salDryerAgg, "salaryBalance")
+    paySalaryTeam("dryerTeam", salDryerAgg, "salaryBalance"),
+    payFoodCash(salFoodAgg)
   ]).then(()=>{
     note.textContent = "Cleared.";
     setTimeout(()=>{ note.textContent=""; }, 1500);
@@ -1796,6 +2223,7 @@ function loadDashboard(){
     db.collection("machineTeam").doc(today).get(),
     db.collection("machineTeam").get(),
     db.collection("dryerTeam").get(),
+    db.collection("foodCash").get(),
     db.collection("workerLoans").get()
   ]).then((results)=>{
     note.style.display = "none";
