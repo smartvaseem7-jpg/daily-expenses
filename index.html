@@ -315,7 +315,7 @@
       </div>
 
       <div id="dtWeekCalendar" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;"></div>
-      <p class="empty" id="dtSelectedDaysNote" style="margin:0 0 14px;"></p>
+      <div id="dtSelectedDaysChips" style="margin:0 0 14px;"></div>
 
       <button class="btn-clear no-print" id="dtToggleEdit" style="width:100%;margin-bottom:14px;">&#9998; Edit</button>
 
@@ -626,7 +626,7 @@ document.getElementById("goDryer").addEventListener("click", ()=>{
   if(!dtLoadedOnce){
     dtLoadedOnce = true;
     dtRenderCalendar();
-    document.getElementById("dtSelectedDaysNote").textContent = "Calendar-la eh naala dry pannunganu tap panni select pannunga.";
+    dtRenderSelectedChips();
     dtRender();
   }
 });
@@ -1587,11 +1587,69 @@ function dtOnSelectionChange(){
   const sortedDays = Array.from(dtSelectedDays).sort();
   dtBatchId = sortedDays.length ? sortedDays.join("_") : null;
   dtRenderCalendar();
-  const note = document.getElementById("dtSelectedDaysNote");
-  note.textContent = sortedDays.length
-    ? "Selected: " + dtBatchLabel(sortedDays)
-    : "Calendar-la eh naala dry pannunganu tap panni select pannunga.";
+  dtRenderSelectedChips();
   dtLoadBatch(dtBatchId);
+}
+
+function dtRenderSelectedChips(){
+  const wrap = document.getElementById("dtSelectedDaysChips");
+  const sortedDays = Array.from(dtSelectedDays).sort();
+  if(sortedDays.length===0){
+    wrap.innerHTML = '<p class="empty" style="margin:0;">Calendar-la eh naala dry pannunganu tap panni select pannunga.</p>';
+    return;
+  }
+  const shortFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
+  let html = `<p class="empty" style="margin:0 0 6px;">Selected: ${dtBatchLabel(sortedDays)}</p>`;
+  if(sortedDays.length>1){
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;">`;
+    sortedDays.forEach(ds=>{
+      html += `<span class="no-print" style="display:inline-flex;align-items:center;gap:5px;background:#EFE6D0;border:1px solid #C9BC9C;border-radius:14px;padding:3px 4px 3px 9px;font-size:11px;color:#4A3B28;">${shortFmt(ds)}<button class="dt-split-btn" data-day="${ds}" title="Indha oru naala thaniya paakanumna tap pannunga" style="background:#B33A3A;color:#F3ECD9;border:none;border-radius:50%;width:16px;height:16px;line-height:16px;font-size:10px;cursor:pointer;padding:0;">&times;</button></span>`;
+    });
+    html += `</div><p class="empty" style="margin:0;">Ore workers illama vera maari oru day irundha, andha day-oda &times; tap pannunga — adhu thaniya split aagi, adhukku mattum thani kg/workers pottu save pannalam.</p>`;
+  }
+  wrap.innerHTML = html;
+  wrap.querySelectorAll(".dt-split-btn").forEach(btn=>{
+    btn.addEventListener("click", (ev)=>{
+      ev.stopPropagation();
+      const day = btn.dataset.day;
+      if(confirm(`${day} mattum thaniya split pannalama? Meethi days group-aa sேrthu irukkum.`)) dtSplitDayOut(day);
+    });
+  });
+}
+
+// Pull one day out of a multi-day batch: the remaining days keep the currently
+// entered kg/workers as their own (smaller) batch, and the pulled-out day
+// becomes its own fresh single-day selection so its own kg/workers can be
+// entered and saved as its own card.
+function dtSplitDayOut(dayStr){
+  const currentDays = Array.from(dtSelectedDays).sort();
+  if(currentDays.length<=1) return;
+  const oldBatchId = dtBatchId;
+  const remainingDays = currentDays.filter(d=>d!==dayStr);
+  const remainingId = remainingDays.length ? remainingDays.join("_") : null;
+  const snapshotKg = dtKg;
+  const snapshotWorkers = dtWorkers;
+  document.getElementById("dtSaveNote").textContent = "Splitting day...";
+  const tasks = [];
+  if(remainingId){
+    tasks.push(db.collection("dryerBatches").doc(remainingId).set({
+      days: remainingDays,
+      label: dtBatchLabel(remainingDays),
+      month: monthKey(remainingDays[0]),
+      kg: snapshotKg,
+      workers: snapshotWorkers
+    }));
+  }
+  if(oldBatchId && oldBatchId !== remainingId){
+    tasks.push(db.collection("dryerBatches").doc(oldBatchId).delete().catch(()=>{}));
+  }
+  Promise.all(tasks).then(()=>{
+    document.getElementById("dtSaveNote").textContent = "";
+    dtSelectedDays = new Set([dayStr]);
+    dtOnSelectionChange();
+  }).catch(()=>{
+    document.getElementById("dtSaveNote").textContent = "Couldn't split. Check internet.";
+  });
 }
 
 function dtRenderCalendar(){
@@ -1986,15 +2044,17 @@ function computeFoodCashAccumulation(snapshot){
       const evening = Number(e.evening)||0;
       if(!e.paid && e.name && e.name.trim() && (morning>0 || evening>0)){
         const nm = e.name.trim();
-        if(!map[nm]) map[nm] = {morning:0, evening:0, total:0};
+        if(!map[nm]) map[nm] = {morning:0, evening:0, total:0, entries:[]};
         map[nm].morning += morning;
         map[nm].evening += evening;
         map[nm].total += morning+evening;
+        map[nm].entries.push({docId:doc.id, entryId:e.id, morning, evening, niceDate:fmtNice(doc.id)});
         touched = true;
       }
     });
     if(touched) dayDocs[doc.id] = d;
   });
+  Object.values(map).forEach(info=>{ info.entries.sort((a,b)=>a.docId.localeCompare(b.docId)); });
   return {map, dayDocs};
 }
 
@@ -2070,13 +2130,69 @@ function renderFoodCashTable(){
     names.forEach(name=>{
       const info = salFoodAgg.map[name];
       total += info.total;
-      const row = document.createElement("div");
-      row.className = "ledger-row display";
-      row.innerHTML = `<div class="iname">${escapeHtml(name.toUpperCase())}<div class="icat">Morning ${rupee(info.morning)} &middot; Evening ${rupee(info.evening)}</div></div><div class="iprice mono">${rupee(info.total)}</div>`;
-      container.appendChild(row);
+      const expandKey = "food:" + name;
+      const isExpanded = salExpanded.has(expandKey);
+      let entriesHtml = "";
+      if(isExpanded){
+        info.entries.forEach(en=>{
+          entriesHtml += `<div class="ledger-row display" style="padding:6px 2px;align-items:center;">
+            <div class="iname" style="font-size:13px;">${en.niceDate}<div class="icat">Morning ${rupee(en.morning)} &middot; Evening ${rupee(en.evening)}</div></div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="iprice mono" style="font-size:13px;">${rupee(en.morning+en.evening)}</div>
+              <button class="food-del-btn no-print" data-docid="${en.docId}" data-entryid="${en.entryId}" style="background:#B33A3A;color:#F3ECD9;border:none;border-radius:6px;padding:4px 9px;font-size:12px;cursor:pointer;">Delete</button>
+            </div>
+          </div>`;
+        });
+      }
+      const card = document.createElement("div");
+      card.className = "mt-card";
+      card.innerHTML = `
+        <div class="mt-card-head worker-toggle" data-expandkey="${expandKey}" style="cursor:pointer;">
+          <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
+            <span style="width:26px;height:26px;border-radius:50%;background:#4A3B28;color:#F3ECD9;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">&#128100;</span>
+            ${escapeHtml(name.toUpperCase())}
+          </span>
+          <span class="sec-balance">${rupee(info.total)} ${isExpanded?"&#9650;":"&#9660;"}</span>
+        </div>
+        ${entriesHtml}`;
+      container.appendChild(card);
+    });
+    container.querySelectorAll(".worker-toggle").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const key = el.dataset.expandkey;
+        if(salExpanded.has(key)) salExpanded.delete(key);
+        else salExpanded.add(key);
+        renderFoodCashTable();
+      });
+    });
+    container.querySelectorAll(".food-del-btn").forEach(btn=>{
+      btn.addEventListener("click", (ev)=>{
+        ev.stopPropagation();
+        const docId = btn.dataset.docid;
+        const entryId = btn.dataset.entryid;
+        if(!confirm("Intha food cash entry mattum delete pannalama?")) return;
+        deleteFoodCashEntry(docId, entryId);
+      });
     });
   }
   document.getElementById("salFoodTotal").textContent = rupee(total);
+}
+
+function deleteFoodCashEntry(docId, entryId){
+  const note = document.getElementById("salSaveNote");
+  note.textContent = "Deleting...";
+  db.collection("foodCash").doc(docId).get().then((doc)=>{
+    if(!doc.exists) return Promise.resolve();
+    const arr = Array.isArray(doc.data().entries) ? doc.data().entries : [];
+    const updated = arr.filter(e=>e.id !== entryId);
+    return db.collection("foodCash").doc(docId).update({entries: updated});
+  }).then(()=>{
+    note.textContent = "Deleted";
+    setTimeout(()=>{ note.textContent=""; }, 1200);
+    loadSalaryCurrent();
+  }).catch(()=>{
+    note.textContent = "Couldn't delete. Check internet.";
+  });
 }
 
 function loadSalaryCurrent(){
