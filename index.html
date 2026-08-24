@@ -1531,7 +1531,7 @@ let dtFormWorkers = []; // array of worker name strings currently selected in th
 let dtKnownWorkerNames = []; // all distinct known worker names, for the tap-chips
 let dtRecordsCache = [];
 let dtRecordsExpanded = new Set();
-let dtSummaryWeekStart = (()=>{ const d = new Date(); d.setDate(d.getDate()-d.getDay()); return d; })(); // Sunday of the currently viewed summary week
+let dtSummaryWeekStart = (()=>{ const d = new Date(); const diff = (d.getDay()-6+7)%7; d.setDate(d.getDate()-diff); return d; })(); // Saturday of the currently viewed summary week (weeks run Sat–Fri)
 
 function nameKey(name){ return name.trim().toLowerCase().replace(/\s+/g,"_"); }
 
@@ -1545,13 +1545,13 @@ function dtDaysBetween(fromStr, toStr){
 }
 function dtBatchLabel(sortedDays){
   if(sortedDays.length===0) return "";
-  if(sortedDays.length===1) return fmtNice(sortedDays[0]);
-  const shortFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
-  return `${shortFmt(sortedDays[0])} \u2013 ${shortFmt(sortedDays[sortedDays.length-1])}`;
+  const fullFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"long", day:"numeric", month:"short"});
+  return sortedDays.map(fullFmt).join(", ");
 }
-function dtSundayOf(dateStr){
+function dtWeekStartOf(dateStr){ // Saturday on/before this date, so weeks run Sat–Fri
   const d = new Date(dateStr+"T00:00:00");
-  d.setDate(d.getDate()-d.getDay());
+  const diff = (d.getDay() - 6 + 7) % 7;
+  d.setDate(d.getDate()-diff);
   return fmtDate(d);
 }
 
@@ -1673,7 +1673,7 @@ document.getElementById("dtSaveRecordBtn").addEventListener("click", ()=>{
   const recordData = {
     days: sortedDays,
     label: dtBatchLabel(sortedDays),
-    weekKey: dtSundayOf(sortedDays[0]),
+    weekKey: dtWeekStartOf(sortedDays[0]),
     month: monthKey(sortedDays[0]),
     kg, totalSalary, workers,
     createdAt: Date.now()
@@ -1700,7 +1700,7 @@ function loadDryerRecords(){
         id: doc.id,
         days: Array.isArray(d.days) ? d.days : [],
         label: d.label || dtBatchLabel(Array.isArray(d.days)?d.days:[]),
-        weekKey: d.weekKey || (Array.isArray(d.days) && d.days[0] ? dtSundayOf(d.days[0]) : ""),
+        weekKey: d.weekKey || (Array.isArray(d.days) && d.days[0] ? dtWeekStartOf(d.days[0]) : ""),
         kg: Number(d.kg)||0,
         totalSalary: Number(d.totalSalary)||((Number(d.kg)||0)*RATE_PER_KG),
         workers: Array.isArray(d.workers) ? d.workers : [],
