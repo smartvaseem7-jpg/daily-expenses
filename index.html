@@ -315,15 +315,10 @@
         </div>
 
         <div class="form-row no-print" style="margin-bottom:6px;">
-          <div style="flex:1;min-width:120px;">
-            <label style="font-size:11px;color:#6B5B45;">From date</label>
-            <input type="date" id="dtFromDate" style="width:100%;box-sizing:border-box;" />
-          </div>
-          <div style="flex:1;min-width:120px;">
-            <label style="font-size:11px;color:#6B5B45;">To date</label>
-            <input type="date" id="dtToDate" style="width:100%;box-sizing:border-box;" />
-          </div>
+          <input type="date" id="dtPickDate" style="flex:1;" />
+          <button class="fadd" id="dtAddDateBtn">+ Add date</button>
         </div>
+        <div id="dtDayChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
         <p class="empty" id="dtDaysNote" style="margin:0 0 12px;"></p>
 
         <div class="form-row no-print">
@@ -1528,6 +1523,7 @@ const RATE_PER_KG = 8;
 let dtLoadedOnce = false;
 let dtEditingRecordId = null; // null = new record; else the doc id being edited
 let dtFormWorkers = []; // array of worker name strings currently selected in the form
+let dtFormDays = []; // array of date strings picked one-by-one for the record being created/edited (need not be consecutive)
 let dtKnownWorkerNames = []; // all distinct known worker names, for the tap-chips
 let dtRecordsCache = [];
 let dtRecordsExpanded = new Set();
@@ -1535,14 +1531,6 @@ let dtSummaryWeekStart = (()=>{ const d = new Date(); const diff = (d.getDay()-6
 
 function nameKey(name){ return name.trim().toLowerCase().replace(/\s+/g,"_"); }
 
-function dtDaysBetween(fromStr, toStr){
-  const out = [];
-  let d = new Date(fromStr+"T00:00:00");
-  const end = new Date(toStr+"T00:00:00");
-  if(isNaN(d) || isNaN(end) || d>end) return out;
-  while(d<=end){ out.push(fmtDate(d)); d.setDate(d.getDate()+1); }
-  return out;
-}
 function dtBatchLabel(sortedDays){
   if(sortedDays.length===0) return "";
   const fullFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"long", day:"numeric", month:"short"});
@@ -1554,6 +1542,36 @@ function dtWeekStartOf(dateStr){ // Saturday on/before this date, so weeks run S
   d.setDate(d.getDate()-diff);
   return fmtDate(d);
 }
+
+function dtRenderDayChips(){
+  const wrap = document.getElementById("dtDayChips");
+  const sortedDays = Array.from(dtFormDays).sort();
+  wrap.innerHTML = "";
+  const shortFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short", day:"numeric", month:"short"});
+  sortedDays.forEach(ds=>{
+    const chip = document.createElement("span");
+    chip.style.cssText = "display:inline-flex;align-items:center;gap:6px;background:#3B6B35;color:#F3ECD9;border-radius:16px;padding:5px 6px 5px 12px;font-size:12px;font-weight:600;";
+    chip.innerHTML = `${shortFmt(ds)} <button class="no-print" data-day="${ds}" style="background:rgba(255,255,255,0.25);color:#F3ECD9;border:none;border-radius:50%;width:18px;height:18px;line-height:18px;font-size:12px;cursor:pointer;padding:0;">&times;</button>`;
+    wrap.appendChild(chip);
+  });
+  wrap.querySelectorAll("[data-day]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      dtFormDays = dtFormDays.filter(d=>d!==btn.dataset.day);
+      dtRenderDayChips();
+      dtUpdatePreview();
+    });
+  });
+}
+
+document.getElementById("dtAddDateBtn").addEventListener("click", ()=>{
+  const input = document.getElementById("dtPickDate");
+  const ds = input.value;
+  if(!ds) return;
+  if(!dtFormDays.includes(ds)) dtFormDays.push(ds);
+  input.value = "";
+  dtRenderDayChips();
+  dtUpdatePreview();
+});
 
 // ----- Known worker names (tap-chips) -----
 function dtLoadKnownWorkerNames(){
@@ -1608,34 +1626,29 @@ document.getElementById("dtNewWorkerAddBtn").addEventListener("click", ()=>{
 
 // ----- Form (add / edit one record) -----
 function dtUpdatePreview(){
-  const from = document.getElementById("dtFromDate").value;
-  const to = document.getElementById("dtToDate").value;
   const kg = Number(document.getElementById("dtKgInput").value)||0;
   const daysNote = document.getElementById("dtDaysNote");
-  if(from && to){
-    const days = dtDaysBetween(from, to);
-    daysNote.textContent = days.length ? `${days.length} day${days.length>1?"s":""}: ${dtBatchLabel(days)}` : "To date From date-ku apram irukkanum.";
-  } else {
-    daysNote.textContent = "From date & To date rendaiyum select pannunga (oru naal na rendaiyum same date podunga).";
-  }
+  const sortedDays = Array.from(dtFormDays).sort();
+  daysNote.textContent = sortedDays.length
+    ? `${sortedDays.length} day${sortedDays.length>1?"s":""} selected: ${dtBatchLabel(sortedDays)}`
+    : "Date pick panni \"+ Add date\" tap pannunga (evlo naala vendalum add pannalam, thodara naala irukkanumnu illa).";
   const total = kg*RATE_PER_KG;
   document.getElementById("dtShareDisplay").textContent = dtFormWorkers.length>0
     ? `${kg||0} kg \u00d7 \u20b9${RATE_PER_KG} = \u20b9${rupee(total)} \u00f7 ${dtFormWorkers.length} worker${dtFormWorkers.length>1?"s":""} = \u20b9${rupee(total/dtFormWorkers.length)} each`
     : `${kg||0} kg \u00d7 \u20b9${RATE_PER_KG} = \u20b9${rupee(total)} — thaniya workers select pannunga`;
 }
-document.getElementById("dtFromDate").addEventListener("change", dtUpdatePreview);
-document.getElementById("dtToDate").addEventListener("change", dtUpdatePreview);
 document.getElementById("dtKgInput").addEventListener("input", dtUpdatePreview);
 
 function dtResetForm(){
   dtEditingRecordId = null;
   dtFormWorkers = [];
-  document.getElementById("dtFromDate").value = "";
-  document.getElementById("dtToDate").value = "";
+  dtFormDays = [];
+  document.getElementById("dtPickDate").value = "";
   document.getElementById("dtKgInput").value = "";
   document.getElementById("dtFormTitle").textContent = "Add Record";
   document.getElementById("dtFormCancelWrap").style.display = "none";
   document.getElementById("dtSaveNote").textContent = "";
+  dtRenderDayChips();
   dtRenderWorkerChips();
   dtUpdatePreview();
 }
@@ -1643,12 +1656,13 @@ function dtResetForm(){
 function dtLoadRecordIntoForm(rec){
   dtEditingRecordId = rec.id;
   dtFormWorkers = rec.workers.map(w=>w.name);
-  document.getElementById("dtFromDate").value = rec.days[0] || "";
-  document.getElementById("dtToDate").value = rec.days[rec.days.length-1] || "";
+  dtFormDays = Array.from(rec.days);
+  document.getElementById("dtPickDate").value = "";
   document.getElementById("dtKgInput").value = rec.kg || "";
   document.getElementById("dtFormTitle").textContent = "Editing: " + rec.label;
   document.getElementById("dtFormCancelWrap").style.display = "inline";
   document.getElementById("dtSaveNote").textContent = "";
+  dtRenderDayChips();
   dtRenderWorkerChips();
   dtUpdatePreview();
   document.getElementById("dtFormTitle").scrollIntoView({behavior:"smooth", block:"start"});
@@ -1658,12 +1672,9 @@ document.getElementById("dtCancelEditBtn").addEventListener("click", dtResetForm
 
 document.getElementById("dtSaveRecordBtn").addEventListener("click", ()=>{
   const note = document.getElementById("dtSaveNote");
-  const from = document.getElementById("dtFromDate").value;
-  const to = document.getElementById("dtToDate").value;
   const kg = Number(document.getElementById("dtKgInput").value)||0;
-  if(!from || !to){ note.textContent = "From date & To date rendaiyum select pannunga."; return; }
-  const sortedDays = dtDaysBetween(from, to);
-  if(sortedDays.length===0){ note.textContent = "To date, From date-ku apram irukkanum."; return; }
+  const sortedDays = Array.from(dtFormDays).sort();
+  if(sortedDays.length===0){ note.textContent = "Kammikkalum oru date add pannunga."; return; }
   if(kg<=0){ note.textContent = "Total dried kg podunga."; return; }
   if(dtFormWorkers.length===0){ note.textContent = "Kammikkalum oru worker select pannunga."; return; }
   const totalSalary = kg*RATE_PER_KG;
