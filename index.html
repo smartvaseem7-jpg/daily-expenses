@@ -19,7 +19,7 @@
   .mono { font-family:'IBM Plex Mono', monospace; }
   .display { font-family:'Fraunces', serif; }
   .wrap { max-width:640px; margin:0 auto; padding:16px 8px 60px; }
-  .card { position:relative; background:#F3ECD9; border:1px solid #D8C89A; border-radius:14px; padding:26px 22px; overflow:hidden; }
+  .card { position:relative; background:#FFFFFF; border:1px solid #D8C89A; border-radius:14px; padding:26px 22px; overflow:hidden; }
   .leaf-corner { position:absolute; font-size:60px; opacity:0.35; pointer-events:none; line-height:1; }
   .tl { top:-10px; left:-10px; }
   .bl { bottom:-10px; left:-10px; transform:scaleX(-1) rotate(10deg); }
@@ -78,10 +78,21 @@
   .month-total { display:flex; justify-content:space-between; padding:12px 2px; font-size:14px; font-weight:700; border-top:1px solid #C9BC9C; margin-top:4px; }
   .save-note { font-size:11px; color:#9A8B6E; text-align:center; margin-bottom:6px; }
   .lock-btn { border:none; background:none; color:#8A7A5E; font-size:12px; cursor:pointer; text-decoration:underline; }
-  #lockScreen { position:fixed; inset:0; background:#FFFFFF; display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
-  .lock-card { background:#F3ECD9; border:1px solid #D8C89A; border-radius:14px; padding:34px 26px; max-width:340px; width:100%; text-align:center; }
-  .lock-card input { font-size:22px; letter-spacing:6px; text-align:center; width:160px; padding:10px; border-radius:8px; border:1px solid #C9BC9C; margin:14px 0; }
-  .lock-card button { padding:10px 26px; border-radius:8px; border:none; background:#3B6B35; color:white; font-size:14px; font-weight:600; cursor:pointer; }
+  #lockScreen {
+    position:fixed; inset:0; z-index:100;
+    display:flex; align-items:flex-end; justify-content:center;
+    background-image:url('lockphoto.png');
+    background-size:cover; background-position:center top; background-repeat:no-repeat;
+  }
+  #lockScreen::before {
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(to bottom, rgba(16,26,14,0) 0%, rgba(16,26,14,0.35) 45%, rgba(14,24,12,0.82) 72%, rgba(10,18,9,0.96) 100%);
+  }
+  .lock-card { position:relative; z-index:1; background:transparent; border:none; border-radius:0; padding:0 28px 44px; max-width:380px; width:100%; text-align:center; }
+  .lock-card h1 { color:#F3ECD9 !important; }
+  .lock-card p { color:#C9D8BE !important; }
+  .lock-card input { font-size:22px; letter-spacing:6px; text-align:center; width:160px; padding:10px; border-radius:8px; border:1px solid #C9BC9C; margin:14px 0; background:#F3ECD9; }
+  .lock-card button { padding:11px 30px; border-radius:8px; border:none; background:#3B6B35; color:#F3ECD9; font-size:14px; font-weight:700; cursor:pointer; }
   .lock-error { color:#B33A3A; font-size:13px; min-height:18px; }
   .worker-row { display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px dotted #B8A87E; font-size:14px; font-weight:600; }
   .worker-row input[type=checkbox] { width:18px; height:18px; accent-color:#3B6B35; }
@@ -164,9 +175,9 @@
 
 <div id="lockScreen">
   <div class="lock-card">
-    <div class="leaf-corner" style="position:relative;font-size:40px;">&#127811;</div>
-    <h1 class="display" style="font-size:19px;color:#4A3B28;margin:6px 0 2px;">S.H.A.M COCO PRODUCTION</h1>
-    <p style="font-size:12px;color:#6B5B45;margin:0 0 10px;">Enter PIN to view</p>
+    <img src="logo.png" alt="SHAM Coco Production logo" style="width:74px;height:74px;object-fit:contain;margin-bottom:8px;" />
+    <h1 class="display" style="font-size:20px;margin:0 0 2px;">S.H.A.M COCO PRODUCTION</h1>
+    <p style="font-size:12px;margin:0 0 14px;">Enter PIN to view</p>
     <input type="password" inputmode="numeric" maxlength="6" id="pinInput" placeholder="••••" />
     <div class="lock-error" id="lockError"></div>
     <button id="pinSubmit">Unlock</button>
