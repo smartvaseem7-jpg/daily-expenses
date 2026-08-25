@@ -268,6 +268,7 @@
         <input type="time" id="mtWorkerTimeIn" style="flex:1;min-width:90px;" />
         <input type="time" id="mtWorkerTimeOut" style="flex:1;min-width:90px;" />
         <input type="number" inputmode="decimal" placeholder="Morning food" id="mtWorkerMorningInput" style="flex:1;min-width:90px;" />
+        <input type="number" inputmode="decimal" placeholder="Lunch food" id="mtWorkerLunchInput" style="flex:1;min-width:90px;" />
         <input type="number" inputmode="decimal" placeholder="Evening food" id="mtWorkerEveningInput" style="flex:1;min-width:90px;" />
         <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
       </div>
@@ -340,15 +341,36 @@
 
       <div class="mt-card">
         <div class="mt-card-head">
+          <span class="sec-name display">Food Cash</span>
+        </div>
+        <div class="form-row no-print" style="margin-bottom:6px;">
+          <input type="text" placeholder="Worker name" id="dtFoodNameInput" list="workerNamesList" style="flex:1.4;min-width:100px;" />
+          <input type="date" id="dtFoodDateInput" style="flex:1;min-width:120px;" />
+        </div>
+        <div class="form-row no-print">
+          <input type="number" inputmode="decimal" placeholder="Morning" id="dtFoodMorningInput" style="flex:1;min-width:80px;" />
+          <input type="number" inputmode="decimal" placeholder="Lunch" id="dtFoodLunchInput" style="flex:1;min-width:80px;" />
+          <input type="number" inputmode="decimal" placeholder="Evening" id="dtFoodEveningInput" style="flex:1;min-width:80px;" />
+          <button class="fadd" id="dtFoodAddBtn">+ Add</button>
+        </div>
+        <div class="save-note no-print" id="dtFoodSaveNote"></div>
+      </div>
+
+      <div class="mt-card">
+        <div class="mt-card-head">
           <span class="sec-name display">This week</span>
-          <span class="sec-balance" id="dtWeekSummaryTotal"></span>
         </div>
         <div class="datenav" style="margin:0 0 8px;">
           <button id="dtPrevWeekSummary" class="no-print">&#8592;</button>
           <span class="mono" id="dtSummaryWeekLabel" style="font-size:12px;color:#6B5B45;"></span>
           <button id="dtNextWeekSummary" class="no-print">&#8594;</button>
         </div>
-        <div class="mt-opening" id="dtWeekSummaryLine"></div>
+
+        <div class="sec-name display" style="font-size:14px;margin-bottom:4px;">Workers Weekly Salary <span class="sec-balance" id="dtWeekSalaryTotal" style="float:right;"></span></div>
+        <div class="mt-opening" id="dtWeekSalaryLine"></div>
+
+        <div class="sec-name display" style="font-size:14px;margin:12px 0 4px;">Workers Weekly Food Cash <span class="sec-balance" id="dtWeekFoodTotal" style="float:right;"></span></div>
+        <div class="mt-opening" id="dtWeekFoodLine"></div>
       </div>
 
       <div id="dtRecordsList"></div>
@@ -391,6 +413,36 @@
       <div id="salCurrentView">
         <p class="empty" id="salEmptyNote" style="display:none;">Loading salary records...</p>
 
+        <div class="mt-card">
+          <div class="mt-card-head">
+            <span class="sec-name display">This Week</span>
+          </div>
+          <div class="datenav" style="margin:0 0 8px;">
+            <button id="salPrevWeek" class="no-print">&#8592;</button>
+            <span class="mono" id="salWeekLabel" style="font-size:12px;color:#6B5B45;"></span>
+            <button id="salNextWeek" class="no-print">&#8594;</button>
+          </div>
+          <div class="sec-name display" style="font-size:14px;margin-bottom:4px;">This Week Salary <span class="sec-balance" id="salWeekSalaryTotal" style="float:right;"></span></div>
+          <div class="mt-opening" id="salWeekSalaryLine"></div>
+          <div class="sec-name display" style="font-size:14px;margin:12px 0 4px;">This Week Food Cash <span class="sec-balance" id="salWeekFoodTotal" style="float:right;"></span></div>
+          <div class="mt-opening" id="salWeekFoodLine"></div>
+        </div>
+
+        <div class="mt-card">
+          <div class="mt-card-head">
+            <span class="sec-name display">This Month</span>
+          </div>
+          <div class="datenav" style="margin:0 0 8px;">
+            <button id="salPrevMonth" class="no-print">&#8592;</button>
+            <span class="mono" id="salMonthLabel" style="font-size:12px;color:#6B5B45;"></span>
+            <button id="salNextMonth" class="no-print">&#8594;</button>
+          </div>
+          <div class="sec-name display" style="font-size:14px;margin-bottom:4px;">This Month Salary <span class="sec-balance" id="salMonthSalaryTotal" style="float:right;"></span></div>
+          <div class="mt-opening" id="salMonthSalaryLine"></div>
+          <div class="sec-name display" style="font-size:14px;margin:12px 0 4px;">This Month Food Cash <span class="sec-balance" id="salMonthFoodTotal" style="float:right;"></span></div>
+          <div class="mt-opening" id="salMonthFoodLine"></div>
+        </div>
+
         <h3 class="sub-title display">Machine Team Salary</h3>
         <div id="salMachineList"></div>
         <div class="totals" style="margin-bottom:16px;">
@@ -409,6 +461,7 @@
         <div class="form-row no-print" id="salFoodFormRow" style="display:none;">
           <input type="text" placeholder="Worker name" id="salFoodNameInput" list="workerNamesList" style="flex:1.4;min-width:100px;" />
           <input type="number" inputmode="decimal" placeholder="Morning" id="salFoodMorningInput" style="flex:1;min-width:80px;" />
+          <input type="number" inputmode="decimal" placeholder="Lunch" id="salFoodLunchInput" style="flex:1;min-width:80px;" />
           <input type="number" inputmode="decimal" placeholder="Evening" id="salFoodEveningInput" style="flex:1;min-width:80px;" />
           <button class="fadd" id="salFoodAddBtn">+ Add</button>
         </div>
@@ -519,16 +572,17 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
-// Shared helper: add a morning/evening food-cash entry for a worker on a given date.
-// Used by both the Machine Team "add worker" form and the Salary page Food Cash form,
-// so typing morning/evening food while adding a worker also lands in the Salary > Food Cash list.
-function addFoodCashEntry(dateStr, name, morning, evening){
+// Shared helper: add a morning/lunch/evening food-cash entry for a worker on a given date.
+// Used by the Machine Team "add worker" form, the Dryer Team Food Cash form, and the
+// Salary page Food Cash form, so all of them land in the same Salary > Food Cash list.
+function addFoodCashEntry(dateStr, name, morning, lunch, evening){
   morning = Number(morning)||0;
+  lunch = Number(lunch)||0;
   evening = Number(evening)||0;
-  if(!name || (morning<=0 && evening<=0)) return Promise.resolve();
+  if(!name || (morning<=0 && lunch<=0 && evening<=0)) return Promise.resolve();
   return db.collection("foodCash").doc(dateStr).get().then((doc)=>{
     const existing = doc.exists && Array.isArray(doc.data().entries) ? doc.data().entries : [];
-    existing.push({id:Date.now().toString(36), name, morning, evening, paid:false});
+    existing.push({id:Date.now().toString(36), name, morning, lunch, evening, paid:false});
     return db.collection("foodCash").doc(dateStr).set({date:dateStr, month:monthKey(dateStr), entries:existing});
   });
 }
@@ -627,6 +681,7 @@ document.getElementById("goDryer").addEventListener("click", ()=>{
   if(!dtLoadedOnce){
     dtLoadedOnce = true;
     dtResetForm();
+    document.getElementById("dtFoodDateInput").value = fmtDate(new Date());
     dtLoadKnownWorkerNames();
     loadDryerRecords();
   }
@@ -1471,27 +1526,28 @@ document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
   const timeInInput = document.getElementById("mtWorkerTimeIn");
   const timeOutInput = document.getElementById("mtWorkerTimeOut");
   const morningInput = document.getElementById("mtWorkerMorningInput");
+  const lunchInput = document.getElementById("mtWorkerLunchInput");
   const eveningInput = document.getElementById("mtWorkerEveningInput");
   const name = input.value.trim();
   if(!name) return;
   const autoSalary = mtDailyRate;
-  const morning = morningInput.value, evening = eveningInput.value;
+  const morning = morningInput.value, lunch = lunchInput.value, evening = eveningInput.value;
   const clearForm = ()=>{
     input.value=""; timeInInput.value=""; timeOutInput.value="";
-    morningInput.value=""; eveningInput.value="";
+    morningInput.value=""; lunchInput.value=""; eveningInput.value="";
   };
   db.collection("workerLoans").doc(nameKey(name)).get().then((doc)=>{
     const loanOpening = doc.exists ? (Number(doc.data().loanBalance)||0) : 0;
     mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, salary:autoSalary, loanOpening, loanTaken:0, loanRepaid:0, loanBalance:loanOpening});
     mtPersist();
-    addFoodCashEntry(mtSelectedDate, name, morning, evening).then(()=>{ if(document.getElementById("salarySection").style.display!=="none") loadSalaryCurrent(); }).catch(()=>{});
+    addFoodCashEntry(mtSelectedDate, name, morning, lunch, evening).then(()=>{ if(document.getElementById("salarySection").style.display!=="none") loadSalaryCurrent(); }).catch(()=>{});
     loadWorkerNamesList();
     clearForm();
     mtRender();
   }).catch(()=>{
     mtWorkers.push({id:Date.now().toString(36), name, timeIn:timeInInput.value, timeOut:timeOutInput.value, salary:autoSalary, loanOpening:0, loanTaken:0, loanRepaid:0, loanBalance:0});
     mtPersist();
-    addFoodCashEntry(mtSelectedDate, name, morning, evening).catch(()=>{});
+    addFoodCashEntry(mtSelectedDate, name, morning, lunch, evening).catch(()=>{});
     clearForm();
     mtRender();
   });
@@ -1700,12 +1756,19 @@ document.getElementById("dtSaveRecordBtn").addEventListener("click", ()=>{
 });
 
 // ----- Records list + weekly summary -----
+let dtFoodCashCache = []; // flat unpaid food-cash entries: {date, name, morning, lunch, evening, total}
+
 function loadDryerRecords(){
   const container = document.getElementById("dtRecordsList");
   container.innerHTML = '<p class="empty">Loading records...</p>';
-  db.collection("dryerBatches").get().then((snap)=>{
+  Promise.allSettled([
+    db.collection("dryerBatches").get(),
+    db.collection("foodCash").get()
+  ]).then((results)=>{
     dtRecordsCache = [];
-    snap.forEach(doc=>{
+    const dbSnap = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
+    const fcSnap = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
+    dbSnap.forEach(doc=>{
       const d = doc.data();
       dtRecordsCache.push({
         id: doc.id,
@@ -1719,12 +1782,51 @@ function loadDryerRecords(){
       });
     });
     dtRecordsCache.sort((a,b)=> (b.days[0]||"").localeCompare(a.days[0]||"") || b.createdAt-a.createdAt);
+
+    dtFoodCashCache = [];
+    fcSnap.forEach(doc=>{
+      const d = doc.data();
+      const arr = Array.isArray(d.entries) ? d.entries : [];
+      arr.forEach(e=>{
+        const morning = Number(e.morning)||0;
+        const lunch = Number(e.lunch)||0;
+        const evening = Number(e.evening)||0;
+        if(!e.paid && e.name && e.name.trim() && (morning>0||lunch>0||evening>0)){
+          dtFoodCashCache.push({date:doc.id, name:e.name.trim(), morning, lunch, evening, total:morning+lunch+evening});
+        }
+      });
+    });
+
     dtRenderRecordsList();
     dtRenderWeeklySummary();
   }).catch(()=>{
     container.innerHTML = '<p class="empty">Couldn\u2019t load records. Check internet and try again.</p>';
   });
 }
+
+document.getElementById("dtFoodAddBtn").addEventListener("click", ()=>{
+  const nameInput = document.getElementById("dtFoodNameInput");
+  const dateInput = document.getElementById("dtFoodDateInput");
+  const morningInput = document.getElementById("dtFoodMorningInput");
+  const lunchInput = document.getElementById("dtFoodLunchInput");
+  const eveningInput = document.getElementById("dtFoodEveningInput");
+  const name = nameInput.value.trim();
+  const dateStr = dateInput.value || fmtDate(new Date());
+  const morning = Number(morningInput.value)||0;
+  const lunch = Number(lunchInput.value)||0;
+  const evening = Number(eveningInput.value)||0;
+  const note = document.getElementById("dtFoodSaveNote");
+  if(!name || (morning<=0 && lunch<=0 && evening<=0)){ note.textContent = "Worker name-um, Food amount-um venum."; return; }
+  note.textContent = "Saving...";
+  addFoodCashEntry(dateStr, name, morning, lunch, evening).then(()=>{
+    note.textContent = "Saved";
+    setTimeout(()=>{ note.textContent=""; }, 1200);
+    nameInput.value=""; morningInput.value=""; lunchInput.value=""; eveningInput.value="";
+    loadDryerRecords();
+  }).catch(()=>{
+    note.textContent = "Couldn't save. Check internet.";
+  });
+});
 
 function dtRenderRecordsList(){
   const container = document.getElementById("dtRecordsList");
@@ -1785,18 +1887,41 @@ function dtRenderRecordsList(){
 function dtRenderWeeklySummary(){
   const weekStartStr = fmtDate(dtSummaryWeekStart);
   const wEnd = new Date(dtSummaryWeekStart); wEnd.setDate(wEnd.getDate()+6);
+  const wEndStr = fmtDate(wEnd);
   const shortFmt = (d)=> d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
   document.getElementById("dtSummaryWeekLabel").textContent = `${shortFmt(dtSummaryWeekStart)} \u2013 ${shortFmt(wEnd)}`;
+
+  // Workers Weekly Salary — per-worker totals from this week's records (kg is never split; only the cash is)
   const weekRecords = dtRecordsCache.filter(r=>r.weekKey===weekStartStr);
-  const totalKg = weekRecords.reduce((s,r)=>s+r.kg,0);
-  const totalSalary = weekRecords.reduce((s,r)=>s+r.totalSalary,0);
-  document.getElementById("dtWeekSummaryTotal").textContent = `\u20b9${rupee(totalSalary)}`;
-  if(weekRecords.length===0){
-    document.getElementById("dtWeekSummaryLine").innerHTML = '<p class="empty" style="margin:4px 0;">No records this week.</p>';
-    return;
-  }
-  let lines = weekRecords.map(r=>`<div class="ledger-row display" style="padding:5px 2px;"><div class="iname" style="font-size:13px;">${escapeHtml(r.label)}</div><div class="iprice mono" style="font-size:13px;">${r.kg} kg &middot; \u20b9${rupee(r.totalSalary)}</div></div>`).join("");
-  document.getElementById("dtWeekSummaryLine").innerHTML = `<div style="margin-bottom:6px;">${weekRecords.length} record${weekRecords.length>1?"s":""} &middot; ${totalKg} kg total</div>${lines}`;
+  const salaryByName = {};
+  weekRecords.forEach(r=>{
+    r.workers.forEach(w=>{
+      const nm = (w.name||"").trim();
+      if(!nm) return;
+      const amt = w.salaryBalance!=null ? w.salaryBalance : w.share;
+      salaryByName[nm] = (salaryByName[nm]||0) + amt;
+    });
+  });
+  const salaryTotal = Object.values(salaryByName).reduce((s,v)=>s+v,0);
+  document.getElementById("dtWeekSalaryTotal").textContent = `\u20b9${rupee(salaryTotal)}`;
+  const salaryNames = Object.keys(salaryByName).sort();
+  document.getElementById("dtWeekSalaryLine").innerHTML = salaryNames.length
+    ? salaryNames.map(nm=>`<div class="ledger-row display" style="padding:5px 2px;"><div class="iname" style="font-size:13px;">${escapeHtml(nm.toUpperCase())}</div><div class="iprice mono" style="font-size:13px;">\u20b9${rupee(salaryByName[nm])}</div></div>`).join("")
+    : '<p class="empty" style="margin:4px 0;">No salary records this week.</p>';
+
+  // Workers Weekly Food Cash — per-worker totals from foodCash entries dated within this week
+  const foodByName = {};
+  dtFoodCashCache.forEach(e=>{
+    if(e.date>=weekStartStr && e.date<=wEndStr){
+      foodByName[e.name] = (foodByName[e.name]||0) + e.total;
+    }
+  });
+  const foodTotal = Object.values(foodByName).reduce((s,v)=>s+v,0);
+  document.getElementById("dtWeekFoodTotal").textContent = `\u20b9${rupee(foodTotal)}`;
+  const foodNames = Object.keys(foodByName).sort();
+  document.getElementById("dtWeekFoodLine").innerHTML = foodNames.length
+    ? foodNames.map(nm=>`<div class="ledger-row display" style="padding:5px 2px;"><div class="iname" style="font-size:13px;">${escapeHtml(nm.toUpperCase())}</div><div class="iprice mono" style="font-size:13px;">\u20b9${rupee(foodByName[nm])}</div></div>`).join("")
+    : '<p class="empty" style="margin:4px 0;">No food cash this week.</p>';
 }
 
 document.getElementById("dtPrevWeekSummary").addEventListener("click", ()=>{
@@ -1946,7 +2071,7 @@ function computeSalaryAccumulation(snapshot, salaryField){
         if(!map[nm]) map[nm] = {workingDays:0, totalSalary:0, days:[]};
         map[nm].workingDays += 1;
         map[nm].totalSalary += val;
-        map[nm].days.push({date:doc.id, amount:val, niceDate: d.label ? d.label : fmtNice(doc.id)});
+        map[nm].days.push({date:doc.id, amount:val, niceDate: d.label ? d.label : fmtNice(doc.id), sortDate: (Array.isArray(d.days) && d.days[0]) || doc.id});
         touched = true;
       }
     });
@@ -1965,14 +2090,16 @@ function computeFoodCashAccumulation(snapshot){
     let touched = false;
     arr.forEach(e=>{
       const morning = Number(e.morning)||0;
+      const lunch = Number(e.lunch)||0;
       const evening = Number(e.evening)||0;
-      if(!e.paid && e.name && e.name.trim() && (morning>0 || evening>0)){
+      if(!e.paid && e.name && e.name.trim() && (morning>0 || lunch>0 || evening>0)){
         const nm = e.name.trim();
-        if(!map[nm]) map[nm] = {morning:0, evening:0, total:0, entries:[]};
+        if(!map[nm]) map[nm] = {morning:0, lunch:0, evening:0, total:0, entries:[]};
         map[nm].morning += morning;
+        map[nm].lunch += lunch;
         map[nm].evening += evening;
-        map[nm].total += morning+evening;
-        map[nm].entries.push({docId:doc.id, entryId:e.id, morning, evening, niceDate:fmtNice(doc.id)});
+        map[nm].total += morning+lunch+evening;
+        map[nm].entries.push({docId:doc.id, entryId:e.id, morning, lunch, evening, niceDate:fmtNice(doc.id)});
         touched = true;
       }
     });
@@ -2060,9 +2187,9 @@ function renderFoodCashTable(){
       if(isExpanded){
         info.entries.forEach(en=>{
           entriesHtml += `<div class="ledger-row display" style="padding:6px 2px;align-items:center;">
-            <div class="iname" style="font-size:13px;">${en.niceDate}<div class="icat">Morning ${rupee(en.morning)} &middot; Evening ${rupee(en.evening)}</div></div>
+            <div class="iname" style="font-size:13px;">${en.niceDate}<div class="icat">Morning ${rupee(en.morning)} &middot; Lunch ${rupee(en.lunch)} &middot; Evening ${rupee(en.evening)}</div></div>
             <div style="display:flex;align-items:center;gap:8px;">
-              <div class="iprice mono" style="font-size:13px;">${rupee(en.morning+en.evening)}</div>
+              <div class="iprice mono" style="font-size:13px;">${rupee(en.morning+en.lunch+en.evening)}</div>
               <button class="food-del-btn no-print" data-docid="${en.docId}" data-entryid="${en.entryId}" style="background:#B33A3A;color:#F3ECD9;border:none;border-radius:6px;padding:4px 9px;font-size:12px;cursor:pointer;">Delete</button>
             </div>
           </div>`;
@@ -2148,10 +2275,106 @@ function loadSalaryCurrent(){
     renderSalaryTable("salMachineList","salMachineTotal", salMachineAgg.map, "machine");
     renderSalaryTable("salDryerList","salDryerTotal", salDryerMergedMap, "dryer");
     renderFoodCashTable();
+    salRenderPeriods();
   }).catch(()=>{
     note.textContent = "Couldn't load. Check internet and try again.";
   });
 }
+
+// ----- This Week / This Month summaries (Salary vs Food Cash kept fully separate) -----
+let salWeekStart = (()=>{ const d = new Date(); const diff = (d.getDay()-6+7)%7; d.setDate(d.getDate()-diff); return d; })(); // Saturday-start week, same convention as Dryer Team
+let salMonthYM = monthKey(fmtDate(new Date())); // "YYYY-MM" of the currently viewed month
+
+function weekStartOf(dateStr){
+  const d = new Date(dateStr+"T00:00:00");
+  const diff = (d.getDay()-6+7)%7;
+  d.setDate(d.getDate()-diff);
+  return fmtDate(d);
+}
+
+function salCombinedSalaryDays(){
+  // Union of Machine Team + Dryer Team (legacy + batches) per-name day entries, each with a real sortDate
+  const combined = {};
+  [salMachineAgg.map, salDryerMergedMap].forEach(m=>{
+    Object.keys(m).forEach(nm=>{
+      if(!combined[nm]) combined[nm] = [];
+      combined[nm] = combined[nm].concat(m[nm].days);
+    });
+  });
+  return combined;
+}
+
+function salRenderPeriodBlock(salaryDays, foodEntries, weekOrMonthFilter, salaryTotalId, salaryLineId, foodTotalId, foodLineId){
+  const salaryByName = {};
+  Object.keys(salaryDays).forEach(nm=>{
+    salaryDays[nm].forEach(dinfo=>{
+      if(weekOrMonthFilter(dinfo.sortDate)){
+        salaryByName[nm] = (salaryByName[nm]||0) + dinfo.amount;
+      }
+    });
+  });
+  const salaryTotal = Object.values(salaryByName).reduce((s,v)=>s+v,0);
+  document.getElementById(salaryTotalId).textContent = `\u20b9${rupee(salaryTotal)}`;
+  const salaryNames = Object.keys(salaryByName).sort();
+  document.getElementById(salaryLineId).innerHTML = salaryNames.length
+    ? salaryNames.map(nm=>`<div class="ledger-row display" style="padding:5px 2px;"><div class="iname" style="font-size:13px;">${escapeHtml(nm.toUpperCase())}</div><div class="iprice mono" style="font-size:13px;">\u20b9${rupee(salaryByName[nm])}</div></div>`).join("")
+    : '<p class="empty" style="margin:4px 0;">No salary this period.</p>';
+
+  const foodByName = {};
+  Object.keys(foodEntries).forEach(nm=>{
+    foodEntries[nm].forEach(en=>{
+      if(weekOrMonthFilter(en.docId)){
+        foodByName[nm] = (foodByName[nm]||0) + en.morning + en.lunch + en.evening;
+      }
+    });
+  });
+  const foodTotal = Object.values(foodByName).reduce((s,v)=>s+v,0);
+  document.getElementById(foodTotalId).textContent = `\u20b9${rupee(foodTotal)}`;
+  const foodNames = Object.keys(foodByName).sort();
+  document.getElementById(foodLineId).innerHTML = foodNames.length
+    ? foodNames.map(nm=>`<div class="ledger-row display" style="padding:5px 2px;"><div class="iname" style="font-size:13px;">${escapeHtml(nm.toUpperCase())}</div><div class="iprice mono" style="font-size:13px;">\u20b9${rupee(foodByName[nm])}</div></div>`).join("")
+    : '<p class="empty" style="margin:4px 0;">No food cash this period.</p>';
+}
+
+function salRenderPeriods(){
+  const salaryDays = salCombinedSalaryDays();
+  const foodEntries = {};
+  Object.keys(salFoodAgg.map).forEach(nm=>{ foodEntries[nm] = salFoodAgg.map[nm].entries; });
+
+  const weekStartStr = fmtDate(salWeekStart);
+  const wEnd = new Date(salWeekStart); wEnd.setDate(wEnd.getDate()+6);
+  const wEndStr = fmtDate(wEnd);
+  const shortFmt = (d)=> d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
+  document.getElementById("salWeekLabel").textContent = `${shortFmt(salWeekStart)} \u2013 ${shortFmt(wEnd)}`;
+  salRenderPeriodBlock(salaryDays, foodEntries, (ds)=> ds>=weekStartStr && ds<=wEndStr,
+    "salWeekSalaryTotal","salWeekSalaryLine","salWeekFoodTotal","salWeekFoodLine");
+
+  const monthLabel = new Date(salMonthYM+"-01T00:00:00").toLocaleDateString("en-IN",{month:"long", year:"numeric"});
+  document.getElementById("salMonthLabel").textContent = monthLabel;
+  salRenderPeriodBlock(salaryDays, foodEntries, (ds)=> monthKey(ds)===salMonthYM,
+    "salMonthSalaryTotal","salMonthSalaryLine","salMonthFoodTotal","salMonthFoodLine");
+}
+
+document.getElementById("salPrevWeek").addEventListener("click", ()=>{
+  salWeekStart.setDate(salWeekStart.getDate()-7);
+  salRenderPeriods();
+});
+document.getElementById("salNextWeek").addEventListener("click", ()=>{
+  salWeekStart.setDate(salWeekStart.getDate()+7);
+  salRenderPeriods();
+});
+document.getElementById("salPrevMonth").addEventListener("click", ()=>{
+  const d = new Date(salMonthYM+"-15T00:00:00");
+  d.setMonth(d.getMonth()-1);
+  salMonthYM = monthKey(fmtDate(d));
+  salRenderPeriods();
+});
+document.getElementById("salNextMonth").addEventListener("click", ()=>{
+  const d = new Date(salMonthYM+"-15T00:00:00");
+  d.setMonth(d.getMonth()+1);
+  salMonthYM = monthKey(fmtDate(d));
+  salRenderPeriods();
+});
 
 document.getElementById("salFoodToggleEdit").addEventListener("click", ()=>{
   salFoodEditMode = !salFoodEditMode;
@@ -2162,18 +2385,20 @@ document.getElementById("salFoodToggleEdit").addEventListener("click", ()=>{
 document.getElementById("salFoodAddBtn").addEventListener("click", ()=>{
   const nameInput = document.getElementById("salFoodNameInput");
   const morningInput = document.getElementById("salFoodMorningInput");
+  const lunchInput = document.getElementById("salFoodLunchInput");
   const eveningInput = document.getElementById("salFoodEveningInput");
   const name = nameInput.value.trim();
   const morning = Number(morningInput.value)||0;
+  const lunch = Number(lunchInput.value)||0;
   const evening = Number(eveningInput.value)||0;
-  if(!name || (morning<=0 && evening<=0)) return;
+  if(!name || (morning<=0 && lunch<=0 && evening<=0)) return;
   const note = document.getElementById("salSaveNote");
   note.textContent = "Saving...";
   const today = fmtDate(new Date());
-  addFoodCashEntry(today, name, morning, evening).then(()=>{
+  addFoodCashEntry(today, name, morning, lunch, evening).then(()=>{
     note.textContent = "Saved";
     setTimeout(()=>{ note.textContent=""; }, 1200);
-    nameInput.value=""; morningInput.value=""; eveningInput.value="";
+    nameInput.value=""; morningInput.value=""; lunchInput.value=""; eveningInput.value="";
     loadSalaryCurrent();
   }).catch(()=>{
     note.textContent = "Couldn't save. Check internet.";
