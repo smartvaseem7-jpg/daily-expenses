@@ -15,7 +15,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap');
   * { box-sizing: border-box; }
-  body { margin:0; font-family:'Inter',system-ui,sans-serif; background:#EFE7D3; color:#3A2E1E; }
+  body { margin:0; font-family:'Inter',system-ui,sans-serif; background:#FFFFFF; color:#3A2E1E; }
   .mono { font-family:'IBM Plex Mono', monospace; }
   .display { font-family:'Fraunces', serif; }
   .wrap { max-width:640px; margin:0 auto; padding:16px 8px 60px; }
@@ -78,7 +78,7 @@
   .month-total { display:flex; justify-content:space-between; padding:12px 2px; font-size:14px; font-weight:700; border-top:1px solid #C9BC9C; margin-top:4px; }
   .save-note { font-size:11px; color:#9A8B6E; text-align:center; margin-bottom:6px; }
   .lock-btn { border:none; background:none; color:#8A7A5E; font-size:12px; cursor:pointer; text-decoration:underline; }
-  #lockScreen { position:fixed; inset:0; background:#EFE7D3; display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+  #lockScreen { position:fixed; inset:0; background:#FFFFFF; display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
   .lock-card { background:#F3ECD9; border:1px solid #D8C89A; border-radius:14px; padding:34px 26px; max-width:340px; width:100%; text-align:center; }
   .lock-card input { font-size:22px; letter-spacing:6px; text-align:center; width:160px; padding:10px; border-radius:8px; border:1px solid #C9BC9C; margin:14px 0; }
   .lock-card button { padding:10px 26px; border-radius:8px; border:none; background:#3B6B35; color:white; font-size:14px; font-weight:600; cursor:pointer; }
@@ -96,7 +96,7 @@
   .dash-header { background: linear-gradient(135deg, #1F3D24, #2E5233); padding: 20px 18px; display:flex; align-items:center; gap:12px; border-radius:14px 14px 0 0; }
   .dash-title { color:#fff; font-family:'Fraunces',serif; font-size:16px; font-weight:900; letter-spacing:0.02em; }
   .dash-subtitle { color:#B9D6BC; font-size:11px; margin-top:2px; }
-  .dash-body { background:#F4F6F5; padding:18px 16px 24px; }
+  .dash-body { background:#FFFFFF; padding:18px 16px 24px; }
   .dash-section-label { font-size:12px; font-weight:800; color:#1F3D24; letter-spacing:0.03em; margin:18px 0 8px; }
   .dash-badge-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
   .dash-badge { background:#fff; border:1px solid #E1E6E2; border-radius:10px; padding:10px 8px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
@@ -199,6 +199,7 @@
         <button class="home-btn soon" id="goStore"><span class="icon">&#127974;&#65039;</span>Store</button>
         <button class="home-btn" id="goLoan"><span class="icon">&#128176;</span>Loan</button>
         <button class="home-btn" id="goSalary"><span class="icon">&#128181;</span>Salary</button>
+        <button class="home-btn" id="goMonthReport"><span class="icon">&#128197;</span>Month Report</button>
         <button class="home-btn" id="goDashboard" style="grid-column:span 2;"><span class="icon">&#128202;</span>Dashboard</button>
       </div>
     </div>
@@ -453,36 +454,6 @@
       <div id="salCurrentView">
         <p class="empty" id="salEmptyNote" style="display:none;">Loading salary records...</p>
 
-        <div class="mt-card">
-          <div class="mt-card-head">
-            <span class="sec-name display">This Week</span>
-          </div>
-          <div class="datenav" style="margin:0 0 8px;">
-            <button id="salPrevWeek" class="no-print">&#8592;</button>
-            <span class="mono" id="salWeekLabel" style="font-size:12px;color:#6B5B45;"></span>
-            <button id="salNextWeek" class="no-print">&#8594;</button>
-          </div>
-          <div class="sec-name display" style="font-size:14px;margin-bottom:4px;">This Week Salary <span class="sec-balance" id="salWeekSalaryTotal" style="float:right;"></span></div>
-          <div class="mt-opening" id="salWeekSalaryLine"></div>
-          <div class="sec-name display" style="font-size:14px;margin:12px 0 4px;">This Week Food Cash <span class="sec-balance" id="salWeekFoodTotal" style="float:right;"></span></div>
-          <div class="mt-opening" id="salWeekFoodLine"></div>
-        </div>
-
-        <div class="mt-card">
-          <div class="mt-card-head">
-            <span class="sec-name display">This Month</span>
-          </div>
-          <div class="datenav" style="margin:0 0 8px;">
-            <button id="salPrevMonth" class="no-print">&#8592;</button>
-            <span class="mono" id="salMonthLabel" style="font-size:12px;color:#6B5B45;"></span>
-            <button id="salNextMonth" class="no-print">&#8594;</button>
-          </div>
-          <div class="sec-name display" style="font-size:14px;margin-bottom:4px;">This Month Salary <span class="sec-balance" id="salMonthSalaryTotal" style="float:right;"></span></div>
-          <div class="mt-opening" id="salMonthSalaryLine"></div>
-          <div class="sec-name display" style="font-size:14px;margin:12px 0 4px;">This Month Food Cash <span class="sec-balance" id="salMonthFoodTotal" style="float:right;"></span></div>
-          <div class="mt-opening" id="salMonthFoodLine"></div>
-        </div>
-
         <h3 class="sub-title display">Machine Team Salary</h3>
         <div id="salMachineList"></div>
         <div class="totals" style="margin-bottom:16px;">
@@ -519,6 +490,46 @@
 
       <div id="salHistoryView" style="display:none;">
         <div id="salHistoryList"></div>
+      </div>
+    </div>
+
+    <!-- ===== MONTH REPORT ===== -->
+    <div id="monthReportSection" style="display:none;">
+      <div class="section-header">
+        <button class="back-btn no-print" data-home>&#8592; Home</button>
+        <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
+        <h2 class="section-title">MONTH REPORT</h2>
+      </div>
+
+      <p class="empty" id="mrEmptyNote">Loading month report...</p>
+
+      <div id="mrContent" style="display:none;">
+        <div class="datenav">
+          <button id="mrPrevMonth" class="no-print">&#8592;</button>
+          <span class="mono" id="mrMonthLabel" style="font-size:14px;color:#6B5B45;font-weight:700;"></span>
+          <button id="mrNextMonth" class="no-print">&#8594;</button>
+        </div>
+
+        <div class="mt-card">
+          <div class="dt-week-hero">
+            <div class="dt-week-total-label">Total Salary</div>
+            <div class="dt-week-total" id="mrTotalSalary"></div>
+          </div>
+          <div class="section-divider"></div>
+          <div class="dt-section-label">Total Food Cash <span class="amt" id="mrTotalFood"></span></div>
+          <div class="section-divider"></div>
+          <div class="dt-section-label">Total Dried KG (Dryer Team) <span class="amt" id="mrTotalKg"></span></div>
+        </div>
+
+        <div class="mt-card">
+          <div class="mt-card-head"><span class="sec-name display">Salary by Worker</span></div>
+          <div id="mrSalaryByWorker"></div>
+        </div>
+
+        <div class="mt-card">
+          <div class="mt-card-head"><span class="sec-name display">Food Cash by Worker</span></div>
+          <div id="mrFoodByWorker"></div>
+        </div>
       </div>
     </div>
 
@@ -676,7 +687,7 @@ if(localStorage.getItem("sham-unlocked") === "true"){
 }
 
 // ---------- SCREEN NAVIGATION ----------
-const SCREENS = ["homeScreen","expensesSection","machineSection","dryerSection","storeSection","loanSection","salarySection","dashboardSection"];
+const SCREENS = ["homeScreen","expensesSection","machineSection","dryerSection","storeSection","loanSection","salarySection","monthReportSection","dashboardSection"];
 function showScreen(id){
   SCREENS.forEach(s=>{
     document.getElementById(s).style.display = (s===id) ? "block" : "none";
@@ -739,6 +750,12 @@ document.getElementById("goSalary").addEventListener("click", ()=>{
   waitForPendingSaves().then(()=>{
     showScreen("salarySection");
     loadSalaryCurrent();
+  });
+});
+document.getElementById("goMonthReport").addEventListener("click", ()=>{
+  waitForPendingSaves().then(()=>{
+    showScreen("monthReportSection");
+    loadMonthReport();
   });
 });
 document.getElementById("goDashboard").addEventListener("click", ()=>{
@@ -2319,105 +2336,111 @@ function loadSalaryCurrent(){
     renderSalaryTable("salMachineList","salMachineTotal", salMachineAgg.map, "machine");
     renderSalaryTable("salDryerList","salDryerTotal", salDryerMergedMap, "dryer");
     renderFoodCashTable();
-    salRenderPeriods();
   }).catch(()=>{
     note.textContent = "Couldn't load. Check internet and try again.";
   });
 }
 
-// ----- This Week / This Month summaries (Salary vs Food Cash kept fully separate) -----
-let salWeekStart = (()=>{ const d = new Date(); const diff = (d.getDay()-6+7)%7; d.setDate(d.getDate()-diff); return d; })(); // Saturday-start week, same convention as Dryer Team
-let salMonthYM = monthKey(fmtDate(new Date())); // "YYYY-MM" of the currently viewed month
+// ----- Month Report (its own page: total salary, total food cash, total kg, per-worker breakdown) -----
+let mrMonthYM = monthKey(fmtDate(new Date())); // "YYYY-MM" of the currently viewed month
+let mrLoadedOnce = false;
+let mrSalaryDaysCache = {}; // name -> [{sortDate, amount}]
+let mrFoodEntriesCache = {}; // name -> [{docId, morning, lunch, evening}]
+let mrKgRecordsCache = []; // [{date, kg}] one entry per dryer record's first day
 
-function weekStartOf(dateStr){
-  const d = new Date(dateStr+"T00:00:00");
-  const diff = (d.getDay()-6+7)%7;
-  d.setDate(d.getDate()-diff);
-  return fmtDate(d);
-}
+function loadMonthReport(){
+  document.getElementById("mrEmptyNote").style.display = "block";
+  document.getElementById("mrEmptyNote").textContent = "Loading month report...";
+  document.getElementById("mrContent").style.display = "none";
+  Promise.allSettled([
+    db.collection("machineTeam").get(),
+    db.collection("dryerTeam").get(),
+    db.collection("dryerBatches").get(),
+    db.collection("foodCash").get()
+  ]).then((results)=>{
+    const mtResult = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
+    const dtResult = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
+    const dbResult = results[2].status==="fulfilled" ? results[2].value : {forEach:()=>{}};
+    const fcResult = results[3].status==="fulfilled" ? results[3].value : {forEach:()=>{}};
 
-function salCombinedSalaryDays(){
-  // Union of Machine Team + Dryer Team (legacy + batches) per-name day entries, each with a real sortDate
-  const combined = {};
-  [salMachineAgg.map, salDryerMergedMap].forEach(m=>{
-    Object.keys(m).forEach(nm=>{
-      if(!combined[nm]) combined[nm] = [];
-      combined[nm] = combined[nm].concat(m[nm].days);
+    const mAgg = computeSalaryAccumulation(mtResult, "salary");
+    const dAgg = computeSalaryAccumulation(dtResult, "salaryBalance");
+    const dBatchAgg = computeSalaryAccumulation(dbResult, "salaryBalance");
+    const dMergedMap = mergeSalaryMaps(dAgg.map, dBatchAgg.map);
+    const fAgg = computeFoodCashAccumulation(fcResult);
+
+    mrSalaryDaysCache = {};
+    [mAgg.map, dMergedMap].forEach(m=>{
+      Object.keys(m).forEach(nm=>{
+        if(!mrSalaryDaysCache[nm]) mrSalaryDaysCache[nm] = [];
+        mrSalaryDaysCache[nm] = mrSalaryDaysCache[nm].concat(m[nm].days);
+      });
     });
+
+    mrFoodEntriesCache = {};
+    Object.keys(fAgg.map).forEach(nm=>{ mrFoodEntriesCache[nm] = fAgg.map[nm].entries; });
+
+    mrKgRecordsCache = [];
+    dbResult.forEach(doc=>{
+      const d = doc.data();
+      if(Array.isArray(d.days) && d.days[0]){
+        mrKgRecordsCache.push({date:d.days[0], kg:Number(d.kg)||0});
+      }
+    });
+
+    document.getElementById("mrEmptyNote").style.display = "none";
+    document.getElementById("mrContent").style.display = "block";
+    mrRenderMonth();
+  }).catch(()=>{
+    document.getElementById("mrEmptyNote").textContent = "Couldn't load. Check internet and try again.";
   });
-  return combined;
 }
 
-function salRenderPeriodBlock(salaryDays, foodEntries, weekOrMonthFilter, salaryTotalId, salaryLineId, foodTotalId, foodLineId){
+function mrRenderMonth(){
+  const monthLabel = new Date(mrMonthYM+"-01T00:00:00").toLocaleDateString("en-IN",{month:"long", year:"numeric"});
+  document.getElementById("mrMonthLabel").textContent = monthLabel;
+
   const salaryByName = {};
-  Object.keys(salaryDays).forEach(nm=>{
-    salaryDays[nm].forEach(dinfo=>{
-      if(weekOrMonthFilter(dinfo.sortDate)){
-        salaryByName[nm] = (salaryByName[nm]||0) + dinfo.amount;
-      }
+  Object.keys(mrSalaryDaysCache).forEach(nm=>{
+    mrSalaryDaysCache[nm].forEach(dinfo=>{
+      if(monthKey(dinfo.sortDate)===mrMonthYM) salaryByName[nm] = (salaryByName[nm]||0) + dinfo.amount;
     });
   });
   const salaryTotal = Object.values(salaryByName).reduce((s,v)=>s+v,0);
-  document.getElementById(salaryTotalId).textContent = `\u20b9${rupee(salaryTotal)}`;
+  document.getElementById("mrTotalSalary").textContent = `\u20b9${rupee(salaryTotal)}`;
   const salaryNames = Object.keys(salaryByName).sort();
-  document.getElementById(salaryLineId).innerHTML = salaryNames.length
+  document.getElementById("mrSalaryByWorker").innerHTML = salaryNames.length
     ? salaryNames.map(nm=>`<div class="dt-worker-row"><span>${escapeHtml(nm.toUpperCase())}</span><span class="amt">\u20b9${rupee(salaryByName[nm])}</span></div>`).join("")
-    : '<p class="empty" style="margin:4px 0;">No salary this period.</p>';
+    : '<p class="empty" style="margin:4px 0;">No salary this month.</p>';
 
   const foodByName = {};
-  Object.keys(foodEntries).forEach(nm=>{
-    foodEntries[nm].forEach(en=>{
-      if(weekOrMonthFilter(en.docId)){
-        foodByName[nm] = (foodByName[nm]||0) + en.morning + en.lunch + en.evening;
-      }
+  Object.keys(mrFoodEntriesCache).forEach(nm=>{
+    mrFoodEntriesCache[nm].forEach(en=>{
+      if(monthKey(en.docId)===mrMonthYM) foodByName[nm] = (foodByName[nm]||0) + en.morning + en.lunch + en.evening;
     });
   });
   const foodTotal = Object.values(foodByName).reduce((s,v)=>s+v,0);
-  document.getElementById(foodTotalId).textContent = `\u20b9${rupee(foodTotal)}`;
+  document.getElementById("mrTotalFood").textContent = `\u20b9${rupee(foodTotal)}`;
   const foodNames = Object.keys(foodByName).sort();
-  document.getElementById(foodLineId).innerHTML = foodNames.length
+  document.getElementById("mrFoodByWorker").innerHTML = foodNames.length
     ? foodNames.map(nm=>`<div class="dt-worker-row"><span>${escapeHtml(nm.toUpperCase())}</span><span class="amt">\u20b9${rupee(foodByName[nm])}</span></div>`).join("")
-    : '<p class="empty" style="margin:4px 0;">No food cash this period.</p>';
+    : '<p class="empty" style="margin:4px 0;">No food cash this month.</p>';
+
+  const kgTotal = mrKgRecordsCache.filter(r=>monthKey(r.date)===mrMonthYM).reduce((s,r)=>s+r.kg,0);
+  document.getElementById("mrTotalKg").textContent = `${kgTotal} kg`;
 }
 
-function salRenderPeriods(){
-  const salaryDays = salCombinedSalaryDays();
-  const foodEntries = {};
-  Object.keys(salFoodAgg.map).forEach(nm=>{ foodEntries[nm] = salFoodAgg.map[nm].entries; });
-
-  const weekStartStr = fmtDate(salWeekStart);
-  const wEnd = new Date(salWeekStart); wEnd.setDate(wEnd.getDate()+6);
-  const wEndStr = fmtDate(wEnd);
-  const shortFmt = (d)=> d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
-  document.getElementById("salWeekLabel").textContent = `${shortFmt(salWeekStart)} \u2013 ${shortFmt(wEnd)}`;
-  salRenderPeriodBlock(salaryDays, foodEntries, (ds)=> ds>=weekStartStr && ds<=wEndStr,
-    "salWeekSalaryTotal","salWeekSalaryLine","salWeekFoodTotal","salWeekFoodLine");
-
-  const monthLabel = new Date(salMonthYM+"-01T00:00:00").toLocaleDateString("en-IN",{month:"long", year:"numeric"});
-  document.getElementById("salMonthLabel").textContent = monthLabel;
-  salRenderPeriodBlock(salaryDays, foodEntries, (ds)=> monthKey(ds)===salMonthYM,
-    "salMonthSalaryTotal","salMonthSalaryLine","salMonthFoodTotal","salMonthFoodLine");
-}
-
-document.getElementById("salPrevWeek").addEventListener("click", ()=>{
-  salWeekStart.setDate(salWeekStart.getDate()-7);
-  salRenderPeriods();
-});
-document.getElementById("salNextWeek").addEventListener("click", ()=>{
-  salWeekStart.setDate(salWeekStart.getDate()+7);
-  salRenderPeriods();
-});
-document.getElementById("salPrevMonth").addEventListener("click", ()=>{
-  const d = new Date(salMonthYM+"-15T00:00:00");
+document.getElementById("mrPrevMonth").addEventListener("click", ()=>{
+  const d = new Date(mrMonthYM+"-15T00:00:00");
   d.setMonth(d.getMonth()-1);
-  salMonthYM = monthKey(fmtDate(d));
-  salRenderPeriods();
+  mrMonthYM = monthKey(fmtDate(d));
+  mrRenderMonth();
 });
-document.getElementById("salNextMonth").addEventListener("click", ()=>{
-  const d = new Date(salMonthYM+"-15T00:00:00");
+document.getElementById("mrNextMonth").addEventListener("click", ()=>{
+  const d = new Date(mrMonthYM+"-15T00:00:00");
   d.setMonth(d.getMonth()+1);
-  salMonthYM = monthKey(fmtDate(d));
-  salRenderPeriods();
+  mrMonthYM = monthKey(fmtDate(d));
+  mrRenderMonth();
 });
 
 document.getElementById("salFoodToggleEdit").addEventListener("click", ()=>{
