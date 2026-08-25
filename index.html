@@ -126,6 +126,38 @@
     .person-row { font-size:18px !important; }
     .datenav span, .cashbox div { font-size:16px !important; }
   }
+  /* ===== DRYER TEAM (redesigned: KG is the hero, weekly salary is prominent, food cash stays quiet) ===== */
+  .dt-field-label { font-size:11px; font-weight:700; color:#8A7A5E; text-transform:uppercase; letter-spacing:0.05em; margin:16px 0 6px; }
+  .dt-field-label:first-child { margin-top:0; }
+  .dt-kg-input { font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:700; text-align:center; padding:12px; border-radius:10px; border:1px solid #C9BC9C; width:100%; color:#2E5233; background:#fff; }
+  .dt-day-chip { display:inline-flex; align-items:center; gap:6px; background:#3B6B35; color:#F3ECD9; border-radius:16px; padding:6px 6px 6px 13px; font-size:12px; font-weight:700; }
+  .dt-day-chip button { background:rgba(255,255,255,0.25); color:#F3ECD9; border:none; border-radius:50%; width:18px; height:18px; line-height:18px; font-size:12px; cursor:pointer; padding:0; }
+  .dt-worker-chip { padding:9px 15px; border-radius:20px; border:1.5px solid #C9BC9C; background:#fff; color:#4A3B28; font-size:13px; font-weight:700; cursor:pointer; }
+  .dt-worker-chip.selected { border-color:#3B6B35; background:#3B6B35; color:#F3ECD9; }
+  .dt-calc-box { background:#EAF3EC; border:1px solid #BFDCC4; border-radius:12px; padding:14px 16px; margin:16px 0; }
+  .dt-calc-line { font-family:'IBM Plex Mono',monospace; font-size:14px; color:#1F3D24; display:flex; justify-content:space-between; margin-bottom:6px; }
+  .dt-calc-line:last-child { margin-bottom:0; }
+  .dt-calc-line.hero { font-size:20px; font-weight:800; }
+  .dt-record { background:#F3ECD9; border:1px solid #D8C89A; border-radius:14px; padding:18px 16px; margin-bottom:14px; }
+  .dt-record-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .dt-kg-hero { font-family:'Fraunces',serif; font-weight:900; font-size:38px; line-height:1; color:#2E5233; }
+  .dt-kg-hero .unit { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; color:#6B5B45; margin-left:5px; }
+  .dt-record-actions { display:flex; gap:6px; flex-shrink:0; }
+  .dt-icon-btn { border:none; background:#E4D8B4; color:#4A3B28; width:32px; height:32px; border-radius:8px; font-size:14px; cursor:pointer; }
+  .dt-icon-btn.danger { color:#B33A3A; }
+  .dt-record-date { font-size:14px; color:#4A3B28; font-weight:600; margin:2px 0 12px; }
+  .dt-equation { font-family:'IBM Plex Mono',monospace; font-size:13px; color:#4A3B28; background:#E4D8B4; border-radius:8px; padding:9px 12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px; }
+  .dt-equation .total { font-weight:800; color:#3B6B35; font-size:16px; }
+  .dt-worker-row { display:flex; justify-content:space-between; padding:8px 2px; font-size:15px; font-weight:700; color:#4A3B28; border-bottom:1px dotted #C9BC9C; }
+  .dt-worker-row:last-child { border-bottom:none; }
+  .dt-worker-row .amt { font-family:'IBM Plex Mono',monospace; font-weight:700; color:#3B6B35; }
+  .dt-week-hero { text-align:center; margin-bottom:16px; }
+  .dt-week-total { font-family:'Fraunces',serif; font-weight:900; font-size:34px; color:#3B6B35; line-height:1.1; }
+  .dt-week-total-label { font-size:11px; color:#6B5B45; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:2px; }
+  .dt-section-label { font-size:12px; font-weight:800; color:#4A3B28; text-transform:uppercase; letter-spacing:0.04em; margin:14px 0 6px; display:flex; justify-content:space-between; align-items:baseline; }
+  .dt-section-label .amt { font-family:'IBM Plex Mono',monospace; font-size:14px; color:#3B6B35; }
+  .dt-foodcash-card { background:#EFE7D3; border:1px dashed #C9BC9C; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .dt-foodcash-card .sec-name { font-size:14px; }
 </style>
 </head>
 <body>
@@ -315,36 +347,60 @@
           <span id="dtFormCancelWrap" style="display:none;"><button class="no-print" id="dtCancelEditBtn" style="background:none;border:none;color:#B33A3A;font-size:13px;cursor:pointer;">Cancel edit</button></span>
         </div>
 
+        <div class="dt-field-label">Date</div>
         <div class="form-row no-print" style="margin-bottom:6px;">
           <input type="date" id="dtPickDate" style="flex:1;" />
           <button class="fadd" id="dtAddDateBtn">+ Add date</button>
         </div>
         <div id="dtDayChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
-        <p class="empty" id="dtDaysNote" style="margin:0 0 12px;"></p>
+        <p class="empty" id="dtDaysNote" style="margin:0 0 4px;"></p>
 
-        <div class="form-row no-print">
-          <input type="number" inputmode="decimal" placeholder="Total dried kg" id="dtKgInput" style="flex:1;" />
-        </div>
+        <div class="dt-field-label">Total KG</div>
+        <input type="number" inputmode="decimal" placeholder="0" id="dtKgInput" class="dt-kg-input no-print" />
 
-        <div style="margin:2px 0 6px;font-size:13px;font-weight:700;color:#4A3B28;">Workers (tap to select)</div>
-        <div id="dtWorkerChips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;"></div>
+        <div class="dt-field-label">Workers (tap to select)</div>
+        <div id="dtWorkerChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
         <div class="form-row no-print">
           <input type="text" placeholder="New worker name" id="dtNewWorkerInput" style="flex:1;" />
           <button class="fadd" id="dtNewWorkerAddBtn">+ Add name</button>
         </div>
 
-        <div class="mt-opening" id="dtShareDisplay" style="margin-top:6px;"></div>
+        <div class="dt-calc-box">
+          <div class="dt-calc-line hero" id="dtCalcLine1"></div>
+          <div class="dt-calc-line" id="dtCalcLine2"></div>
+          <div class="dt-calc-line" id="dtCalcLine3"></div>
+        </div>
 
-        <button class="btn-export no-print" id="dtSaveRecordBtn" style="width:100%;margin-top:10px;">&#10003; Save Record</button>
+        <button class="btn-export no-print" id="dtSaveRecordBtn" style="width:100%;font-size:15px;padding:13px 0;">&#10003; Save Record</button>
         <div class="save-note no-print" id="dtSaveNote"></div>
       </div>
 
       <div class="mt-card">
         <div class="mt-card-head">
-          <span class="sec-name display">Food Cash</span>
+          <span class="sec-name display">This Week</span>
         </div>
+        <div class="datenav" style="margin:0 0 10px;">
+          <button id="dtPrevWeekSummary" class="no-print">&#8592;</button>
+          <span class="mono" id="dtSummaryWeekLabel" style="font-size:12px;color:#6B5B45;"></span>
+          <button id="dtNextWeekSummary" class="no-print">&#8594;</button>
+        </div>
+
+        <div class="dt-week-hero">
+          <div class="dt-week-total-label">Total Salary</div>
+          <div class="dt-week-total" id="dtWeekSalaryTotal"></div>
+        </div>
+        <div id="dtWeekSalaryLine"></div>
+
+        <div class="section-divider"></div>
+        <div class="dt-section-label">Weekly Food Cash <span class="amt" id="dtWeekFoodTotal"></span></div>
+        <div id="dtWeekFoodLine"></div>
+      </div>
+
+      <div class="dt-foodcash-card">
+        <div class="sec-name display" style="margin-bottom:8px;">Food Cash</div>
+        <div class="dt-field-label" style="margin-top:0;">Worker</div>
         <div class="form-row no-print" style="margin-bottom:6px;">
-          <input type="text" placeholder="Worker name" id="dtFoodNameInput" list="workerNamesList" style="flex:1.4;min-width:100px;" />
+          <select id="dtFoodNameSelect" style="flex:1;min-width:120px;background:#fff;"><option value="">Select worker</option></select>
           <input type="date" id="dtFoodDateInput" style="flex:1;min-width:120px;" />
         </div>
         <div class="form-row no-print">
@@ -356,23 +412,7 @@
         <div class="save-note no-print" id="dtFoodSaveNote"></div>
       </div>
 
-      <div class="mt-card">
-        <div class="mt-card-head">
-          <span class="sec-name display">This week</span>
-        </div>
-        <div class="datenav" style="margin:0 0 8px;">
-          <button id="dtPrevWeekSummary" class="no-print">&#8592;</button>
-          <span class="mono" id="dtSummaryWeekLabel" style="font-size:12px;color:#6B5B45;"></span>
-          <button id="dtNextWeekSummary" class="no-print">&#8594;</button>
-        </div>
-
-        <div class="sec-name display" style="font-size:14px;margin-bottom:4px;">Workers Weekly Salary <span class="sec-balance" id="dtWeekSalaryTotal" style="float:right;"></span></div>
-        <div class="mt-opening" id="dtWeekSalaryLine"></div>
-
-        <div class="sec-name display" style="font-size:14px;margin:12px 0 4px;">Workers Weekly Food Cash <span class="sec-balance" id="dtWeekFoodTotal" style="float:right;"></span></div>
-        <div class="mt-opening" id="dtWeekFoodLine"></div>
-      </div>
-
+      <h3 class="sub-title display" style="margin-top:20px;">Previous Records</h3>
       <div id="dtRecordsList"></div>
     </div>
 
@@ -1606,8 +1646,8 @@ function dtRenderDayChips(){
   const shortFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short", day:"numeric", month:"short"});
   sortedDays.forEach(ds=>{
     const chip = document.createElement("span");
-    chip.style.cssText = "display:inline-flex;align-items:center;gap:6px;background:#3B6B35;color:#F3ECD9;border-radius:16px;padding:5px 6px 5px 12px;font-size:12px;font-weight:600;";
-    chip.innerHTML = `${shortFmt(ds)} <button class="no-print" data-day="${ds}" style="background:rgba(255,255,255,0.25);color:#F3ECD9;border:none;border-radius:50%;width:18px;height:18px;line-height:18px;font-size:12px;cursor:pointer;padding:0;">&times;</button>`;
+    chip.className = "dt-day-chip";
+    chip.innerHTML = `${shortFmt(ds)} <button class="no-print" data-day="${ds}">&times;</button>`;
     wrap.appendChild(chip);
   });
   wrap.querySelectorAll("[data-day]").forEach(btn=>{
@@ -1639,7 +1679,15 @@ function dtLoadKnownWorkerNames(){
     });
     dtKnownWorkerNames = names.sort((a,b)=>a.localeCompare(b));
     dtRenderWorkerChips();
+    dtRenderFoodWorkerSelect();
   }).catch(()=>{});
+}
+
+function dtRenderFoodWorkerSelect(){
+  const select = document.getElementById("dtFoodNameSelect");
+  const current = select.value;
+  select.innerHTML = '<option value="">Select worker</option>' + dtKnownWorkerNames.map(nm=>`<option value="${escapeHtml(nm)}">${escapeHtml(nm)}</option>`).join("");
+  if(dtKnownWorkerNames.includes(current)) select.value = current;
 }
 
 function dtRenderWorkerChips(){
@@ -1653,10 +1701,9 @@ function dtRenderWorkerChips(){
   allNames.forEach(name=>{
     const isSel = dtFormWorkers.includes(name);
     const chip = document.createElement("button");
-    chip.className = "no-print";
+    chip.className = "no-print dt-worker-chip" + (isSel?" selected":"");
     chip.type = "button";
     chip.textContent = name;
-    chip.style.cssText = `padding:8px 14px;border-radius:20px;border:1px solid ${isSel?"#3B6B35":"#C9BC9C"};background:${isSel?"#3B6B35":"transparent"};color:${isSel?"#F3ECD9":"#4A3B28"};font-size:13px;font-weight:600;cursor:pointer;`;
     chip.addEventListener("click", ()=>{
       if(dtFormWorkers.includes(name)) dtFormWorkers = dtFormWorkers.filter(n=>n!==name);
       else dtFormWorkers.push(name);
@@ -1677,6 +1724,7 @@ document.getElementById("dtNewWorkerAddBtn").addEventListener("click", ()=>{
   loadWorkerNamesList();
   input.value = "";
   dtRenderWorkerChips();
+  dtRenderFoodWorkerSelect();
   dtUpdatePreview();
 });
 
@@ -1689,9 +1737,13 @@ function dtUpdatePreview(){
     ? `${sortedDays.length} day${sortedDays.length>1?"s":""} selected: ${dtBatchLabel(sortedDays)}`
     : "Date pick panni \"+ Add date\" tap pannunga (evlo naala vendalum add pannalam, thodara naala irukkanumnu illa).";
   const total = kg*RATE_PER_KG;
-  document.getElementById("dtShareDisplay").textContent = dtFormWorkers.length>0
-    ? `${kg||0} kg \u00d7 \u20b9${RATE_PER_KG} = \u20b9${rupee(total)} \u00f7 ${dtFormWorkers.length} worker${dtFormWorkers.length>1?"s":""} = \u20b9${rupee(total/dtFormWorkers.length)} each`
-    : `${kg||0} kg \u00d7 \u20b9${RATE_PER_KG} = \u20b9${rupee(total)} — thaniya workers select pannunga`;
+  document.getElementById("dtCalcLine1").innerHTML = `<span>${kg||0} KG \u00d7 \u20b9${RATE_PER_KG}</span><span>= \u20b9${rupee(total)}</span>`;
+  document.getElementById("dtCalcLine2").textContent = dtFormWorkers.length>0
+    ? `${dtFormWorkers.length} worker${dtFormWorkers.length>1?"s":""} selected`
+    : "Thaniya workers select pannunga";
+  document.getElementById("dtCalcLine3").textContent = dtFormWorkers.length>0
+    ? `\u20b9${rupee(total/dtFormWorkers.length)} per worker`
+    : "";
 }
 document.getElementById("dtKgInput").addEventListener("input", dtUpdatePreview);
 
@@ -1805,7 +1857,7 @@ function loadDryerRecords(){
 }
 
 document.getElementById("dtFoodAddBtn").addEventListener("click", ()=>{
-  const nameInput = document.getElementById("dtFoodNameInput");
+  const nameInput = document.getElementById("dtFoodNameSelect");
   const dateInput = document.getElementById("dtFoodDateInput");
   const morningInput = document.getElementById("dtFoodMorningInput");
   const lunchInput = document.getElementById("dtFoodLunchInput");
@@ -1816,7 +1868,7 @@ document.getElementById("dtFoodAddBtn").addEventListener("click", ()=>{
   const lunch = Number(lunchInput.value)||0;
   const evening = Number(eveningInput.value)||0;
   const note = document.getElementById("dtFoodSaveNote");
-  if(!name || (morning<=0 && lunch<=0 && evening<=0)){ note.textContent = "Worker name-um, Food amount-um venum."; return; }
+  if(!name || (morning<=0 && lunch<=0 && evening<=0)){ note.textContent = "Worker select pannunga, Food amount-um venum."; return; }
   note.textContent = "Saving...";
   addFoodCashEntry(dateStr, name, morning, lunch, evening).then(()=>{
     note.textContent = "Saved";
@@ -1836,35 +1888,27 @@ function dtRenderRecordsList(){
     return;
   }
   dtRecordsCache.forEach(rec=>{
-    const isExpanded = dtRecordsExpanded.has(rec.id);
     const card = document.createElement("div");
-    card.className = "mt-card";
-    let workersHtml = "";
-    if(isExpanded){
-      rec.workers.forEach(w=>{
-        workersHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml((w.name||"").toUpperCase())}</div><div class="iprice mono" style="font-size:14px;">\u20b9${rupee(w.salaryBalance!=null?w.salaryBalance:w.share)}</div></div>`;
-      });
-    }
+    card.className = "dt-record";
+    const perWorker = rec.workers.length>0 ? rec.totalSalary/rec.workers.length : 0;
+    let workersHtml = rec.workers.map(w=>`
+      <div class="dt-worker-row"><span>${escapeHtml((w.name||"").toUpperCase())}</span><span class="amt">\u20b9${rupee(w.salaryBalance!=null?w.salaryBalance:w.share)}</span></div>
+    `).join("");
     card.innerHTML = `
-      <div class="mt-card-head" style="align-items:center;">
-        <span class="sec-name display worker-toggle" data-recordid="${rec.id}" style="cursor:pointer;">${escapeHtml(rec.label)} ${isExpanded?"&#9650;":"&#9660;"}</span>
-        <span style="display:flex;align-items:center;gap:10px;">
-          <span class="sec-balance">${rec.kg} kg &middot; \u20b9${rupee(rec.totalSalary)}</span>
-          <button class="no-print" data-editrecord="${rec.id}" style="background:none;border:none;color:#3B6B35;font-size:16px;cursor:pointer;padding:2px;" title="Edit">&#9998;</button>
-          <button class="no-print" data-delrecord="${rec.id}" style="background:none;border:none;color:#B33A3A;font-size:16px;cursor:pointer;padding:2px;" title="Delete">&#128465;</button>
-        </span>
+      <div class="dt-record-top">
+        <div class="dt-kg-hero">${rec.kg}<span class="unit">KG</span></div>
+        <div class="dt-record-actions">
+          <button class="dt-icon-btn no-print" data-editrecord="${rec.id}" title="Edit">&#9998;</button>
+          <button class="dt-icon-btn danger no-print" data-delrecord="${rec.id}" title="Delete">&#128465;</button>
+        </div>
       </div>
-      ${isExpanded ? `<div class="mt-opening">Split among ${rec.workers.length} worker${rec.workers.length>1?"s":""}</div>` : ""}
+      <div class="dt-record-date">${escapeHtml(rec.label)}</div>
+      <div class="dt-equation">
+        <span>${rec.workers.length} Worker${rec.workers.length>1?"s":""} \u00d7 \u20b9${rupee(perWorker)}</span>
+        <span class="total">= \u20b9${rupee(rec.totalSalary)}</span>
+      </div>
       ${workersHtml}`;
     container.appendChild(card);
-  });
-  container.querySelectorAll(".worker-toggle").forEach(el=>{
-    el.addEventListener("click", ()=>{
-      const id = el.dataset.recordid;
-      if(dtRecordsExpanded.has(id)) dtRecordsExpanded.delete(id);
-      else dtRecordsExpanded.add(id);
-      dtRenderRecordsList();
-    });
   });
   container.querySelectorAll("[data-editrecord]").forEach(btn=>{
     btn.addEventListener("click", (ev)=>{
@@ -1906,7 +1950,7 @@ function dtRenderWeeklySummary(){
   document.getElementById("dtWeekSalaryTotal").textContent = `\u20b9${rupee(salaryTotal)}`;
   const salaryNames = Object.keys(salaryByName).sort();
   document.getElementById("dtWeekSalaryLine").innerHTML = salaryNames.length
-    ? salaryNames.map(nm=>`<div class="ledger-row display" style="padding:5px 2px;"><div class="iname" style="font-size:13px;">${escapeHtml(nm.toUpperCase())}</div><div class="iprice mono" style="font-size:13px;">\u20b9${rupee(salaryByName[nm])}</div></div>`).join("")
+    ? salaryNames.map(nm=>`<div class="dt-worker-row"><span>${escapeHtml(nm.toUpperCase())}</span><span class="amt">\u20b9${rupee(salaryByName[nm])}</span></div>`).join("")
     : '<p class="empty" style="margin:4px 0;">No salary records this week.</p>';
 
   // Workers Weekly Food Cash — per-worker totals from foodCash entries dated within this week
@@ -1920,7 +1964,7 @@ function dtRenderWeeklySummary(){
   document.getElementById("dtWeekFoodTotal").textContent = `\u20b9${rupee(foodTotal)}`;
   const foodNames = Object.keys(foodByName).sort();
   document.getElementById("dtWeekFoodLine").innerHTML = foodNames.length
-    ? foodNames.map(nm=>`<div class="ledger-row display" style="padding:5px 2px;"><div class="iname" style="font-size:13px;">${escapeHtml(nm.toUpperCase())}</div><div class="iprice mono" style="font-size:13px;">\u20b9${rupee(foodByName[nm])}</div></div>`).join("")
+    ? foodNames.map(nm=>`<div class="dt-worker-row"><span>${escapeHtml(nm.toUpperCase())}</span><span class="amt">\u20b9${rupee(foodByName[nm])}</span></div>`).join("")
     : '<p class="empty" style="margin:4px 0;">No food cash this week.</p>';
 }
 
@@ -2317,7 +2361,7 @@ function salRenderPeriodBlock(salaryDays, foodEntries, weekOrMonthFilter, salary
   document.getElementById(salaryTotalId).textContent = `\u20b9${rupee(salaryTotal)}`;
   const salaryNames = Object.keys(salaryByName).sort();
   document.getElementById(salaryLineId).innerHTML = salaryNames.length
-    ? salaryNames.map(nm=>`<div class="ledger-row display" style="padding:5px 2px;"><div class="iname" style="font-size:13px;">${escapeHtml(nm.toUpperCase())}</div><div class="iprice mono" style="font-size:13px;">\u20b9${rupee(salaryByName[nm])}</div></div>`).join("")
+    ? salaryNames.map(nm=>`<div class="dt-worker-row"><span>${escapeHtml(nm.toUpperCase())}</span><span class="amt">\u20b9${rupee(salaryByName[nm])}</span></div>`).join("")
     : '<p class="empty" style="margin:4px 0;">No salary this period.</p>';
 
   const foodByName = {};
@@ -2332,7 +2376,7 @@ function salRenderPeriodBlock(salaryDays, foodEntries, weekOrMonthFilter, salary
   document.getElementById(foodTotalId).textContent = `\u20b9${rupee(foodTotal)}`;
   const foodNames = Object.keys(foodByName).sort();
   document.getElementById(foodLineId).innerHTML = foodNames.length
-    ? foodNames.map(nm=>`<div class="ledger-row display" style="padding:5px 2px;"><div class="iname" style="font-size:13px;">${escapeHtml(nm.toUpperCase())}</div><div class="iprice mono" style="font-size:13px;">\u20b9${rupee(foodByName[nm])}</div></div>`).join("")
+    ? foodNames.map(nm=>`<div class="dt-worker-row"><span>${escapeHtml(nm.toUpperCase())}</span><span class="amt">\u20b9${rupee(foodByName[nm])}</span></div>`).join("")
     : '<p class="empty" style="margin:4px 0;">No food cash this period.</p>';
 }
 
