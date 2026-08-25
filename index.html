@@ -88,11 +88,12 @@
     content:""; position:absolute; inset:0;
     background:linear-gradient(to bottom, rgba(16,26,14,0) 0%, rgba(16,26,14,0.35) 45%, rgba(14,24,12,0.82) 72%, rgba(10,18,9,0.96) 100%);
   }
-  .lock-card { position:relative; z-index:1; background:transparent; border:none; border-radius:0; padding:0 28px 44px; max-width:380px; width:100%; text-align:center; }
+  .lock-card { position:relative; z-index:1; background:transparent; border:none; border-radius:0; padding:0 28px 48px; max-width:380px; width:100%; text-align:center; display:flex; flex-direction:column; align-items:center; }
   .lock-card h1 { color:#F3ECD9 !important; }
   .lock-card p { color:#C9D8BE !important; }
-  .lock-card input { font-size:22px; letter-spacing:6px; text-align:center; width:160px; padding:10px; border-radius:8px; border:1px solid #C9BC9C; margin:14px 0; background:#F3ECD9; }
-  .lock-card button { padding:11px 30px; border-radius:8px; border:none; background:#3B6B35; color:#F3ECD9; font-size:14px; font-weight:700; cursor:pointer; }
+  .pin-panel { background:rgba(243,236,217,0.97); border-radius:16px; padding:22px 24px 26px; width:100%; box-sizing:border-box; box-shadow:0 10px 28px rgba(0,0,0,0.4); display:flex; flex-direction:column; align-items:center; }
+  .lock-card input { font-size:24px; letter-spacing:8px; text-align:center; width:170px; padding:13px 10px; border-radius:10px; border:1px solid #C9BC9C; margin:0 0 12px; background:#FFFFFF; }
+  .lock-card button { padding:12px 34px; border-radius:10px; border:none; background:#3B6B35; color:#F3ECD9; font-size:15px; font-weight:700; cursor:pointer; width:100%; }
   .lock-error { color:#B33A3A; font-size:13px; min-height:18px; }
   .worker-row { display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px dotted #B8A87E; font-size:14px; font-weight:600; }
   .worker-row input[type=checkbox] { width:18px; height:18px; accent-color:#3B6B35; }
@@ -177,10 +178,13 @@
   <div class="lock-card">
     <img src="logo.png" alt="SHAM Coco Production logo" style="width:74px;height:74px;object-fit:contain;margin-bottom:8px;" />
     <h1 class="display" style="font-size:20px;margin:0 0 2px;">S.H.A.M COCO PRODUCTION</h1>
-    <p style="font-size:12px;margin:0 0 14px;">Enter PIN to view</p>
-    <input type="password" inputmode="numeric" maxlength="6" id="pinInput" placeholder="••••" />
-    <div class="lock-error" id="lockError"></div>
-    <button id="pinSubmit">Unlock</button>
+    <p style="font-size:12.5px;letter-spacing:0.06em;text-transform:uppercase;color:#9FBB90 !important;margin:0 0 18px;font-weight:600;">Factory Management System</p>
+    <div class="pin-panel">
+      <p style="font-size:12.5px;margin:0 0 10px;color:#4A3B28 !important;font-weight:600;">Enter PIN to view</p>
+      <input type="password" inputmode="numeric" maxlength="6" id="pinInput" placeholder="••••" />
+      <div class="lock-error" id="lockError"></div>
+      <button id="pinSubmit">Unlock</button>
+    </div>
   </div>
 </div>
 
