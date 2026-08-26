@@ -144,12 +144,16 @@
   .dt-kg-input { font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:700; text-align:center; padding:12px; border-radius:10px; border:1px solid #C9BC9C; width:100%; color:#2E5233; background:#fff; }
   .dt-day-chip { display:inline-flex; align-items:center; gap:6px; background:#3B6B35; color:#F3ECD9; border-radius:16px; padding:6px 6px 6px 13px; font-size:12px; font-weight:700; }
   .dt-day-chip button { background:rgba(255,255,255,0.25); color:#F3ECD9; border:none; border-radius:50%; width:18px; height:18px; line-height:18px; font-size:12px; cursor:pointer; padding:0; }
+  .dt-worker-chip-wrap { display:inline-flex; align-items:center; gap:3px; }
   .dt-worker-chip { padding:9px 15px; border-radius:20px; border:1.5px solid #C9BC9C; background:#fff; color:#4A3B28; font-size:13px; font-weight:700; cursor:pointer; }
   .dt-worker-chip.selected { border-color:#3B6B35; background:#3B6B35; color:#F3ECD9; }
+  .dt-worker-chip-del { background:#E4BFBF; color:#8A2F2F; border:none; border-radius:50%; width:22px; height:22px; font-size:13px; line-height:22px; cursor:pointer; padding:0; flex-shrink:0; }
   .dt-calc-box { background:#EAF3EC; border:1px solid #BFDCC4; border-radius:12px; padding:14px 16px; margin:16px 0; }
   .dt-calc-line { font-family:'IBM Plex Mono',monospace; font-size:14px; color:#1F3D24; display:flex; justify-content:space-between; margin-bottom:6px; }
   .dt-calc-line:last-child { margin-bottom:0; }
   .dt-calc-line.hero { font-size:20px; font-weight:800; }
+  .dt-week-group-header { display:flex; justify-content:space-between; align-items:baseline; font-size:12px; font-weight:800; color:#4A3B28; text-transform:uppercase; letter-spacing:0.04em; margin:18px 4px 8px; padding-bottom:6px; border-bottom:2px solid #C9BC9C; }
+  .dt-week-group-header .amt { font-family:'IBM Plex Mono',monospace; font-size:13px; color:#3B6B35; text-transform:none; letter-spacing:0; }
   .dt-record { background:#F3ECD9; border:1px solid #D8C89A; border-radius:14px; padding:18px 16px; margin-bottom:14px; }
   .dt-record-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
   .dt-kg-hero { font-family:'Fraunces',serif; font-weight:900; font-size:38px; line-height:1; color:#2E5233; }
@@ -417,14 +421,19 @@
         <div class="dt-field-label" style="margin-top:0;">Worker</div>
         <div class="form-row no-print" style="margin-bottom:6px;">
           <select id="dtFoodNameSelect" style="flex:1;min-width:120px;background:#fff;"><option value="">Select worker</option></select>
-          <input type="date" id="dtFoodDateInput" style="flex:1;min-width:120px;" />
         </div>
+        <div class="dt-field-label">Dates</div>
+        <div class="form-row no-print" style="margin-bottom:6px;">
+          <input type="date" id="dtFoodPickDate" style="flex:1;" />
+          <button class="fadd" id="dtFoodAddDateBtn">+ Add date</button>
+        </div>
+        <div id="dtFoodDayChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
         <div class="form-row no-print">
           <input type="number" inputmode="decimal" placeholder="Morning" id="dtFoodMorningInput" style="flex:1;min-width:80px;" />
           <input type="number" inputmode="decimal" placeholder="Lunch" id="dtFoodLunchInput" style="flex:1;min-width:80px;" />
           <input type="number" inputmode="decimal" placeholder="Evening" id="dtFoodEveningInput" style="flex:1;min-width:80px;" />
-          <button class="fadd" id="dtFoodAddBtn">+ Add</button>
         </div>
+        <button class="fadd no-print" id="dtFoodAddBtn" style="width:100%;margin-top:8px;">+ Add</button>
         <div class="save-note no-print" id="dtFoodSaveNote"></div>
       </div>
 
@@ -747,7 +756,8 @@ document.getElementById("goDryer").addEventListener("click", ()=>{
   if(!dtLoadedOnce){
     dtLoadedOnce = true;
     dtResetForm();
-    document.getElementById("dtFoodDateInput").value = fmtDate(new Date());
+    dtFoodDays = [];
+    dtRenderFoodDayChips();
     dtLoadKnownWorkerNames();
     loadDryerRecords();
   }
@@ -1732,6 +1742,8 @@ function dtRenderWorkerChips(){
   wrap.innerHTML = "";
   allNames.forEach(name=>{
     const isSel = dtFormWorkers.includes(name);
+    const chipWrap = document.createElement("span");
+    chipWrap.className = "dt-worker-chip-wrap";
     const chip = document.createElement("button");
     chip.className = "no-print dt-worker-chip" + (isSel?" selected":"");
     chip.type = "button";
@@ -1742,7 +1754,25 @@ function dtRenderWorkerChips(){
       dtRenderWorkerChips();
       dtUpdatePreview();
     });
-    wrap.appendChild(chip);
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "no-print dt-worker-chip-del";
+    delBtn.innerHTML = "&times;";
+    delBtn.title = "Remove " + name + " from worker list";
+    delBtn.addEventListener("click", (ev)=>{
+      ev.stopPropagation();
+      if(!confirm(`"${name}" ah worker list-la irundhu eppodhaikkumaa remove pannalama? (Pazhaiya saved records touch aagaadhu)`)) return;
+      dtKnownWorkerNames = dtKnownWorkerNames.filter(n=>n!==name);
+      dtFormWorkers = dtFormWorkers.filter(n=>n!==name);
+      db.collection("workerLoans").doc(nameKey(name)).delete().catch(()=>{});
+      loadWorkerNamesList();
+      dtRenderWorkerChips();
+      dtRenderFoodWorkerSelect();
+      dtUpdatePreview();
+    });
+    chipWrap.appendChild(chip);
+    chipWrap.appendChild(delBtn);
+    wrap.appendChild(chipWrap);
   });
 }
 
@@ -1888,24 +1918,57 @@ function loadDryerRecords(){
   });
 }
 
+let dtFoodDays = []; // array of date strings picked for the Food Cash entry being added
+
+function dtRenderFoodDayChips(){
+  const wrap = document.getElementById("dtFoodDayChips");
+  const sortedDays = Array.from(dtFoodDays).sort();
+  const shortFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short", day:"numeric", month:"short"});
+  wrap.innerHTML = "";
+  sortedDays.forEach(ds=>{
+    const chip = document.createElement("span");
+    chip.className = "dt-day-chip";
+    chip.innerHTML = `${shortFmt(ds)} <button class="no-print" data-day="${ds}">&times;</button>`;
+    wrap.appendChild(chip);
+  });
+  wrap.querySelectorAll("[data-day]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      dtFoodDays = dtFoodDays.filter(d=>d!==btn.dataset.day);
+      dtRenderFoodDayChips();
+    });
+  });
+}
+
+document.getElementById("dtFoodAddDateBtn").addEventListener("click", ()=>{
+  const input = document.getElementById("dtFoodPickDate");
+  const ds = input.value;
+  if(!ds) return;
+  if(!dtFoodDays.includes(ds)) dtFoodDays.push(ds);
+  input.value = "";
+  dtRenderFoodDayChips();
+});
+
 document.getElementById("dtFoodAddBtn").addEventListener("click", ()=>{
   const nameInput = document.getElementById("dtFoodNameSelect");
-  const dateInput = document.getElementById("dtFoodDateInput");
   const morningInput = document.getElementById("dtFoodMorningInput");
   const lunchInput = document.getElementById("dtFoodLunchInput");
   const eveningInput = document.getElementById("dtFoodEveningInput");
   const name = nameInput.value.trim();
-  const dateStr = dateInput.value || fmtDate(new Date());
+  const sortedDays = Array.from(dtFoodDays).sort();
   const morning = Number(morningInput.value)||0;
   const lunch = Number(lunchInput.value)||0;
   const evening = Number(eveningInput.value)||0;
   const note = document.getElementById("dtFoodSaveNote");
-  if(!name || (morning<=0 && lunch<=0 && evening<=0)){ note.textContent = "Worker select pannunga, Food amount-um venum."; return; }
+  if(!name){ note.textContent = "Worker select pannunga."; return; }
+  if(sortedDays.length===0){ note.textContent = "Kammikkalum oru date add pannunga."; return; }
+  if(morning<=0 && lunch<=0 && evening<=0){ note.textContent = "Morning/Lunch/Evening amount podunga."; return; }
   note.textContent = "Saving...";
-  addFoodCashEntry(dateStr, name, morning, lunch, evening).then(()=>{
+  Promise.all(sortedDays.map(ds=>addFoodCashEntry(ds, name, morning, lunch, evening))).then(()=>{
     note.textContent = "Saved";
     setTimeout(()=>{ note.textContent=""; }, 1200);
     nameInput.value=""; morningInput.value=""; lunchInput.value=""; eveningInput.value="";
+    dtFoodDays = [];
+    dtRenderFoodDayChips();
     loadDryerRecords();
   }).catch(()=>{
     note.textContent = "Couldn't save. Check internet.";
@@ -1919,28 +1982,58 @@ function dtRenderRecordsList(){
     container.innerHTML = '<p class="empty">No dryer records yet. Fill the form above and tap Save.</p>';
     return;
   }
+  // dtRecordsCache is already sorted newest-first; group consecutive records by weekKey
+  const groups = [];
+  const indexByWeek = new Map();
   dtRecordsCache.forEach(rec=>{
-    const card = document.createElement("div");
-    card.className = "dt-record";
-    const perWorker = rec.workers.length>0 ? rec.totalSalary/rec.workers.length : 0;
-    let workersHtml = rec.workers.map(w=>`
-      <div class="dt-worker-row"><span>${escapeHtml((w.name||"").toUpperCase())}</span><span class="amt">\u20b9${rupee(w.salaryBalance!=null?w.salaryBalance:w.share)}</span></div>
-    `).join("");
-    card.innerHTML = `
-      <div class="dt-record-top">
-        <div class="dt-kg-hero">${rec.kg}<span class="unit">KG</span></div>
-        <div class="dt-record-actions">
-          <button class="dt-icon-btn no-print" data-editrecord="${rec.id}" title="Edit">&#9998;</button>
-          <button class="dt-icon-btn danger no-print" data-delrecord="${rec.id}" title="Delete">&#128465;</button>
+    const wk = rec.weekKey || "";
+    if(!indexByWeek.has(wk)){
+      indexByWeek.set(wk, {weekKey:wk, records:[]});
+      groups.push(indexByWeek.get(wk));
+    }
+    indexByWeek.get(wk).records.push(rec);
+  });
+  const currentWeekKey = dtWeekStartOf(fmtDate(new Date()));
+  const shortFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
+
+  groups.forEach(group=>{
+    let weekLabel;
+    if(group.weekKey){
+      const wEnd = new Date(group.weekKey+"T00:00:00"); wEnd.setDate(wEnd.getDate()+6);
+      weekLabel = `${shortFmt(group.weekKey)} \u2013 ${shortFmt(fmtDate(wEnd))}`;
+      if(group.weekKey===currentWeekKey) weekLabel = "This Week &middot; " + weekLabel;
+    } else {
+      weekLabel = "Older";
+    }
+    const weekTotal = group.records.reduce((s,r)=>s+r.totalSalary,0);
+    const header = document.createElement("div");
+    header.className = "dt-week-group-header";
+    header.innerHTML = `<span>${weekLabel}</span><span class="amt">\u20b9${rupee(weekTotal)}</span>`;
+    container.appendChild(header);
+
+    group.records.forEach(rec=>{
+      const card = document.createElement("div");
+      card.className = "dt-record";
+      const perWorker = rec.workers.length>0 ? rec.totalSalary/rec.workers.length : 0;
+      let workersHtml = rec.workers.map(w=>`
+        <div class="dt-worker-row"><span>${escapeHtml((w.name||"").toUpperCase())}</span><span class="amt">\u20b9${rupee(w.salaryBalance!=null?w.salaryBalance:w.share)}</span></div>
+      `).join("");
+      card.innerHTML = `
+        <div class="dt-record-top">
+          <div class="dt-kg-hero">${rec.kg}<span class="unit">KG</span></div>
+          <div class="dt-record-actions">
+            <button class="dt-icon-btn no-print" data-editrecord="${rec.id}" title="Edit">&#9998;</button>
+            <button class="dt-icon-btn danger no-print" data-delrecord="${rec.id}" title="Delete">&#128465;</button>
+          </div>
         </div>
-      </div>
-      <div class="dt-record-date">${escapeHtml(rec.label)}</div>
-      <div class="dt-equation">
-        <span>${rec.workers.length} Worker${rec.workers.length>1?"s":""} \u00d7 \u20b9${rupee(perWorker)}</span>
-        <span class="total">= \u20b9${rupee(rec.totalSalary)}</span>
-      </div>
-      ${workersHtml}`;
-    container.appendChild(card);
+        <div class="dt-record-date">${escapeHtml(rec.label)}</div>
+        <div class="dt-equation">
+          <span>${rec.workers.length} Worker${rec.workers.length>1?"s":""} \u00d7 \u20b9${rupee(perWorker)}</span>
+          <span class="total">= \u20b9${rupee(rec.totalSalary)}</span>
+        </div>
+        ${workersHtml}`;
+      container.appendChild(card);
+    });
   });
   container.querySelectorAll("[data-editrecord]").forEach(btn=>{
     btn.addEventListener("click", (ev)=>{
