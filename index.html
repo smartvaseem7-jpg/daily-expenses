@@ -174,6 +174,12 @@
   .dt-section-label .amt { font-family:'IBM Plex Mono',monospace; font-size:14px; color:#3B6B35; }
   .dt-foodcash-card { background:#EFE7D3; border:1px dashed #C9BC9C; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
   .dt-foodcash-card .sec-name { font-size:14px; }
+  .mt-swipe-viewport { overflow:hidden; width:100%; position:relative; }
+  .mt-swipe-track { display:flex; width:200%; transition:transform 0.32s cubic-bezier(.22,.68,0,1.01); }
+  .mt-swipe-track.dragging { transition:none; }
+  .mt-swipe-page { width:50%; flex-shrink:0; box-sizing:border-box; padding-right:4px; }
+  .mt-swipe-page + .mt-swipe-page { padding-right:0; padding-left:4px; }
+  .swipe-hint { text-align:center; font-size:11px; opacity:0.7; margin-top:10px; }
 </style>
 </head>
 <body>
@@ -293,63 +299,85 @@
 
     <!-- ===== MACHINE TEAM ===== -->
     <div id="machineSection" style="display:none;">
-      <div class="section-header">
-        <button class="back-btn no-print" data-home>&#8592; Home</button>
-        <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
-        <h2 class="section-title">MACHINE TEAM</h2>
-      </div>
+      <div class="mt-swipe-viewport">
+        <div class="mt-swipe-track" id="mtSwipeTrack">
 
-      <div class="datenav">
-        <button id="mtPrevDay" class="no-print">&#8592;</button>
-        <span class="mono" id="mtNiceDate" style="font-size:13px;color:#6B5B45;"></span>
-        <button id="mtNextDay" class="no-print">&#8594;</button>
-      </div>
+          <div class="mt-swipe-page" id="mtSwipePage1">
+            <div class="section-header">
+              <button class="back-btn no-print" data-home>&#8592; Home</button>
+              <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
+              <h2 class="section-title">MACHINE TEAM</h2>
+            </div>
 
-      <button class="btn-clear no-print" id="mtToggleEdit" style="width:100%;margin-bottom:14px;">&#9998; Edit</button>
+            <div class="datenav">
+              <button id="mtPrevDay" class="no-print">&#8592;</button>
+              <span class="mono" id="mtNiceDate" style="font-size:13px;color:#6B5B45;"></span>
+              <button id="mtNextDay" class="no-print">&#8594;</button>
+            </div>
 
-      <div class="form-row no-print" id="mtRateFormRow" style="display:none;">
-        <input type="number" inputmode="decimal" placeholder="Daily rate per worker" id="mtRateInput" style="flex:1;" />
-        <button class="fadd" id="mtRateSaveBtn">&#10003; Save rate</button>
-      </div>
-      <p class="empty" id="mtRateDisplay" style="display:none;"></p>
+            <button class="btn-clear no-print" id="mtToggleEdit" style="width:100%;margin-bottom:14px;">&#9998; Edit</button>
 
-      <h3 class="sub-title display">Workers Today</h3>
-      <div id="mtWorkersList"></div>
-      <div class="form-row no-print" id="mtWorkerFormRow" style="display:none;">
-        <input type="text" placeholder="Worker name" id="mtWorkerNameInput" list="workerNamesList" style="flex:2;min-width:100px;" />
-        <input type="time" id="mtWorkerTimeIn" style="flex:1;min-width:90px;" />
-        <input type="time" id="mtWorkerTimeOut" style="flex:1;min-width:90px;" />
-        <input type="number" inputmode="decimal" placeholder="Morning food" id="mtWorkerMorningInput" style="flex:1;min-width:90px;" />
-        <input type="number" inputmode="decimal" placeholder="Lunch food" id="mtWorkerLunchInput" style="flex:1;min-width:90px;" />
-        <input type="number" inputmode="decimal" placeholder="Evening food" id="mtWorkerEveningInput" style="flex:1;min-width:90px;" />
-        <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
-      </div>
-      <p class="empty" id="mtWorkersCount"></p>
+            <div class="form-row no-print" id="mtRateFormRow" style="display:none;">
+              <input type="number" inputmode="decimal" placeholder="Daily rate per worker" id="mtRateInput" style="flex:1;" />
+              <button class="fadd" id="mtRateSaveBtn">&#10003; Save rate</button>
+            </div>
+            <p class="empty" id="mtRateDisplay" style="display:none;"></p>
 
-      <h3 class="sub-title display">Matta Today</h3>
-      <div id="mtSectionsList"></div>
+            <h3 class="sub-title display">Workers Today</h3>
+            <div id="mtWorkersList"></div>
+            <div class="form-row no-print" id="mtWorkerFormRow" style="display:none;">
+              <input type="text" placeholder="Worker name" id="mtWorkerNameInput" list="workerNamesList" style="flex:2;min-width:100px;" />
+              <input type="time" id="mtWorkerTimeIn" style="flex:1;min-width:90px;" />
+              <input type="time" id="mtWorkerTimeOut" style="flex:1;min-width:90px;" />
+              <input type="number" inputmode="decimal" placeholder="Morning food" id="mtWorkerMorningInput" style="flex:1;min-width:90px;" />
+              <input type="number" inputmode="decimal" placeholder="Lunch food" id="mtWorkerLunchInput" style="flex:1;min-width:90px;" />
+              <input type="number" inputmode="decimal" placeholder="Evening food" id="mtWorkerEveningInput" style="flex:1;min-width:90px;" />
+              <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
+            </div>
+            <p class="empty" id="mtWorkersCount"></p>
 
-      <div id="mtPersonTotals" style="margin:6px 0 10px;"></div>
+            <h3 class="sub-title display">Matta Today</h3>
+            <div id="mtSectionsList"></div>
 
-      <h3 class="sub-title display">Full Matta Details</h3>
-      <div id="mtFullLog" style="margin-bottom:10px;"></div>
+            <div id="mtPersonTotals" style="margin:6px 0 10px;"></div>
 
-      <div class="totals">
-        <div class="line"><span class="label">Opening &raquo;&raquo;</span><span class="val mono" id="mtOpeningVal"></span></div>
-        <div class="line"><span class="label">Total matta &raquo;&raquo;</span><span class="val mono" id="mtTotalVal" style="color:#3B6B35;"></span></div>
-      </div>
+            <h3 class="sub-title display">Full Matta Details</h3>
+            <div id="mtFullLog" style="margin-bottom:10px;"></div>
 
-      <div id="mtCutBreakdown" style="margin:10px 0;"></div>
+            <div class="totals">
+              <div class="line"><span class="label">Opening &raquo;&raquo;</span><span class="val mono" id="mtOpeningVal"></span></div>
+              <div class="line"><span class="label">Total matta &raquo;&raquo;</span><span class="val mono" id="mtTotalVal" style="color:#3B6B35;"></span></div>
+            </div>
 
-      <div class="totals">
-        <div class="line"><span class="label">Total balance &raquo;&raquo;</span><span class="val mono" id="mtBalanceVal" style="color:#B5651D;"></span></div>
-      </div>
+            <div id="mtCutBreakdown" style="margin:10px 0;"></div>
 
-      <div class="save-note no-print" id="mtSaveNote"></div>
+            <div class="totals">
+              <div class="line"><span class="label">Total balance &raquo;&raquo;</span><span class="val mono" id="mtBalanceVal" style="color:#B5651D;"></span></div>
+            </div>
 
-      <div class="actions no-print">
-        <button class="btn-export" id="mtExportBtn" style="flex:1;">&#128424; Export day (PDF)</button>
-        <button class="btn-clear" id="mtClearBtn">&#8635; Clear</button>
+            <div class="save-note no-print" id="mtSaveNote"></div>
+
+            <div class="actions no-print">
+              <button class="btn-export" id="mtExportBtn" style="flex:1;">&#128424; Export day (PDF)</button>
+              <button class="btn-clear" id="mtClearBtn">&#8635; Clear</button>
+            </div>
+            <p class="empty swipe-hint no-print">Salary paakanumna &#8592; swipe pannunga</p>
+          </div>
+
+          <div class="mt-swipe-page" id="mtSwipePage2">
+            <div class="section-header">
+              <button class="back-btn no-print" data-home>&#8592; Home</button>
+              <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
+              <h2 class="section-title">MACHINE TEAM SALARY</h2>
+            </div>
+            <p class="empty swipe-hint no-print">&#8594; swipe pannina Machine Team-ku thirumba varalam</p>
+            <div id="mtSalaryList"></div>
+            <div class="totals">
+              <div class="line"><span class="label">Machine Team Total &raquo;&raquo;</span><span class="val mono" id="mtSalaryTotalVal" style="color:#3B6B35;"></span></div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
 
@@ -749,6 +777,7 @@ document.getElementById("goMachine").addEventListener("click", ()=>{
       document.getElementById("mtRateDisplay").style.display = "block";
     }).catch(()=>{});
     mtLoadDay(mtSelectedDate);
+    loadMachineTeamSalary();
   }
 });
 document.getElementById("goDryer").addEventListener("click", ()=>{
@@ -1248,8 +1277,73 @@ function mtPersist(){
   });
 }
 
+function loadMachineTeamSalary(){
+  db.collection("machineTeam").get().then((snap)=>{
+    const agg = computeSalaryAccumulation(snap, "salary");
+    renderSalaryTable("mtSalaryList","mtSalaryTotalVal", agg.map, "mtpage");
+  }).catch(()=>{
+    document.getElementById("mtSalaryList").innerHTML = '<p class="empty">Couldn\u2019t load. Check internet and try again.</p>';
+  });
+}
+
+// ---------- MACHINE TEAM swipe (Page 1: daily view, Page 2: salary list) ----------
+(function(){
+  const viewport = document.querySelector(".mt-swipe-viewport");
+  const track = document.getElementById("mtSwipeTrack");
+  let mtSwipePage = 0; // 0 = Machine Team, 1 = Machine Team Salary
+  let startX = null, startY = null, currentDeltaX = 0, isDragging = false, lockedAxis = null;
+
+  function setPage(page, animate){
+    mtSwipePage = page;
+    track.style.transition = animate===false ? "none" : "";
+    track.style.transform = `translateX(${page===0 ? "0%" : "-50%"})`;
+    if(page===1) loadMachineTeamSalary();
+  }
+
+  viewport.addEventListener("touchstart", (e)=>{
+    if(e.touches.length!==1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    currentDeltaX = 0;
+    isDragging = true;
+    lockedAxis = null;
+    track.classList.add("dragging");
+  }, {passive:true});
+
+  viewport.addEventListener("touchmove", (e)=>{
+    if(!isDragging || startX===null) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if(lockedAxis===null){
+      lockedAxis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    }
+    if(lockedAxis!=="x") return;
+    // don't swipe past the edges
+    if((mtSwipePage===0 && dx<0) || (mtSwipePage===1 && dx>0)){
+      currentDeltaX = dx;
+      const viewportWidth = viewport.offsetWidth;
+      const basePercent = mtSwipePage===0 ? 0 : -50;
+      const deltaPercent = (dx / viewportWidth) * 50;
+      track.style.transform = `translateX(${basePercent + deltaPercent}%)`;
+      e.preventDefault();
+    }
+  }, {passive:false});
+
+  viewport.addEventListener("touchend", ()=>{
+    if(!isDragging) return;
+    isDragging = false;
+    track.classList.remove("dragging");
+    const threshold = viewport.offsetWidth * 0.18;
+    if(lockedAxis==="x"){
+      if(mtSwipePage===0 && currentDeltaX < -threshold) setPage(1);
+      else if(mtSwipePage===1 && currentDeltaX > threshold) setPage(0);
+      else setPage(mtSwipePage);
+    }
+    startX = null; startY = null; currentDeltaX = 0; lockedAxis = null;
+  });
+})();
+
 function hoursBetween(t1, t2){
-  if(!t1 || !t2) return null;
   const [h1,m1] = t1.split(":").map(Number);
   const [h2,m2] = t2.split(":").map(Number);
   let mins = (h2*60+m2) - (h1*60+m1);
