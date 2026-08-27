@@ -371,9 +371,22 @@
               <h2 class="section-title">MACHINE TEAM SALARY</h2>
             </div>
             <p class="empty swipe-hint no-print">&#8594; swipe pannina Machine Team-ku thirumba varalam</p>
+
+            <h3 class="sub-title display">Salary</h3>
             <div id="mtSalaryList"></div>
-            <div class="totals">
+            <div class="totals" style="margin-bottom:16px;">
               <div class="line"><span class="label">Machine Team Total &raquo;&raquo;</span><span class="val mono" id="mtSalaryTotalVal" style="color:#3B6B35;"></span></div>
+            </div>
+
+            <h3 class="sub-title display">Food Cash</h3>
+            <div id="mtFoodList"></div>
+            <div class="totals">
+              <div class="line"><span class="label">Food cash total &raquo;&raquo;</span><span class="val mono" id="mtFoodTotalVal" style="color:#B5651D;"></span></div>
+            </div>
+
+            <div class="save-note no-print" id="mtSalarySaveNote"></div>
+            <div class="actions no-print">
+              <button class="btn-export" id="mtPaySalaryBtn" style="flex:1;">&#128181; Pay Salary (mark as paid)</button>
             </div>
           </div>
 
@@ -506,30 +519,10 @@
       <div id="salCurrentView">
         <p class="empty" id="salEmptyNote" style="display:none;">Loading salary records...</p>
 
-        <h3 class="sub-title display">Machine Team Salary</h3>
-        <div id="salMachineList"></div>
-        <div class="totals" style="margin-bottom:16px;">
-          <div class="line"><span class="label">Machine total &raquo;&raquo;</span><span class="val mono" id="salMachineTotal" style="color:#3B6B35;"></span></div>
-        </div>
-
         <h3 class="sub-title display">Dryer Team Salary</h3>
         <div id="salDryerList"></div>
         <div class="totals" style="margin-bottom:16px;">
           <div class="line"><span class="label">Dryer total &raquo;&raquo;</span><span class="val mono" id="salDryerTotal" style="color:#3B6B35;"></span></div>
-        </div>
-
-        <h3 class="sub-title display">Food Cash</h3>
-        <button class="btn-clear no-print" id="salFoodToggleEdit" style="width:100%;margin-bottom:10px;">&#9998; Edit</button>
-        <div id="salFoodList"></div>
-        <div class="form-row no-print" id="salFoodFormRow" style="display:none;">
-          <input type="text" placeholder="Worker name" id="salFoodNameInput" list="workerNamesList" style="flex:1.4;min-width:100px;" />
-          <input type="number" inputmode="decimal" placeholder="Morning" id="salFoodMorningInput" style="flex:1;min-width:80px;" />
-          <input type="number" inputmode="decimal" placeholder="Lunch" id="salFoodLunchInput" style="flex:1;min-width:80px;" />
-          <input type="number" inputmode="decimal" placeholder="Evening" id="salFoodEveningInput" style="flex:1;min-width:80px;" />
-          <button class="fadd" id="salFoodAddBtn">+ Add</button>
-        </div>
-        <div class="totals">
-          <div class="line"><span class="label">Food cash total &raquo;&raquo;</span><span class="val mono" id="salFoodTotal" style="color:#B5651D;"></span></div>
         </div>
 
         <div class="save-note no-print" id="salSaveNote"></div>
@@ -1277,14 +1270,57 @@ function mtPersist(){
   });
 }
 
+let mtSalaryAggCache = {map:{}, dayDocs:{}};
+let mtFoodAggCache = {map:{}, dayDocs:{}};
+
 function loadMachineTeamSalary(){
-  db.collection("machineTeam").get().then((snap)=>{
-    const agg = computeSalaryAccumulation(snap, "salary");
-    renderSalaryTable("mtSalaryList","mtSalaryTotalVal", agg.map, "mtpage");
+  Promise.allSettled([
+    db.collection("machineTeam").get(),
+    db.collection("foodCash").get()
+  ]).then((results)=>{
+    const mtSnap = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
+    const fcSnap = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
+    mtSalaryAggCache = computeSalaryAccumulation(mtSnap, "salary");
+    mtFoodAggCache = computeFoodCashAccumulation(fcSnap);
+    renderSalaryTable("mtSalaryList","mtSalaryTotalVal", mtSalaryAggCache.map, "mtpage");
+    renderFoodCashTable("mtFoodList","mtFoodTotalVal", mtFoodAggCache.map, "mtSalarySaveNote", loadMachineTeamSalary);
   }).catch(()=>{
     document.getElementById("mtSalaryList").innerHTML = '<p class="empty">Couldn\u2019t load. Check internet and try again.</p>';
   });
 }
+
+document.getElementById("mtPaySalaryBtn").addEventListener("click", ()=>{
+  const note = document.getElementById("mtSalarySaveNote");
+  const salaryNames = Object.keys(mtSalaryAggCache.map);
+  const foodNames = Object.keys(mtFoodAggCache.map);
+  if(salaryNames.length===0 && foodNames.length===0){
+    note.textContent = "Nothing to pay right now.";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    return;
+  }
+  note.textContent = "Saving...";
+  const paidDate = fmtDate(new Date());
+  const historyWrites = [];
+  salaryNames.forEach(name=>{
+    const info = mtSalaryAggCache.map[name];
+    historyWrites.push(db.collection("salaryHistory").add({team:"Machine Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
+  });
+  foodNames.forEach(name=>{
+    const info = mtFoodAggCache.map[name];
+    historyWrites.push(db.collection("salaryHistory").add({team:"Food Cash", name, workingDays:0, totalSalary:info.total, paidDate}));
+  });
+  Promise.all([
+    paySalaryTeam("machineTeam", mtSalaryAggCache, "salary"),
+    payFoodCash(mtFoodAggCache),
+    ...historyWrites
+  ]).then(()=>{
+    note.textContent = "Salary paid — saved to history!";
+    setTimeout(()=>{ note.textContent=""; }, 2000);
+    loadMachineTeamSalary();
+  }).catch(()=>{
+    note.textContent = "Couldn't save. Check internet.";
+  });
+});
 
 // ---------- MACHINE TEAM swipe (Page 1: daily view, Page 2: salary list) ----------
 (function(){
@@ -2312,13 +2348,10 @@ function loadLoanPage(){
 }
 
 // ---------- SALARY PAGE ----------
-let salMachineAgg = {map:{}, dayDocs:{}};
 let salDryerAgg = {map:{}, dayDocs:{}}; // legacy "dryerTeam" (single-day) unpaid entries
 let salDryerBatchAgg = {map:{}, dayDocs:{}}; // new "dryerBatches" (multi-day batch) unpaid entries
 let salDryerMergedMap = {}; // combined, for display only
-let salFoodAgg = {map:{}, dayDocs:{}};
 let salExpanded = new Set();
-let salFoodEditMode = false;
 
 function computeSalaryAccumulation(snapshot, salaryField){
   const map = {};
@@ -2432,19 +2465,19 @@ function renderSalaryTable(listId, totalId, map, prefix){
   document.getElementById(totalId).textContent = rupee(total);
 }
 
-function renderFoodCashTable(){
-  const container = document.getElementById("salFoodList");
+function renderFoodCashTable(listId, totalId, aggMap, noteId, refreshFn){
+  const container = document.getElementById(listId);
   container.innerHTML = "";
-  const names = Object.keys(salFoodAgg.map);
+  const names = Object.keys(aggMap);
   let total = 0;
   if(names.length===0){
     container.innerHTML = '<p class="empty">No unpaid food cash yet.</p>';
   } else {
     names.sort();
     names.forEach(name=>{
-      const info = salFoodAgg.map[name];
+      const info = aggMap[name];
       total += info.total;
-      const expandKey = "food:" + name;
+      const expandKey = "food:" + listId + ":" + name;
       const isExpanded = salExpanded.has(expandKey);
       let entriesHtml = "";
       if(isExpanded){
@@ -2476,7 +2509,7 @@ function renderFoodCashTable(){
         const key = el.dataset.expandkey;
         if(salExpanded.has(key)) salExpanded.delete(key);
         else salExpanded.add(key);
-        renderFoodCashTable();
+        renderFoodCashTable(listId, totalId, aggMap, noteId, refreshFn);
       });
     });
     container.querySelectorAll(".food-del-btn").forEach(btn=>{
@@ -2485,15 +2518,15 @@ function renderFoodCashTable(){
         const docId = btn.dataset.docid;
         const entryId = btn.dataset.entryid;
         if(!confirm("Intha food cash entry mattum delete pannalama?")) return;
-        deleteFoodCashEntry(docId, entryId);
+        deleteFoodCashEntry(docId, entryId, noteId, refreshFn);
       });
     });
   }
-  document.getElementById("salFoodTotal").textContent = rupee(total);
+  document.getElementById(totalId).textContent = rupee(total);
 }
 
-function deleteFoodCashEntry(docId, entryId){
-  const note = document.getElementById("salSaveNote");
+function deleteFoodCashEntry(docId, entryId, noteId, refreshFn){
+  const note = document.getElementById(noteId);
   note.textContent = "Deleting...";
   db.collection("foodCash").doc(docId).get().then((doc)=>{
     if(!doc.exists) return Promise.resolve();
@@ -2503,7 +2536,7 @@ function deleteFoodCashEntry(docId, entryId){
   }).then(()=>{
     note.textContent = "Deleted";
     setTimeout(()=>{ note.textContent=""; }, 1200);
-    loadSalaryCurrent();
+    refreshFn();
   }).catch(()=>{
     note.textContent = "Couldn't delete. Check internet.";
   });
@@ -2513,31 +2546,21 @@ function loadSalaryCurrent(){
   const note = document.getElementById("salEmptyNote");
   note.style.display = "block";
   note.textContent = "Loading salary records...";
-  document.getElementById("salMachineList").innerHTML = "";
   document.getElementById("salDryerList").innerHTML = "";
-  document.getElementById("salFoodList").innerHTML = "";
 
   Promise.allSettled([
-    db.collection("machineTeam").get(),
     db.collection("dryerTeam").get(),
-    db.collection("dryerBatches").get(),
-    db.collection("foodCash").get()
+    db.collection("dryerBatches").get()
   ]).then((results)=>{
     note.style.display = "none";
-    const mtResult = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
-    const dtResult = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
-    const dbResult = results[2].status==="fulfilled" ? results[2].value : {forEach:()=>{}};
-    const fcResult = results[3].status==="fulfilled" ? results[3].value : {forEach:()=>{}};
+    const dtResult = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
+    const dbResult = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
 
-    salMachineAgg = computeSalaryAccumulation(mtResult, "salary");
     salDryerAgg = computeSalaryAccumulation(dtResult, "salaryBalance");
     salDryerBatchAgg = computeSalaryAccumulation(dbResult, "salaryBalance");
     salDryerMergedMap = mergeSalaryMaps(salDryerAgg.map, salDryerBatchAgg.map);
-    salFoodAgg = computeFoodCashAccumulation(fcResult);
 
-    renderSalaryTable("salMachineList","salMachineTotal", salMachineAgg.map, "machine");
     renderSalaryTable("salDryerList","salDryerTotal", salDryerMergedMap, "dryer");
-    renderFoodCashTable();
   }).catch(()=>{
     note.textContent = "Couldn't load. Check internet and try again.";
   });
@@ -2645,35 +2668,6 @@ document.getElementById("mrNextMonth").addEventListener("click", ()=>{
   mrRenderMonth();
 });
 
-document.getElementById("salFoodToggleEdit").addEventListener("click", ()=>{
-  salFoodEditMode = !salFoodEditMode;
-  document.getElementById("salFoodToggleEdit").innerHTML = salFoodEditMode ? "&#10003; Done" : "&#9998; Edit";
-  document.getElementById("salFoodFormRow").style.display = salFoodEditMode ? "flex" : "none";
-});
-
-document.getElementById("salFoodAddBtn").addEventListener("click", ()=>{
-  const nameInput = document.getElementById("salFoodNameInput");
-  const morningInput = document.getElementById("salFoodMorningInput");
-  const lunchInput = document.getElementById("salFoodLunchInput");
-  const eveningInput = document.getElementById("salFoodEveningInput");
-  const name = nameInput.value.trim();
-  const morning = Number(morningInput.value)||0;
-  const lunch = Number(lunchInput.value)||0;
-  const evening = Number(eveningInput.value)||0;
-  if(!name || (morning<=0 && lunch<=0 && evening<=0)) return;
-  const note = document.getElementById("salSaveNote");
-  note.textContent = "Saving...";
-  const today = fmtDate(new Date());
-  addFoodCashEntry(today, name, morning, lunch, evening).then(()=>{
-    note.textContent = "Saved";
-    setTimeout(()=>{ note.textContent=""; }, 1200);
-    nameInput.value=""; morningInput.value=""; lunchInput.value=""; eveningInput.value="";
-    loadSalaryCurrent();
-  }).catch(()=>{
-    note.textContent = "Couldn't save. Check internet.";
-  });
-});
-
 function paySalaryTeam(collectionName, agg, salaryField){
   const docIds = Object.keys(agg.dayDocs);
   const writes = docIds.map(docId=>{
@@ -2697,8 +2691,8 @@ function payFoodCash(agg){
     const d = agg.dayDocs[docId];
     const arr = Array.isArray(d.entries) ? d.entries : [];
     const updated = arr.map(e=>{
-      const morning = Number(e.morning)||0, evening = Number(e.evening)||0;
-      if(!e.paid && (morning>0 || evening>0)) return {...e, paid:true};
+      const morning = Number(e.morning)||0, lunch = Number(e.lunch)||0, evening = Number(e.evening)||0;
+      if(!e.paid && (morning>0 || lunch>0 || evening>0)) return {...e, paid:true};
       return e;
     });
     return db.collection("foodCash").doc(docId).update({entries: updated});
@@ -2708,10 +2702,8 @@ function payFoodCash(agg){
 
 document.getElementById("salPayBtn").addEventListener("click", ()=>{
   const note = document.getElementById("salSaveNote");
-  const machineNames = Object.keys(salMachineAgg.map);
   const dryerNames = Object.keys(salDryerMergedMap);
-  const foodNames = Object.keys(salFoodAgg.map);
-  if(machineNames.length===0 && dryerNames.length===0 && foodNames.length===0){
+  if(dryerNames.length===0){
     note.textContent = "Nothing to pay right now.";
     setTimeout(()=>{ note.textContent=""; }, 1500);
     return;
@@ -2719,23 +2711,13 @@ document.getElementById("salPayBtn").addEventListener("click", ()=>{
   note.textContent = "Saving...";
   const paidDate = fmtDate(new Date());
   const historyWrites = [];
-  machineNames.forEach(name=>{
-    const info = salMachineAgg.map[name];
-    historyWrites.push(db.collection("salaryHistory").add({team:"Machine Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
-  });
   dryerNames.forEach(name=>{
     const info = salDryerMergedMap[name];
     historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
   });
-  foodNames.forEach(name=>{
-    const info = salFoodAgg.map[name];
-    historyWrites.push(db.collection("salaryHistory").add({team:"Food Cash", name, workingDays:0, totalSalary:info.total, paidDate}));
-  });
   Promise.all([
-    paySalaryTeam("machineTeam", salMachineAgg, "salary"),
     paySalaryTeam("dryerTeam", salDryerAgg, "salaryBalance"),
     paySalaryTeam("dryerBatches", salDryerBatchAgg, "salaryBalance"),
-    payFoodCash(salFoodAgg),
     ...historyWrites
   ]).then(()=>{
     note.textContent = "Salary paid — saved to history!";
@@ -2748,20 +2730,16 @@ document.getElementById("salPayBtn").addEventListener("click", ()=>{
 
 document.getElementById("salClearBtn").addEventListener("click", ()=>{
   const note = document.getElementById("salSaveNote");
-  const machineNames = Object.keys(salMachineAgg.map);
   const dryerNames = Object.keys(salDryerMergedMap);
-  const foodNames = Object.keys(salFoodAgg.map);
-  if(machineNames.length===0 && dryerNames.length===0 && foodNames.length===0){
+  if(dryerNames.length===0){
     note.textContent = "Nothing to clear.";
     setTimeout(()=>{ note.textContent=""; }, 1500);
     return;
   }
   note.textContent = "Clearing...";
   Promise.all([
-    paySalaryTeam("machineTeam", salMachineAgg, "salary"),
     paySalaryTeam("dryerTeam", salDryerAgg, "salaryBalance"),
-    paySalaryTeam("dryerBatches", salDryerBatchAgg, "salaryBalance"),
-    payFoodCash(salFoodAgg)
+    paySalaryTeam("dryerBatches", salDryerBatchAgg, "salaryBalance")
   ]).then(()=>{
     note.textContent = "Cleared.";
     setTimeout(()=>{ note.textContent=""; }, 1500);
