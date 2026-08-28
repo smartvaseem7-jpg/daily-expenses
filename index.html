@@ -1294,7 +1294,21 @@ function mtPersist(){
     setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
     mtWorkers.forEach(w=>{
       if(w.name && w.name.trim()){
-        db.collection("workerLoans").doc(nameKey(w.name)).set({name:w.name.trim(), loanBalance:w.loanBalance}).catch(()=>{});
+        const key = nameKey(w.name);
+        const nm = w.name.trim();
+        const bal = w.loanBalance;
+        const thisDate = mtSelectedDate;
+        db.collection("workerLoans").doc(key).get().then((loanDoc)=>{
+          // Only push this day's balance as the worker's "current" loan balance if this
+          // day is the same as or later than whatever day last set it. Editing/saving an
+          // older date must never clobber a more recent (and more correct) balance.
+          const lastSetDate = loanDoc.exists ? (loanDoc.data().lastUpdatedDate || "") : "";
+          if(!loanDoc.exists || thisDate >= lastSetDate){
+            db.collection("workerLoans").doc(key).set({name:nm, loanBalance:bal, lastUpdatedDate:thisDate}).catch(()=>{});
+          }
+        }).catch(()=>{
+          db.collection("workerLoans").doc(key).set({name:nm, loanBalance:bal, lastUpdatedDate:thisDate}).catch(()=>{});
+        });
       }
     });
   }).catch((e)=>{
