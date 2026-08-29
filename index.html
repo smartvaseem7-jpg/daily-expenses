@@ -30,10 +30,42 @@
   .brand .tagline { font-size:12px; color:#6B5B45; margin-top:2px; }
   .divider { display:flex; align-items:center; justify-content:center; gap:10px; color:#9A8B6E; }
   .divider .line { height:1px; background:#C9BC9C; flex:1; max-width:90px; }
-  .home-grid { position:relative; z-index:1; display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
-  .home-btn { background:#3B6B35; color:#F3ECD9; border:none; border-radius:14px; padding:26px 10px; text-align:center; font-family:'Fraunces',serif; font-weight:700; font-size:15px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px; }
-  .home-btn .icon { font-size:30px; }
-  .home-btn.soon { background:#C9BC9C; color:#4A3B28; }
+  /* ===== HOME SCREEN (redesigned) ===== */
+  .home-topbar { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .home-icon-btn { background:#F3ECD9; border:1px solid #E4D8B4; border-radius:50%; width:38px; height:38px; padding:0; cursor:pointer; color:#1F3D24; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .home-icon-btn svg { width:18px; height:18px; }
+  .home-greet { font-family:'Fraunces',serif; font-weight:700; font-size:15px; color:#1F3D24; display:flex; align-items:center; gap:4px; }
+  .home-avatar { width:38px; height:38px; border-radius:50%; background:#1F3D24; color:#F3ECD9; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .home-avatar svg { width:18px; height:18px; }
+  .home-brand { position:relative; z-index:1; display:flex; align-items:center; gap:14px; padding:4px 2px 16px; }
+  .home-brand img { width:80px; height:80px; object-fit:contain; flex-shrink:0; }
+  .home-brand h1 { font-family:'Fraunces',serif; font-weight:900; font-size:20px; line-height:1.18; color:#1F3D24; margin:0; }
+  .home-brand-tagline { font-size:12px; color:#6B5B45; margin-top:6px; padding-bottom:5px; border-bottom:2px solid #3B6B35; display:inline-block; }
+  .home-stats-panel { position:relative; z-index:1; background:linear-gradient(150deg,#1F3D24,#2E5233 75%); border-radius:26px 26px 46px 16px; padding:16px 10px 24px; margin-bottom:20px; }
+  .home-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .home-stat-card { background:#fff; border-radius:14px; padding:10px 4px 8px; text-align:center; box-shadow:0 6px 14px rgba(0,0,0,0.18); }
+  .home-stat-icon { width:30px; height:30px; border-radius:50%; background:#1F3D24; color:#F3ECD9; display:flex; align-items:center; justify-content:center; font-size:13px; margin:0 auto 6px; }
+  .home-stat-label { font-size:9.5px; color:#4A3B28; font-weight:700; line-height:1.15; margin-bottom:3px; }
+  .home-stat-val { font-size:12.5px; font-weight:800; color:#1F3D24; word-break:break-word; }
+  .home-stat-period { font-size:8.5px; color:#9A8B6E; margin-top:2px; }
+  .home-section-divider { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:10px; margin:0 4px 16px; color:#4A3B28; font-family:'Fraunces',serif; font-weight:700; font-size:13.5px; }
+  .home-section-divider .line { height:1px; background:#C9BC9C; flex:1; max-width:60px; }
+  .home-cards-grid { position:relative; z-index:1; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .home-card { background:#fff; border:1px solid #EAE2CB; border-radius:16px; padding:16px 6px 12px; text-align:center; cursor:pointer; box-shadow:0 2px 6px rgba(74,59,40,0.06); display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .home-card-icon { font-size:27px; }
+  .home-card-title { font-family:'Fraunces',serif; font-weight:800; font-size:12.5px; color:#1F3D24; line-height:1.2; }
+  .home-card-desc { font-size:10px; color:#8A7A5E; line-height:1.3; }
+  .home-card.soon { background:#F1E7D2; }
+  .home-card-wide { grid-column:span 2; flex-direction:row; justify-content:flex-start; text-align:left; padding:14px 12px; gap:10px; }
+  .home-card-wide .home-card-icon { font-size:26px; }
+  .home-card-wide .home-card-textwrap { display:flex; flex-direction:column; gap:2px; }
+  .home-footer-banner { background:#1F3D24; color:#CFE0C8; text-align:center; font-size:12px; font-weight:600; padding:12px 10px; margin:22px -22px 0; letter-spacing:0.02em; }
+  .home-bottom-nav-spacer { height:60px; }
+  .home-bottom-nav { position:fixed; left:0; right:0; bottom:0; max-width:640px; margin:0 auto; z-index:50; background:#1F3D24; display:flex; align-items:center; justify-content:space-around; padding:9px 10px calc(9px + env(safe-area-inset-bottom)); box-shadow:0 -4px 12px rgba(0,0,0,0.18); }
+  .home-nav-item { background:none; border:none; color:#8FAE86; font-size:9.5px; font-family:'Inter',sans-serif; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 6px; }
+  .home-nav-item.active { color:#9FDB7C; }
+  .home-nav-icon { font-size:18px; }
+  .home-nav-fab { width:46px; height:46px; border-radius:50%; background:#4C8C46; color:#fff; border:3px solid #1F3D24; font-size:22px; font-weight:700; cursor:pointer; margin-top:-24px; box-shadow:0 4px 10px rgba(0,0,0,0.3); flex-shrink:0; }
   .section-header { position:relative; z-index:1; display:flex; align-items:center; gap:10px; margin-bottom:14px; }
   .back-btn { border:none; background:#E4D8B4; border-radius:6px; padding:8px 12px; font-size:13px; cursor:pointer; color:#4A3B28; font-weight:600; }
   .section-title { font-family:'Fraunces',serif; font-size:19px; font-weight:900; color:#3B6B35; margin:0; }
@@ -212,22 +244,110 @@
 
     <!-- ===== HOME SCREEN ===== -->
     <div id="homeScreen">
-      <div class="brand">
-        <img src="logo.png" alt="SHAM Coco Production logo" style="width:110px;height:110px;object-fit:contain;margin-bottom:6px;" />
-        <h1>S.H.A.M COCO PRODUCTION</h1>
-        <div class="divider"><div class="line"></div><span>&#127811;</span><div class="line"></div></div>
-        <p class="tagline">Choose a section</p>
+      <div class="home-topbar no-print">
+        <button class="home-icon-btn" id="homeMenuBtn" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="home-greet">Hi, <span id="homeUserName">Waseem</span> <span>&#128075;</span></div>
+        <button class="home-avatar" id="homeProfileBtn" aria-label="Profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+        </button>
       </div>
-      <div class="home-grid no-print">
-        <button class="home-btn" id="goExpenses"><span class="icon">&#128181;</span>Daily Expenses</button>
-        <button class="home-btn" id="goMachine"><span class="icon">&#9881;&#65039;</span>Machine Team</button>
-        <button class="home-btn" id="goDryer"><span class="icon">&#127788;&#65039;</span>Dryer Team</button>
-        <button class="home-btn soon" id="goStore"><span class="icon">&#127974;&#65039;</span>Store</button>
-        <button class="home-btn" id="goLoan"><span class="icon">&#128176;</span>Loan</button>
-        <button class="home-btn" id="goSalary"><span class="icon">&#128181;</span>Salary</button>
-        <button class="home-btn" id="goMonthReport"><span class="icon">&#128197;</span>Month Report</button>
-        <button class="home-btn" id="goDashboard" style="grid-column:span 2;"><span class="icon">&#128202;</span>Dashboard</button>
+
+      <div class="home-brand">
+        <img src="logo.png" alt="SHAM Coco Production logo" />
+        <div>
+          <h1>S.H.A.M<br/>COCO PRODUCTION</h1>
+          <div class="home-brand-tagline">Manage Smart, Grow Strong</div>
+        </div>
       </div>
+
+      <div class="home-stats-panel">
+        <div class="home-stats">
+          <div class="home-stat-card">
+            <div class="home-stat-icon">&#128179;</div>
+            <div class="home-stat-label">Total Expenses</div>
+            <div class="home-stat-val mono" id="homeStatExpenses">&#8377;0</div>
+            <div class="home-stat-period">This Month</div>
+          </div>
+          <div class="home-stat-card">
+            <div class="home-stat-icon">&#128176;</div>
+            <div class="home-stat-label">Net Balance</div>
+            <div class="home-stat-val mono" id="homeStatBalance">&#8377;0</div>
+            <div class="home-stat-period">This Month</div>
+          </div>
+          <div class="home-stat-card">
+            <div class="home-stat-icon">&#128101;</div>
+            <div class="home-stat-label">Total Salary</div>
+            <div class="home-stat-val mono" id="homeStatSalary">&#8377;0</div>
+            <div class="home-stat-period">This Month</div>
+          </div>
+          <div class="home-stat-card">
+            <div class="home-stat-icon">&#129309;</div>
+            <div class="home-stat-label">Total Loan</div>
+            <div class="home-stat-val mono" id="homeStatLoan">&#8377;0</div>
+            <div class="home-stat-period">Current</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-section-divider"><span class="line"></span><span>&#127811; Choose a section &#127811;</span><span class="line"></span></div>
+
+      <div class="home-cards-grid no-print">
+        <button class="home-card" id="goExpenses">
+          <span class="home-card-icon">&#128181;</span>
+          <span class="home-card-title">Daily Expenses</span>
+          <span class="home-card-desc">Add &amp; manage daily expenses</span>
+        </button>
+        <button class="home-card" id="goMachine">
+          <span class="home-card-icon">&#9881;&#65039;</span>
+          <span class="home-card-title">Machine Team</span>
+          <span class="home-card-desc">Manage machine team &amp; salary</span>
+        </button>
+        <button class="home-card" id="goDryer">
+          <span class="home-card-icon">&#127788;&#65039;</span>
+          <span class="home-card-title">Dryer Team</span>
+          <span class="home-card-desc">Manage dryer team &amp; salary</span>
+        </button>
+        <button class="home-card soon" id="goStore">
+          <span class="home-card-icon">&#127974;&#65039;</span>
+          <span class="home-card-title">Store</span>
+          <span class="home-card-desc">Stock &amp; store management</span>
+        </button>
+        <button class="home-card" id="goLoan">
+          <span class="home-card-icon">&#128176;</span>
+          <span class="home-card-title">Loan</span>
+          <span class="home-card-desc">Loan records &amp; transactions</span>
+        </button>
+        <button class="home-card" id="goSalary">
+          <span class="home-card-icon">&#128181;</span>
+          <span class="home-card-title">Salary</span>
+          <span class="home-card-desc">Salary records &amp; payments</span>
+        </button>
+        <button class="home-card" id="goMonthReport">
+          <span class="home-card-icon">&#128197;</span>
+          <span class="home-card-title">Month Report</span>
+          <span class="home-card-desc">Monthly report &amp; summary</span>
+        </button>
+        <button class="home-card home-card-wide" id="goDashboard">
+          <span class="home-card-icon">&#128202;</span>
+          <span class="home-card-textwrap">
+            <span class="home-card-title">Dashboard</span>
+            <span class="home-card-desc">Overview &amp; analytics at a glance</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="home-footer-banner no-print">&#127811; Quality Products, Trusted by Nature &#127811;</div>
+      <div class="home-bottom-nav-spacer no-print"></div>
+
+      <nav class="home-bottom-nav no-print">
+        <button class="home-nav-item active" id="homeNavHome"><span class="home-nav-icon">&#127968;</span>Home</button>
+        <button class="home-nav-item" id="homeNavReports"><span class="home-nav-icon">&#128196;</span>Reports</button>
+        <button class="home-nav-fab" id="homeNavAdd" aria-label="Quick add">+</button>
+        <button class="home-nav-item" id="homeNavNotif"><span class="home-nav-icon">&#128276;</span>Notifications</button>
+        <button class="home-nav-item" id="homeNavProfile"><span class="home-nav-icon">&#128100;</span>Profile</button>
+      </nav>
     </div>
 
     <!-- ===== DAILY EXPENSES ===== -->
@@ -724,6 +844,7 @@ function showApp(){
     showScreen("homeScreen");
     loadWorkerNamesList();
     loadMachineWorkerNamesList();
+    loadHomeStats();
   }).catch((e)=>{
     alert("Connection error. Check internet.");
   });
@@ -780,8 +901,58 @@ function waitForPendingSaves(){
 
 document.querySelectorAll("[data-home]").forEach(btn=>{
   btn.addEventListener("click", ()=>{
-    waitForPendingSaves().then(()=>showScreen("homeScreen"));
+    waitForPendingSaves().then(()=>{ showScreen("homeScreen"); loadHomeStats(); });
   });
+});
+
+// ---------- HOME SCREEN STATS ----------
+function loadHomeStats(){
+  const mk = monthKey(fmtDate(new Date()));
+  Promise.allSettled([
+    db.collection("expenses").where("month","==",mk).get(),
+    db.collection("expenses").orderBy("date","desc").limit(1).get(),
+    db.collection("salaryHistory").get(),
+    db.collection("workerLoans").get()
+  ]).then((results)=>{
+    let totalExpenses = 0;
+    if(results[0].status==="fulfilled"){
+      results[0].value.forEach(doc=>{
+        const items = Array.isArray(doc.data().items) ? doc.data().items : [];
+        totalExpenses += items.reduce((s,i)=>s+(Number(i.price)||0),0);
+      });
+    }
+    let netBalance = 0;
+    if(results[1].status==="fulfilled" && !results[1].value.empty){
+      const d = results[1].value.docs[0].data();
+      const dItems = Array.isArray(d.items) ? d.items : [];
+      const added = Array.isArray(d.cashEntries) ? d.cashEntries.reduce((s,c)=>s+(Number(c.amount)||0),0) : (d.cashReceived!=null ? Number(d.cashReceived)||0 : 0);
+      const spent = dItems.reduce((s,i)=>s+(Number(i.price)||0),0);
+      netBalance = (Number(d.opening)||0) + added - spent;
+    }
+    let totalSalaryMonth = 0;
+    if(results[2].status==="fulfilled"){
+      results[2].value.forEach(doc=>{
+        const d = doc.data();
+        if(d.paidDate && monthKey(d.paidDate)===mk) totalSalaryMonth += Number(d.totalSalary)||0;
+      });
+    }
+    let totalLoan = 0;
+    if(results[3].status==="fulfilled"){
+      results[3].value.forEach(doc=>{ totalLoan += Number(doc.data().loanBalance)||0; });
+    }
+    document.getElementById("homeStatExpenses").textContent = "\u20b9" + rupee(totalExpenses);
+    document.getElementById("homeStatBalance").textContent = "\u20b9" + rupee(netBalance);
+    document.getElementById("homeStatSalary").textContent = "\u20b9" + rupee(totalSalaryMonth);
+    document.getElementById("homeStatLoan").textContent = "\u20b9" + rupee(totalLoan);
+  }).catch(()=>{});
+}
+
+document.getElementById("homeNavReports").addEventListener("click", ()=>{
+  waitForPendingSaves().then(()=>{ showScreen("monthReportSection"); loadMonthReport(); });
+});
+document.getElementById("homeNavAdd").addEventListener("click", ()=>{
+  showScreen("expensesSection");
+  if(!expensesLoadedOnce){ expensesLoadedOnce = true; loadDay(selectedDate); }
 });
 
 let expensesLoadedOnce = false;
