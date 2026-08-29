@@ -508,6 +508,7 @@
             <div class="save-note no-print" id="mtSalarySaveNote"></div>
             <div class="actions no-print">
               <button class="btn-export" id="mtPaySalaryBtn" style="flex:1;">&#128181; Pay Salary (mark as paid)</button>
+              <button class="btn-clear" id="mtSalaryClearBtn">&#8635; Delete</button>
             </div>
           </div>
 
@@ -1536,6 +1537,29 @@ document.getElementById("mtPaySalaryBtn").addEventListener("click", ()=>{
     loadMachineTeamSalary();
   }).catch(()=>{
     note.textContent = "Couldn't save. Check internet.";
+  });
+});
+
+document.getElementById("mtSalaryClearBtn").addEventListener("click", ()=>{
+  const note = document.getElementById("mtSalarySaveNote");
+  const salaryNames = Object.keys(mtSalaryAggCache.map);
+  const foodNames = Object.keys(mtFoodAggCache.map);
+  if(salaryNames.length===0 && foodNames.length===0){
+    note.textContent = "Nothing to clear.";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    return;
+  }
+  if(!confirm("Ithu Machine Team-oda ippo irukka salary + food cash list-a delete pannidum (History-la save aagaadhu). Confirm pannunga.")) return;
+  note.textContent = "Clearing...";
+  Promise.all([
+    paySalaryTeam("machineTeam", mtSalaryAggCache, "salary"),
+    payFoodCash(mtFoodAggCache)
+  ]).then(()=>{
+    note.textContent = "Cleared.";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    loadMachineTeamSalary();
+  }).catch(()=>{
+    note.textContent = "Couldn't clear. Check internet.";
   });
 });
 
