@@ -169,9 +169,20 @@
     .mt-card-head .sec-name, .mt-card-head .sec-balance { font-size:20px !important; }
     .person-row { font-size:18px !important; }
     .datenav span, .cashbox div { font-size:16px !important; }
-    .dw-input { border:none !important; font-size:16px !important; padding:4px 2px !important; }
-    .dw-block { box-shadow:none !important; page-break-inside:avoid; }
-    .dw-row-num { font-size:14px !important; }
+    .card:has(#dryerWeightSection[style*="block"]) { padding:16px !important; }
+    #dryerWeightSection .section-header img { width:36px !important; height:36px !important; }
+    #dryerWeightSection .section-title { font-size:18px !important; }
+    #dryerWeightSection .datenav { margin-bottom:6px !important; }
+    #dwBlocksContainer { column-count:2; column-gap:16px; }
+    .dw-block { border:1px solid #ccc !important; box-shadow:none !important; page-break-inside:avoid; break-inside:avoid; padding:6px 8px !important; margin-bottom:8px !important; border-radius:4px !important; background:none !important; }
+    .dw-row { margin-bottom:2px !important; gap:6px !important; }
+    .dw-row-num { font-size:10px !important; width:16px !important; }
+    .dw-input { border:none !important; font-size:11px !important; padding:1px 2px !important; }
+    .dw-subtotal-line { margin:1px 0 !important; letter-spacing:0 !important; font-size:9px !important; }
+    .dw-subtotal-row { padding-top:0 !important; }
+    .dw-subtotal-row .label { font-size:10px !important; }
+    .dw-subtotal-val { font-size:11px !important; }
+    #dryerWeightSection .totals .label, #dryerWeightSection .totals .val { font-size:16px !important; }
   }
   /* ===== DRYER TEAM (redesigned: KG is the hero, weekly salary is prominent, food cash stays quiet) ===== */
   .dt-field-label { font-size:11px; font-weight:700; color:#8A7A5E; text-transform:uppercase; letter-spacing:0.05em; margin:16px 0 6px; }
@@ -646,8 +657,8 @@
         <button class="btn-export" id="dwPrintBtn">&#128424; Print</button>
       </div>
 
-      <h3 class="sub-title display" style="margin-top:24px;">Previous Records</h3>
-      <div id="dwRecordsList"></div>
+      <h3 class="sub-title display no-print" style="margin-top:24px;">Previous Records</h3>
+      <div id="dwRecordsList" class="no-print"></div>
     </div>
 
     <!-- ===== STORE (placeholder) ===== -->
