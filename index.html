@@ -322,7 +322,7 @@
         <button class="home-card" id="goDryerWeight">
           <span class="home-card-icon">&#9878;&#65039;</span>
           <span class="home-card-title">Dryer Weight</span>
-          <span class="home-card-desc">Log kaaya kg, day &amp; month total</span>
+          <span class="home-card-desc">Log kaaya kg &amp; day total</span>
         </button>
         <button class="home-card soon" id="goStore">
           <span class="home-card-icon">&#127974;&#65039;</span>
@@ -633,14 +633,17 @@
 
       <div id="dwBlocksContainer"></div>
 
-      <div class="totals" style="margin-bottom:16px;">
+      <div class="totals" style="margin-bottom:14px;">
         <div class="line"><span class="label">Day Total &raquo;&raquo;</span><span class="val mono" id="dwDayTotal" style="color:#3B6B35;">0.00 kg</span></div>
-      </div>
-      <div class="totals">
-        <div class="line"><span class="label">Month Total &raquo;&raquo;</span><span class="val mono" id="dwMonthTotal" style="color:#B5651D;">0.00 kg</span></div>
       </div>
 
       <div class="save-note no-print" id="dwSaveNote"></div>
+      <div class="actions no-print">
+        <button class="btn-export" id="dwSaveBtn" style="flex:1;">&#128190; Save</button>
+      </div>
+
+      <h3 class="sub-title display" style="margin-top:24px;">Previous Records</h3>
+      <div id="dwRecordsList"></div>
     </div>
 
     <!-- ===== STORE (placeholder) ===== -->
@@ -1034,6 +1037,7 @@ document.getElementById("goDryerWeight").addEventListener("click", ()=>{
   if(!dwLoadedOnce){
     dwLoadedOnce = true;
     dwLoadDay(dwSelectedDate);
+    dwLoadRecords();
   }
 });
 let loanLoadedOnce = false;
@@ -2649,7 +2653,6 @@ function loadLoanPage(){
 let dwLoadedOnce = false;
 let dwSelectedDate = fmtDate(new Date());
 let dwPersistPromise = Promise.resolve();
-let dwSaveTimer = null;
 
 function dwLoadDay(dateStr){
   document.getElementById("dwNiceDate").textContent = fmtNice(dateStr);
@@ -2660,7 +2663,6 @@ function dwLoadDay(dateStr){
   }).catch(()=>{
     dwRenderInitial([]);
   });
-  dwLoadMonthTotal(monthKey(dateStr));
 }
 
 function dwSlotCountFor(n){
@@ -2737,37 +2739,6 @@ function dwCollectValues(){
   return compact;
 }
 
-function dwScheduleSave(){
-  const note = document.getElementById("dwSaveNote");
-  note.textContent = "Saving...";
-  if(dwSaveTimer) clearTimeout(dwSaveTimer);
-  dwSaveTimer = setTimeout(()=>{
-    const values = dwCollectValues();
-    dwPersistPromise = db.collection("dryerWeight").doc(dwSelectedDate).set({
-      date: dwSelectedDate,
-      month: monthKey(dwSelectedDate),
-      values
-    }).then(()=>{
-      note.textContent = "Saved";
-      setTimeout(()=>{ note.textContent=""; }, 1200);
-      dwLoadMonthTotal(monthKey(dwSelectedDate));
-    }).catch(()=>{
-      note.textContent = "Couldn't save. Check internet.";
-    });
-  }, 600);
-}
-
-function dwLoadMonthTotal(mk){
-  db.collection("dryerWeight").where("month","==",mk).get().then((snap)=>{
-    let total = 0;
-    snap.forEach(doc=>{
-      const vals = Array.isArray(doc.data().values) ? doc.data().values : [];
-      total += vals.reduce((s,v)=>s+(Number(v)||0),0);
-    });
-    document.getElementById("dwMonthTotal").textContent = total.toFixed(2) + " kg";
-  }).catch(()=>{});
-}
-
 document.getElementById("dwBlocksContainer").addEventListener("input", (ev)=>{
   if(!ev.target.classList.contains("dw-input")) return;
   const idx = Number(ev.target.dataset.idx);
@@ -2775,20 +2746,91 @@ document.getElementById("dwBlocksContainer").addEventListener("input", (ev)=>{
   dwUpdateBlockSubtotal(blockIndex);
   dwUpdateDayTotal();
   dwMaybeAddBlock(blockIndex);
-  dwScheduleSave();
 });
 
-document.getElementById("dwPrevDay").addEventListener("click", ()=>{
-  dwPersistPromise.then(()=>{
-    const d = new Date(dwSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
-    dwSelectedDate = fmtDate(d); dwLoadDay(dwSelectedDate);
+document.getElementById("dwSaveBtn").addEventListener("click", ()=>{
+  const note = document.getElementById("dwSaveNote");
+  const values = dwCollectValues();
+  if(values.length===0){
+    note.textContent = "Weight entha value-um podunga.";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    return;
+  }
+  note.textContent = "Saving...";
+  dwPersistPromise = db.collection("dryerWeight").doc(dwSelectedDate).set({
+    date: dwSelectedDate,
+    month: monthKey(dwSelectedDate),
+    values
+  }).then(()=>{
+    note.textContent = "Saved!";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    dwLoadRecords();
+  }).catch(()=>{
+    note.textContent = "Couldn't save. Check internet.";
   });
 });
-document.getElementById("dwNextDay").addEventListener("click", ()=>{
-  dwPersistPromise.then(()=>{
-    const d = new Date(dwSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
-    dwSelectedDate = fmtDate(d); dwLoadDay(dwSelectedDate);
+
+function dwLoadRecords(){
+  const container = document.getElementById("dwRecordsList");
+  container.innerHTML = '<p class="empty">Loading records...</p>';
+  db.collection("dryerWeight").get().then((snap)=>{
+    const records = [];
+    snap.forEach(doc=>{
+      const vals = Array.isArray(doc.data().values) ? doc.data().values : [];
+      if(vals.length===0) return;
+      const total = vals.reduce((s,v)=>s+(Number(v)||0),0);
+      records.push({date:doc.id, total, count:vals.length});
+    });
+    records.sort((a,b)=> b.date.localeCompare(a.date));
+    if(records.length===0){
+      container.innerHTML = '<p class="empty">Innum record onnum illa.</p>';
+      return;
+    }
+    container.innerHTML = records.map(r=>`
+      <div class="dt-record">
+        <div class="dt-record-top">
+          <div class="dt-kg-hero">${r.total.toFixed(2)}<span class="unit">KG</span></div>
+          <div class="dt-record-actions">
+            <button class="dt-icon-btn no-print" data-editdate="${r.date}" title="Edit">&#9998;</button>
+            <button class="dt-icon-btn danger no-print" data-deldate="${r.date}" title="Delete">&#128465;</button>
+          </div>
+        </div>
+        <div class="dt-record-date">${fmtNice(r.date)} &middot; ${r.count} entries</div>
+      </div>
+    `).join("");
+    container.querySelectorAll("[data-editdate]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        dwSelectedDate = btn.dataset.editdate;
+        dwLoadDay(dwSelectedDate);
+        document.getElementById("dryerWeightSection").scrollIntoView({behavior:"smooth", block:"start"});
+      });
+    });
+    container.querySelectorAll("[data-deldate]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const dateToDelete = btn.dataset.deldate;
+        if(!confirm(`${fmtNice(dateToDelete)} oda weight record-a delete pannalama? Ithu thirumba edukka mudiyaadhu.`)) return;
+        db.collection("dryerWeight").doc(dateToDelete).delete().then(()=>{
+          if(dwSelectedDate === dateToDelete){
+            dwLoadDay(dwSelectedDate);
+          }
+          dwLoadRecords();
+        }).catch(()=>{
+          alert("Couldn't delete. Check internet.");
+        });
+      });
+    });
+  }).catch(()=>{
+    container.innerHTML = '<p class="empty">Couldn\u2019t load. Check internet.</p>';
   });
+}
+
+document.getElementById("dwPrevDay").addEventListener("click", ()=>{
+  const d = new Date(dwSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
+  dwSelectedDate = fmtDate(d); dwLoadDay(dwSelectedDate);
+});
+document.getElementById("dwNextDay").addEventListener("click", ()=>{
+  const d = new Date(dwSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
+  dwSelectedDate = fmtDate(d); dwLoadDay(dwSelectedDate);
 });
 
 // ---------- SALARY PAGE ----------
