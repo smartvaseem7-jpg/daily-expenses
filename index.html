@@ -2353,6 +2353,8 @@ function loadDryerRecords(){
         const morning = Number(e.morning)||0;
         const lunch = Number(e.lunch)||0;
         const evening = Number(e.evening)||0;
+        const entryTeam = e.team || "";
+        if(entryTeam==="Machine Team") return; // Machine Team's own food cash belongs on their page only
         if(!e.paid && e.name && e.name.trim() && (morning>0||lunch>0||evening>0)){
           dtFoodCashCache.push({date:doc.id, name:e.name.trim(), morning, lunch, evening, total:morning+lunch+evening});
         }
