@@ -541,6 +541,10 @@
               <div class="line"><span class="label">Food cash total &raquo;&raquo;</span><span class="val mono" id="mtFoodTotalVal" style="color:#B5651D;"></span></div>
             </div>
 
+            <div class="totals" style="margin-top:6px;">
+              <div class="line"><span class="label">Grand Total &raquo;&raquo;</span><span class="val mono" id="mtGrandTotalVal" style="color:#4A3B28;font-weight:900;"></span></div>
+            </div>
+
             <div class="save-note no-print" id="mtSalarySaveNote"></div>
             <div class="actions no-print">
               <button class="btn-export" id="mtPaySalaryBtn" style="flex:1;">&#128181; Pay Salary (mark as paid)</button>
@@ -1587,6 +1591,9 @@ function loadMachineTeamSalary(){
     mtFoodAggCache = computeFoodCashAccumulation(fcSnap, "onlyMachine");
     renderSalaryTable("mtSalaryList","mtSalaryTotalVal", mtSalaryAggCache.map, "mtpage");
     renderFoodCashTable("mtFoodList","mtFoodTotalVal", mtFoodAggCache.map, "mtSalarySaveNote", loadMachineTeamSalary);
+    const salaryTotal = Object.values(mtSalaryAggCache.map).reduce((s,i)=>s+i.totalSalary,0);
+    const foodTotal = Object.values(mtFoodAggCache.map).reduce((s,i)=>s+i.total,0);
+    document.getElementById("mtGrandTotalVal").textContent = rupee(salaryTotal+foodTotal);
   }).catch(()=>{
     document.getElementById("mtSalaryList").innerHTML = '<p class="empty">Couldn\u2019t load. Check internet and try again.</p>';
   });
