@@ -184,6 +184,14 @@
     .dw-subtotal-val { font-size:11px !important; }
     #dryerWeightSection .totals .label { font-size:18px !important; color:#000 !important; }
     #dryerWeightSection .totals .val { font-size:36px !important; font-weight:900 !important; color:#1F3D24 !important; }
+
+    /* Machine Team uses a horizontal swipe carousel on screen; when printing, force
+       only the relevant page to show full-width instead of the half-width swipe track. */
+    body.print-mt-day .mt-swipe-viewport, body.print-mt-salary .mt-swipe-viewport { overflow:visible !important; }
+    body.print-mt-day .mt-swipe-track, body.print-mt-salary .mt-swipe-track { display:block !important; width:100% !important; transform:none !important; }
+    body.print-mt-day .mt-swipe-page, body.print-mt-salary .mt-swipe-page { width:100% !important; padding:0 !important; }
+    body.print-mt-salary #mtSwipePage1 { display:none !important; }
+    body.print-mt-day #mtSwipePage2 { display:none !important; }
   }
   /* ===== DRYER TEAM (redesigned: KG is the hero, weekly salary is prominent, food cash stays quiet) ===== */
   .dt-field-label { font-size:11px; font-weight:700; color:#8A7A5E; text-transform:uppercase; letter-spacing:0.05em; margin:16px 0 6px; }
@@ -537,6 +545,9 @@
             <div class="actions no-print">
               <button class="btn-export" id="mtPaySalaryBtn" style="flex:1;">&#128181; Pay Salary (mark as paid)</button>
               <button class="btn-clear" id="mtSalaryClearBtn">&#8635; Delete</button>
+            </div>
+            <div class="actions no-print">
+              <button class="btn-export" id="mtSalaryPrintBtn" style="flex:1;">&#128424; Print</button>
             </div>
           </div>
 
@@ -1403,7 +1414,14 @@ function renderMonth(){
 
 document.getElementById("exportDayBtn").addEventListener("click", ()=>window.print());
 document.getElementById("exportMonthBtn").addEventListener("click", ()=>window.print());
-document.getElementById("mtExportBtn").addEventListener("click", ()=>window.print());
+document.getElementById("mtExportBtn").addEventListener("click", ()=>{
+  document.body.classList.add("print-mt-day");
+  window.print();
+});
+window.addEventListener("afterprint", ()=>{
+  document.body.classList.remove("print-mt-day");
+  document.body.classList.remove("print-mt-salary");
+});
 document.getElementById("mtClearBtn").addEventListener("click", ()=>{
   mtWorkers = [];
   SECTION_KEYS.forEach(k=>{
@@ -1573,6 +1591,11 @@ function loadMachineTeamSalary(){
     document.getElementById("mtSalaryList").innerHTML = '<p class="empty">Couldn\u2019t load. Check internet and try again.</p>';
   });
 }
+
+document.getElementById("mtSalaryPrintBtn").addEventListener("click", ()=>{
+  document.body.classList.add("print-mt-salary");
+  window.print();
+});
 
 document.getElementById("mtPaySalaryBtn").addEventListener("click", ()=>{
   const note = document.getElementById("mtSalarySaveNote");
