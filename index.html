@@ -67,7 +67,8 @@
   .home-nav-icon { font-size:18px; }
   .home-nav-fab { width:46px; height:46px; border-radius:50%; background:#4C8C46; color:#fff; border:3px solid #1F3D24; font-size:22px; font-weight:700; cursor:pointer; margin-top:-24px; box-shadow:0 4px 10px rgba(0,0,0,0.3); flex-shrink:0; }
   .section-header { position:relative; z-index:1; display:flex; align-items:center; gap:10px; margin-bottom:14px; }
-  .back-btn { border:none; background:#E4D8B4; border-radius:6px; padding:8px 12px; font-size:13px; cursor:pointer; color:#4A3B28; font-weight:600; }
+  .back-btn { border:none; background:#1F3D24; border-radius:999px; padding:10px 18px; font-size:14px; cursor:pointer; color:#F3ECD9; font-weight:700; }
+  .lock-btn { border:1px solid #C9BC9C; background:#fff; border-radius:999px; padding:8px 16px; color:#4A3B28; font-size:13px; cursor:pointer; font-weight:600; }
   .section-title { font-family:'Fraunces',serif; font-size:19px; font-weight:900; color:#3B6B35; margin:0; }
   .sub-title { font-family:'Fraunces',serif; font-size:15px; color:#4A3B28; margin:14px 0 6px; }
   nav.tabs { position:relative; z-index:1; display:flex; gap:8px; margin-bottom:14px; }
@@ -83,8 +84,8 @@
   .ledger-row .iname { flex:1; font-size:16px; font-weight:700; }
   .ledger-row .icat { font-size:11px; color:#8A7A5E; white-space:nowrap; }
   .ledger-row .iprice { font-size:16px; font-weight:700; min-width:50px; text-align:right; }
-  .ledger-row .idel { border:none; background:none; color:#B33A3A; cursor:pointer; padding:2px; font-size:15px; }
-  .ledger-row .iedit { border:none; background:none; color:#4A3B28; cursor:pointer; padding:2px; font-size:15px; }
+  .idel { border:none; background:none; color:#B33A3A; cursor:pointer; padding:2px; font-size:15px; }
+  .iedit { border:none; background:none; color:#4A3B28; cursor:pointer; padding:2px; font-size:15px; }
   .edit-row { display:flex; gap:6px; align-items:center; padding:9px 2px; border-bottom:1px dotted #B8A87E; }
   .edit-row input { flex:1; min-width:60px; padding:6px 8px; border-radius:6px; border:1px solid #C9BC9C; font-size:13px; }
   .edit-row .isave { border:none; background:#3B6B35; color:white; border-radius:6px; padding:6px 10px; font-size:12px; font-weight:600; cursor:pointer; }
@@ -101,15 +102,14 @@
   .totals .val { font-size:18px; font-weight:700; }
   .actions { display:flex; gap:8px; margin-top:18px; }
   .actions button { display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 0; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; }
-  .btn-export { flex:1; border:1px solid #4A3B28; background:transparent; color:#4A3B28; }
-  .btn-clear { border:1px solid #C9BC9C; background:transparent; color:#6B5B45; padding:10px 12px; }
+  .btn-export { flex:1; border:1px solid #4A3B28; background:transparent; color:#4A3B28; border-radius:999px; }
+  .btn-clear { border:1px solid #C9BC9C; background:transparent; color:#6B5B45; padding:10px 12px; border-radius:999px; }
   .empty { font-size:13px; color:#9A8B6E; text-align:center; margin:0 0 10px; }
   .sub-label { font-size:11px; font-weight:700; color:#8A7A5E; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
   .section-divider { border-top:2px solid #C9BC9C; margin:14px 0 12px; }
   .month-row { display:flex; justify-content:space-between; padding:9px 2px; font-size:13px; border-bottom:1px dotted #B8A87E; }
   .month-total { display:flex; justify-content:space-between; padding:12px 2px; font-size:14px; font-weight:700; border-top:1px solid #C9BC9C; margin-top:4px; }
   .save-note { font-size:11px; color:#9A8B6E; text-align:center; margin-bottom:6px; }
-  .lock-btn { border:none; background:none; color:#8A7A5E; font-size:12px; cursor:pointer; text-decoration:underline; }
   #lockScreen {
     position:fixed; inset:0; z-index:100;
     display:flex; align-items:flex-end; justify-content:center;
@@ -135,7 +135,37 @@
   .mt-card-head .sec-balance { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700; color:#3B6B35; }
   .mt-opening { font-size:14px; color:#4A3B28; font-weight:600; margin-bottom:6px; }
   .person-row { display:flex; justify-content:space-between; padding:6px 2px; font-size:13px; color:#4A3B28; }
-  /* ===== DASHBOARD (distinct professional style) ===== */
+  /* ===== DAILY EXPENSES (redesigned) ===== */
+  #expensesSection .exp-tagline { font-size:12px; color:#6B5B45; margin:-6px 0 16px 78px; }
+  #expensesSection .tabs { background:#EDE6D2; border-radius:999px; padding:4px; border:none; }
+  #expensesSection .tabs button { border:none; border-radius:999px; padding:10px 0; font-family:'Fraunces',serif; font-weight:700; font-size:14px; color:#3B6B35; background:transparent; }
+  #expensesSection .tabs button.active { background:#1F3D24; color:#F3ECD9; }
+  #expensesSection .exp-datenav { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:14px; }
+  #expensesSection .exp-datenav button { width:34px; height:34px; border-radius:50%; border:none; background:#DCE9D5; color:#2E5233; font-size:15px; cursor:pointer; }
+  #expensesSection .exp-date-pill { background:#fff; border:1px solid #E4D8B4; border-radius:999px; padding:9px 18px; font-size:13px; color:#4A3B28; font-weight:600; display:inline-flex; align-items:center; gap:6px; }
+  #expensesSection .exp-hero { background:linear-gradient(150deg,#1F3D24,#2E5233 75%); border-radius:20px; padding:16px 16px 14px; margin-bottom:14px; color:#F3ECD9; }
+  #expensesSection .exp-hero-top { display:flex; align-items:center; gap:12px; }
+  #expensesSection .exp-hero-icon { width:52px; height:52px; border-radius:50%; background:#F3ECD9; display:flex; align-items:center; justify-content:center; font-size:24px; position:relative; flex-shrink:0; }
+  #expensesSection .exp-hero-icon .badge { position:absolute; bottom:-2px; right:-2px; width:18px; height:18px; border-radius:50%; background:#4C8C46; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; border:2px solid #1F3D24; }
+  #expensesSection .exp-hero-mid { flex:1; text-align:center; }
+  #expensesSection .exp-hero-label { font-size:11px; letter-spacing:0.06em; font-weight:700; color:#CFE0C8; }
+  #expensesSection .exp-hero-amount { font-size:26px; font-weight:800; margin-top:2px; }
+  #expensesSection .exp-edit-btn { border:1px solid #6FA366; background:transparent; color:#F3ECD9; border-radius:999px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; flex-shrink:0; }
+  #expensesSection .exp-hero-sub { font-size:11px; color:#CFE0C8; text-align:center; margin-top:8px; }
+  #expensesSection .exp-cashin-row { background:#EAF1E4; border-radius:16px; padding:12px 14px; display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  #expensesSection .exp-cashin-icon { width:36px; height:36px; border-radius:50%; background:#3B6B35; color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  #expensesSection .exp-cashin-label { font-size:10px; font-weight:700; color:#6B8E63; letter-spacing:0.04em; }
+  #expensesSection .exp-cashin-title { font-family:'Fraunces',serif; font-weight:800; font-size:14px; color:#2E5233; }
+  #expensesSection .exp-cashin-amt { margin-left:auto; font-family:'IBM Plex Mono',monospace; font-weight:700; color:#3B6B35; font-size:15px; }
+  #expensesSection .exp-section-label { display:flex; align-items:center; gap:8px; font-family:'Fraunces',serif; font-weight:800; font-size:14px; color:#3B6B35; margin:16px 0 8px; }
+  #expensesSection .exp-section-label .ico { width:26px; height:26px; border-radius:8px; background:#EAF1E4; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  #expensesSection .exp-row { background:#fff; border:1px solid #EFE9D8; border-radius:12px; padding:9px 10px; display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  #expensesSection .exp-row-icon { width:34px; height:34px; border-radius:50%; background:#F3ECD9; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  #expensesSection .exp-row .iname { font-size:13.5px; font-weight:700; color:#2E2418; }
+  #expensesSection .exp-row .iprice { font-size:14px; font-weight:700; color:#2E2418; }
+  #expensesSection .exp-totals-box { background:#EDE6D2; border-radius:14px; padding:12px 14px; margin-bottom:14px; border-top:none; display:flex; align-items:center; gap:12px; }
+  #expensesSection .exp-totals-icon { width:34px; height:34px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  #expensesSection .exp-totals-lines { flex:1; }
   #dashboardSection { margin: -26px -22px; }
   .dash-header { background: linear-gradient(135deg, #1F3D24, #2E5233); padding: 20px 18px; display:flex; align-items:center; gap:12px; border-radius:14px 14px 0 0; }
   .dash-title { color:#fff; font-family:'Fraunces',serif; font-size:16px; font-weight:900; letter-spacing:0.02em; }
@@ -169,6 +199,13 @@
     .mt-card-head .sec-name, .mt-card-head .sec-balance { font-size:20px !important; }
     .person-row { font-size:18px !important; }
     .datenav span, .cashbox div { font-size:16px !important; }
+    #expensesSection .exp-hero { background:none !important; border:2px solid #1F3D24 !important; padding:10px 12px !important; }
+    #expensesSection .exp-hero-label, #expensesSection .exp-hero-amount, #expensesSection .exp-hero-sub { color:#1F3D24 !important; }
+    #expensesSection .exp-hero-icon { display:none !important; }
+    #expensesSection .exp-cashin-row, #expensesSection .exp-row { border:1px solid #ccc !important; }
+    #expensesSection .exp-cashin-title, #expensesSection .exp-cashin-amt, #expensesSection .exp-cashin-label { color:#000 !important; }
+    #expensesSection .exp-totals-box { background:none !important; border:1px solid #ccc !important; }
+    #expensesSection .exp-date-pill { border:1px solid #999 !important; }
     .card:has(#dryerWeightSection[style*="block"]) { padding:16px !important; }
     #dryerWeightSection .section-header img { width:36px !important; height:36px !important; }
     #dryerWeightSection .section-title { font-size:18px !important; }
@@ -393,6 +430,7 @@
         <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
         <h2 class="section-title">DAILY EXPENSES</h2>
       </div>
+      <div class="exp-tagline no-print">Track your daily income &amp; expenses</div>
 
       <nav class="tabs no-print">
         <button id="tabDay" class="active">Day</button>
@@ -400,24 +438,24 @@
       </nav>
 
       <div id="dayView">
-        <div class="datenav">
+        <div class="exp-datenav">
           <button id="prevDay" class="no-print">&#8592;</button>
-          <span class="mono" id="niceDate" style="font-size:13px;color:#6B5B45;"></span>
+          <span class="exp-date-pill">&#128197; <span class="mono" id="niceDate"></span></span>
           <button id="nextDay" class="no-print">&#8594;</button>
         </div>
 
-        <div class="cashbox">
-          <label>Total cash received</label>
-          <div class="row">
-            <span class="mono" style="font-size:20px;color:#3B6B35;">&#8377;</span>
-            <span class="mono" id="cashTotalDisplay" style="font-size:22px;font-weight:700;"></span>
+        <div class="exp-hero">
+          <div class="exp-hero-top">
+            <div class="exp-hero-icon">&#128092;<span class="badge">&#10003;</span></div>
+            <div class="exp-hero-mid">
+              <div class="exp-hero-label">TOTAL CASH RECEIVED</div>
+              <div class="exp-hero-amount mono">&#8377; <span id="cashTotalDisplay"></span></div>
+            </div>
+            <button class="exp-edit-btn no-print" id="toggleEditMode">&#9998; Edit</button>
           </div>
-          <div style="font-size:12px;color:#6B5B45;margin-top:4px;">Yesterday <span class="mono" id="openingDisplay"></span> + Added today <span class="mono" id="addedDisplay"></span></div>
+          <div class="exp-hero-sub">Yesterday <span class="mono" id="openingDisplay"></span> + Added today <span class="mono" id="addedDisplay"></span></div>
         </div>
 
-        <button class="btn-clear no-print" id="toggleEditMode" style="width:100%;margin-bottom:14px;">&#9998; Edit</button>
-
-        <div class="sub-label">Cash in</div>
         <div id="cashEntriesList"></div>
         <div class="form-row no-print" id="cashFormRow" style="display:none;">
           <input type="text" placeholder="Label (e.g. Boss cash)" id="cashLabelInput" style="flex:2;min-width:110px;" />
@@ -425,8 +463,7 @@
           <button class="fadd" id="cashAddBtn">+ Add</button>
         </div>
 
-        <div class="section-divider"></div>
-        <div class="sub-label">Expenses</div>
+        <div class="exp-section-label"><span class="ico">&#127974;&#65039;</span>Expenses</div>
         <div id="itemsList"></div>
 
         <div class="form-row no-print" id="itemFormRow" style="display:none;">
@@ -436,9 +473,12 @@
         </div>
         <div class="save-note no-print" id="saveNote"></div>
 
-        <div class="totals">
-          <div class="line"><span class="label">Total cash &raquo;&raquo;</span><span class="val mono" id="totalCashVal" style="color:#B5651D;"></span></div>
-          <div class="line"><span class="label">Balance cash &raquo;&raquo;</span><span class="val mono" id="balanceVal"></span></div>
+        <div class="exp-totals-box">
+          <div class="exp-totals-icon">&#128290;</div>
+          <div class="exp-totals-lines totals" style="border-top:none;padding-top:0;">
+            <div class="line"><span class="label">Total cash &raquo;&raquo;</span><span class="val mono" id="totalCashVal" style="color:#B5651D;"></span></div>
+            <div class="line"><span class="label">Balance cash &raquo;&raquo;</span><span class="val mono" id="balanceVal"></span></div>
+          </div>
         </div>
 
         <div class="actions no-print">
@@ -1185,6 +1225,23 @@ let editingCashId = null;
 let editingItemId = null;
 let editMode = false;
 
+function expItemIcon(name){
+  const n = (name||"").toLowerCase();
+  if(/belt|dress|cloth|shirt|pant|uniform/.test(n)) return "&#128084;";
+  if(/mask|medicine|tablet|hospital|doctor|pharma/.test(n)) return "&#128138;";
+  if(/glove/.test(n)) return "&#129508;";
+  if(/morning|breakfast/.test(n)) return "&#127859;";
+  if(/lunch/.test(n)) return "&#127858;";
+  if(/evening|dinner|meal|night|male/.test(n)) return "&#127860;";
+  if(/tea|coffee/.test(n)) return "&#9749;";
+  if(/salary|wage|worker|pay/.test(n)) return "&#128092;";
+  if(/petrol|diesel|fuel|vehicle|bike|van|lorry|transport/.test(n)) return "&#9981;&#65039;";
+  if(/electric|current|bill/.test(n)) return "&#128161;";
+  if(/repair|service|machine|spare/.test(n)) return "&#128295;";
+  if(/rent/.test(n)) return "&#127968;";
+  return "&#128179;";
+}
+
 function renderDay(){
   document.getElementById("niceDate").textContent = fmtNice(selectedDate);
   document.getElementById("openingDisplay").textContent = rupee(openingCash);
@@ -1201,9 +1258,9 @@ function renderDay(){
       cashList.appendChild(row);
     } else {
       const row = document.createElement("div");
-      row.className="ledger-row display";
+      row.className="exp-cashin-row display";
       const icons = editMode ? `<button class="iedit no-print" data-editid="${c.id}">&#9998;</button><button class="idel no-print" data-id="${c.id}">&#128465;</button>` : "";
-      row.innerHTML = `<div class="iname">${escapeHtml(label.toUpperCase())}</div><div class="iprice mono" style="color:#3B6B35;">+${rupee(c.amount)}</div>${icons}`;
+      row.innerHTML = `<div class="exp-cashin-icon">&#11015;&#65039;</div><div style="flex:1;"><div class="exp-cashin-label">CASH IN</div><div class="exp-cashin-title">${escapeHtml(label.toUpperCase())}</div></div><div class="exp-cashin-amt">+${rupee(c.amount)}</div>${icons}`;
       cashList.appendChild(row);
     }
   });
@@ -1250,9 +1307,9 @@ function renderDay(){
         list.appendChild(row);
       } else {
         const row = document.createElement("div");
-        row.className="ledger-row display";
+        row.className="exp-row display";
         const icons = editMode ? `<button class="iedit no-print" data-editid="${it.id}">&#9998;</button><button class="idel no-print" data-id="${it.id}">&#128465;</button>` : "";
-        row.innerHTML = `<div class="iname">${escapeHtml(it.name.toUpperCase())}</div><div class="iprice mono">${rupee(it.price)}</div>${icons}`;
+        row.innerHTML = `<div class="exp-row-icon">${expItemIcon(it.name)}</div><div class="iname" style="flex:1;">${escapeHtml(it.name.toUpperCase())}</div><div class="iprice mono">${rupee(it.price)}</div>${icons}`;
         list.appendChild(row);
       }
     });
