@@ -348,6 +348,8 @@
   .dt-week-hero { text-align:center; margin-bottom:16px; }
   .dt-week-total { font-family:'Fraunces',serif; font-weight:900; font-size:34px; color:#3B6B35; line-height:1.1; }
   .dt-week-total-label { font-size:11px; color:#6B5B45; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:2px; }
+  .dt-week-done-btn { width:100%; margin-top:16px; border:none; background:linear-gradient(90deg,#3B6B35,#4C8C46); color:#fff; font-family:'Fraunces',serif; font-weight:800; font-size:15px; padding:14px 0; border-radius:999px; cursor:pointer; box-shadow:0 4px 12px rgba(59,107,53,0.3); }
+  .dt-week-done-btn:active { transform:translateX(2px); }
   .dt-section-label { font-size:12px; font-weight:800; color:#4A3B28; text-transform:uppercase; letter-spacing:0.04em; margin:14px 0 6px; display:flex; justify-content:space-between; align-items:baseline; }
   .dt-section-label .amt { font-family:'IBM Plex Mono',monospace; font-size:14px; color:#3B6B35; }
   .dt-foodcash-card { background:#EFE7D3; border:1px dashed #C9BC9C; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
@@ -859,10 +861,8 @@
         <div class="mt-card-head">
           <span class="sec-name display">This Week</span>
         </div>
-        <div class="datenav" style="margin:0 0 10px;">
-          <button id="dtPrevWeekSummary" class="no-print">&#8592;</button>
+        <div style="text-align:center;margin:0 0 10px;">
           <span class="mono" id="dtSummaryWeekLabel" style="font-size:12px;color:#6B5B45;"></span>
-          <button id="dtNextWeekSummary" class="no-print">&#8594;</button>
         </div>
 
         <div class="dt-week-hero">
@@ -874,6 +874,9 @@
         <div class="section-divider"></div>
         <div class="dt-section-label">Weekly Food Cash <span class="amt" id="dtWeekFoodTotal"></span></div>
         <div id="dtWeekFoodLine"></div>
+
+        <button class="dt-week-done-btn no-print" id="dtWeekDoneBtn">&#9989; Done &mdash; Pay Salary &#8594;</button>
+        <div class="save-note no-print" id="dtWeekDoneNote"></div>
       </div>
 
       <div class="dt-foodcash-card">
@@ -2939,9 +2942,7 @@ function dtRenderWeeklySummary(){
     document.getElementById("dtWeekFoodLine").innerHTML = '<p class="empty" style="margin:4px 0;">No food cash this week.</p>';
     return;
   }
-  if(!dtSummaryWeekKey || !weekKeys.includes(dtSummaryWeekKey)){
-    dtSummaryWeekKey = weekKeys[weekKeys.length-1]; // default to the latest (current) dynamic week
-  }
+  dtSummaryWeekKey = weekKeys[weekKeys.length-1]; // "This Week" always shows the latest dynamic week
   const range = dtWeekDateRange(dtSummaryWeekKey);
   document.getElementById("dtSummaryWeekLabel").textContent = range.start===range.end ? shortFmt(range.start) : `${shortFmt(range.start)} \u2013 ${shortFmt(range.end)}`;
 
@@ -2978,15 +2979,88 @@ function dtRenderWeeklySummary(){
     : '<p class="empty" style="margin:4px 0;">No food cash this week.</p>';
 }
 
-document.getElementById("dtPrevWeekSummary").addEventListener("click", ()=>{
-  const weekKeys = dtDistinctWeekKeys();
-  const idx = weekKeys.indexOf(dtSummaryWeekKey);
-  if(idx>0){ dtSummaryWeekKey = weekKeys[idx-1]; dtRenderWeeklySummary(); }
-});
-document.getElementById("dtNextWeekSummary").addEventListener("click", ()=>{
-  const weekKeys = dtDistinctWeekKeys();
-  const idx = weekKeys.indexOf(dtSummaryWeekKey);
-  if(idx>=0 && idx<weekKeys.length-1){ dtSummaryWeekKey = weekKeys[idx+1]; dtRenderWeeklySummary(); }
+document.getElementById("dtWeekDoneBtn").addEventListener("click", ()=>{
+  const note = document.getElementById("dtWeekDoneNote");
+  if(!dtSummaryWeekKey){
+    note.textContent = "Nothing to pay right now.";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    return;
+  }
+  const weekRecords = dtRecordsCache.filter(r=> (r.weekKey || r.days[0]) === dtSummaryWeekKey);
+  const alreadyFullyPaid = weekRecords.length>0 && weekRecords.every(r=>
+    Array.isArray(r.workers) && r.workers.length>0 && r.workers.every(w=> w.salaryPaid===true)
+  );
+  if(alreadyFullyPaid){
+    note.textContent = "This week is already paid.";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    return;
+  }
+  const range = dtWeekDateRange(dtSummaryWeekKey);
+
+  const salaryByName = {};
+  const daysByName = {};
+  weekRecords.forEach(r=>{
+    r.workers.forEach(w=>{
+      const nm = (w.name||"").trim();
+      if(!nm) return;
+      const amt = w.salaryBalance!=null ? w.salaryBalance : w.share;
+      salaryByName[nm] = (salaryByName[nm]||0) + amt;
+      daysByName[nm] = (daysByName[nm]||0) + 1;
+    });
+  });
+  const foodByName = {};
+  dtFoodCashCache.forEach(e=>{
+    if(e.date>=range.start && e.date<=range.end){
+      foodByName[e.name] = (foodByName[e.name]||0) + e.total;
+    }
+  });
+
+  const salaryNames = Object.keys(salaryByName);
+  const foodNames = Object.keys(foodByName);
+  if(salaryNames.length===0 && foodNames.length===0){
+    note.textContent = "Nothing to pay this week.";
+    setTimeout(()=>{ note.textContent=""; }, 1500);
+    return;
+  }
+
+  note.textContent = "Saving...";
+  const paidDate = fmtDate(new Date());
+  const historyWrites = [];
+  salaryNames.forEach(nm=>{
+    historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team", name:nm, workingDays:daysByName[nm]||0, totalSalary:salaryByName[nm], paidDate}));
+  });
+  foodNames.forEach(nm=>{
+    historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team Food Cash", name:nm, workingDays:0, totalSalary:foodByName[nm], paidDate}));
+  });
+
+  const batchWrites = weekRecords.map(r=>{
+    const updatedWorkers = r.workers.map(w=> w.salaryPaid ? w : {...w, salaryPaid:true});
+    return db.collection("dryerBatches").doc(r.id).update({workers: updatedWorkers});
+  });
+
+  const foodDocDates = new Set();
+  dtFoodCashCache.forEach(e=>{ if(e.date>=range.start && e.date<=range.end) foodDocDates.add(e.date); });
+  const foodWrites = Array.from(foodDocDates).map(dateStr=>
+    db.collection("foodCash").doc(dateStr).get().then(doc=>{
+      if(!doc.exists) return;
+      const arr = Array.isArray(doc.data().entries) ? doc.data().entries : [];
+      const updated = arr.map(e=>{
+        const morning=Number(e.morning)||0, lunch=Number(e.lunch)||0, evening=Number(e.evening)||0;
+        const team = e.team||"";
+        if(team!=="Machine Team" && !e.paid && (morning>0||lunch>0||evening>0)) return {...e, paid:true};
+        return e;
+      });
+      return db.collection("foodCash").doc(dateStr).update({entries:updated});
+    })
+  );
+
+  Promise.all([...batchWrites, ...foodWrites, ...historyWrites]).then(()=>{
+    note.textContent = "Paid \u2014 saved to Salary History!";
+    setTimeout(()=>{ note.textContent=""; }, 2000);
+    loadDryerRecords();
+  }).catch(()=>{
+    note.textContent = "Couldn't save. Check internet.";
+  });
 });
 // ---------- LOAN PAGE (aggregated from Machine Team + Dryer Team) ----------
 function loadLoanPage(){
