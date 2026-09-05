@@ -2481,7 +2481,7 @@ let dtFormDays = []; // array of date strings picked one-by-one for the record b
 let dtKnownWorkerNames = []; // all distinct known worker names, for the tap-chips
 let dtRecordsCache = [];
 let dtRecordsExpanded = new Set();
-let dtSummaryWeekStart = (()=>{ const d = new Date(); const diff = (d.getDay()-6+7)%7; d.setDate(d.getDate()-diff); return d; })(); // Saturday of the currently viewed summary week (weeks run Sat–Fri)
+let dtSummaryWeekKey = null; // weekKey of the dynamic (KG-record-based) week currently shown in "This Week" card
 
 function nameKey(name){ return name.trim().toLowerCase().replace(/\s+/g,"_"); }
 
@@ -2490,11 +2490,44 @@ function dtBatchLabel(sortedDays){
   const fullFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"long", day:"numeric", month:"short"});
   return sortedDays.map(fullFmt).join(", ");
 }
-function dtWeekStartOf(dateStr){ // Saturday on/before this date, so weeks run Sat–Fri
-  const d = new Date(dateStr+"T00:00:00");
-  const diff = (d.getDay() - 6 + 7) % 7;
-  d.setDate(d.getDate()-diff);
-  return fmtDate(d);
+// A "week" is now dynamic: it's a run of contiguous worked days that continues as long as each
+// new record picks up the very next day after the last one, AND that ongoing week hasn't already
+// been fully paid. A gap in days, or a week that's already been paid, starts a fresh week.
+function dtComputeWeekKey(sortedDays){
+  const firstDay = sortedDays[0];
+  const prevDate = new Date(firstDay+"T00:00:00");
+  prevDate.setDate(prevDate.getDate()-1);
+  const prevDayStr = fmtDate(prevDate);
+
+  const adjacent = dtRecordsCache.find(r=>
+    r.id !== dtEditingRecordId &&
+    Array.isArray(r.days) && r.days.length>0 &&
+    r.days[r.days.length-1] === prevDayStr
+  );
+  if(!adjacent) return firstDay; // nothing ends the day before this record starts -> new week
+
+  const candidateWeekKey = adjacent.weekKey || adjacent.days[0];
+  const weekRecords = dtRecordsCache.filter(r=> (r.weekKey || r.days[0]) === candidateWeekKey);
+  const weekFullyPaid = weekRecords.length>0 && weekRecords.every(r=>
+    r.workers.length>0 && r.workers.every(w=> w.salaryPaid===true)
+  );
+  if(weekFullyPaid) return firstDay; // that week is already closed/paid -> start a new one
+  return candidateWeekKey; // still open -> this record continues the same week
+}
+
+function dtDistinctWeekKeys(){
+  const keys = new Set();
+  dtRecordsCache.forEach(r=>{ const k = r.weekKey || r.days[0]; if(k) keys.add(k); });
+  return Array.from(keys).sort(); // "YYYY-MM-DD" strings sort chronologically
+}
+
+function dtWeekDateRange(weekKey){
+  const days = [];
+  dtRecordsCache.forEach(r=>{
+    if((r.weekKey || r.days[0])===weekKey) days.push(...r.days);
+  });
+  days.sort();
+  return { start: days[0] || weekKey, end: days[days.length-1] || weekKey };
 }
 
 function dtRenderDayChips(){
@@ -2676,7 +2709,7 @@ document.getElementById("dtSaveRecordBtn").addEventListener("click", ()=>{
   const recordData = {
     days: sortedDays,
     label: dtBatchLabel(sortedDays),
-    weekKey: dtWeekStartOf(sortedDays[0]),
+    weekKey: dtComputeWeekKey(sortedDays),
     month: monthKey(sortedDays[0]),
     kg, totalSalary, workers,
     createdAt: Date.now()
@@ -2710,7 +2743,7 @@ function loadDryerRecords(){
         id: doc.id,
         days: Array.isArray(d.days) ? d.days : [],
         label: d.label || dtBatchLabel(Array.isArray(d.days)?d.days:[]),
-        weekKey: d.weekKey || (Array.isArray(d.days) && d.days[0] ? dtWeekStartOf(d.days[0]) : ""),
+        weekKey: d.weekKey || (Array.isArray(d.days) && d.days[0] ? d.days[0] : ""),
         kg: Number(d.kg)||0,
         totalSalary: Number(d.totalSalary)||((Number(d.kg)||0)*RATE_PER_KG),
         workers: Array.isArray(d.workers) ? d.workers : [],
@@ -2817,14 +2850,14 @@ function dtRenderRecordsList(){
     }
     indexByWeek.get(wk).records.push(rec);
   });
-  const currentWeekKey = dtWeekStartOf(fmtDate(new Date()));
+  const currentWeekKey = dtDistinctWeekKeys().slice(-1)[0] || "";
   const shortFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
 
   groups.forEach(group=>{
     let weekLabel;
     if(group.weekKey){
-      const wEnd = new Date(group.weekKey+"T00:00:00"); wEnd.setDate(wEnd.getDate()+6);
-      weekLabel = `${shortFmt(group.weekKey)} \u2013 ${shortFmt(fmtDate(wEnd))}`;
+      const range = dtWeekDateRange(group.weekKey);
+      weekLabel = range.start===range.end ? shortFmt(range.start) : `${shortFmt(range.start)} \u2013 ${shortFmt(range.end)}`;
       if(group.weekKey===currentWeekKey) weekLabel = "This Week &middot; " + weekLabel;
     } else {
       weekLabel = "Older";
@@ -2878,14 +2911,26 @@ function dtRenderRecordsList(){
 }
 
 function dtRenderWeeklySummary(){
-  const weekStartStr = fmtDate(dtSummaryWeekStart);
-  const wEnd = new Date(dtSummaryWeekStart); wEnd.setDate(wEnd.getDate()+6);
-  const wEndStr = fmtDate(wEnd);
-  const shortFmt = (d)=> d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
-  document.getElementById("dtSummaryWeekLabel").textContent = `${shortFmt(dtSummaryWeekStart)} \u2013 ${shortFmt(wEnd)}`;
+  const weekKeys = dtDistinctWeekKeys();
+  const shortFmt = (ds)=> new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
 
-  // Workers Weekly Salary — per-worker totals from this week's records (kg is never split; only the cash is)
-  const weekRecords = dtRecordsCache.filter(r=>r.weekKey===weekStartStr);
+  if(weekKeys.length===0){
+    dtSummaryWeekKey = null;
+    document.getElementById("dtSummaryWeekLabel").textContent = "No records yet";
+    document.getElementById("dtWeekSalaryTotal").textContent = `\u20b90`;
+    document.getElementById("dtWeekSalaryLine").innerHTML = '<p class="empty" style="margin:4px 0;">No salary records this week.</p>';
+    document.getElementById("dtWeekFoodTotal").textContent = `\u20b90`;
+    document.getElementById("dtWeekFoodLine").innerHTML = '<p class="empty" style="margin:4px 0;">No food cash this week.</p>';
+    return;
+  }
+  if(!dtSummaryWeekKey || !weekKeys.includes(dtSummaryWeekKey)){
+    dtSummaryWeekKey = weekKeys[weekKeys.length-1]; // default to the latest (current) dynamic week
+  }
+  const range = dtWeekDateRange(dtSummaryWeekKey);
+  document.getElementById("dtSummaryWeekLabel").textContent = range.start===range.end ? shortFmt(range.start) : `${shortFmt(range.start)} \u2013 ${shortFmt(range.end)}`;
+
+  // Workers Weekly Salary — per-worker totals from this dynamic week's records (kg is never split; only the cash is)
+  const weekRecords = dtRecordsCache.filter(r=> (r.weekKey || r.days[0]) === dtSummaryWeekKey);
   const salaryByName = {};
   weekRecords.forEach(r=>{
     r.workers.forEach(w=>{
@@ -2902,10 +2947,10 @@ function dtRenderWeeklySummary(){
     ? salaryNames.map(nm=>`<div class="dt-worker-row"><span>${escapeHtml(nm.toUpperCase())}</span><span class="amt">\u20b9${rupee(salaryByName[nm])}</span></div>`).join("")
     : '<p class="empty" style="margin:4px 0;">No salary records this week.</p>';
 
-  // Workers Weekly Food Cash — per-worker totals from foodCash entries dated within this week
+  // Workers Weekly Food Cash — per-worker totals from foodCash entries dated within this dynamic week's actual range
   const foodByName = {};
   dtFoodCashCache.forEach(e=>{
-    if(e.date>=weekStartStr && e.date<=wEndStr){
+    if(e.date>=range.start && e.date<=range.end){
       foodByName[e.name] = (foodByName[e.name]||0) + e.total;
     }
   });
@@ -2918,12 +2963,14 @@ function dtRenderWeeklySummary(){
 }
 
 document.getElementById("dtPrevWeekSummary").addEventListener("click", ()=>{
-  dtSummaryWeekStart.setDate(dtSummaryWeekStart.getDate()-7);
-  dtRenderWeeklySummary();
+  const weekKeys = dtDistinctWeekKeys();
+  const idx = weekKeys.indexOf(dtSummaryWeekKey);
+  if(idx>0){ dtSummaryWeekKey = weekKeys[idx-1]; dtRenderWeeklySummary(); }
 });
 document.getElementById("dtNextWeekSummary").addEventListener("click", ()=>{
-  dtSummaryWeekStart.setDate(dtSummaryWeekStart.getDate()+7);
-  dtRenderWeeklySummary();
+  const weekKeys = dtDistinctWeekKeys();
+  const idx = weekKeys.indexOf(dtSummaryWeekKey);
+  if(idx>=0 && idx<weekKeys.length-1){ dtSummaryWeekKey = weekKeys[idx+1]; dtRenderWeeklySummary(); }
 });
 // ---------- LOAN PAGE (aggregated from Machine Team + Dryer Team) ----------
 function loadLoanPage(){
