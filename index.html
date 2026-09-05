@@ -2493,13 +2493,14 @@ function dtBatchLabel(sortedDays){
 // A "week" is now dynamic: it's a run of contiguous worked days that continues as long as each
 // new record picks up the very next day after the last one, AND that ongoing week hasn't already
 // been fully paid. A gap in days, or a week that's already been paid, starts a fresh week.
-function dtComputeWeekKey(sortedDays){
+function dtComputeWeekKey(sortedDays, records){
+  records = records || dtRecordsCache;
   const firstDay = sortedDays[0];
   const prevDate = new Date(firstDay+"T00:00:00");
   prevDate.setDate(prevDate.getDate()-1);
   const prevDayStr = fmtDate(prevDate);
 
-  const adjacent = dtRecordsCache.find(r=>
+  const adjacent = records.find(r=>
     r.id !== dtEditingRecordId &&
     Array.isArray(r.days) && r.days.length>0 &&
     r.days[r.days.length-1] === prevDayStr
@@ -2507,9 +2508,9 @@ function dtComputeWeekKey(sortedDays){
   if(!adjacent) return firstDay; // nothing ends the day before this record starts -> new week
 
   const candidateWeekKey = adjacent.weekKey || adjacent.days[0];
-  const weekRecords = dtRecordsCache.filter(r=> (r.weekKey || r.days[0]) === candidateWeekKey);
+  const weekRecords = records.filter(r=> (r.weekKey || r.days[0]) === candidateWeekKey);
   const weekFullyPaid = weekRecords.length>0 && weekRecords.every(r=>
-    r.workers.length>0 && r.workers.every(w=> w.salaryPaid===true)
+    Array.isArray(r.workers) && r.workers.length>0 && r.workers.every(w=> w.salaryPaid===true)
   );
   if(weekFullyPaid) return firstDay; // that week is already closed/paid -> start a new one
   return candidateWeekKey; // still open -> this record continues the same week
@@ -2706,16 +2707,31 @@ document.getElementById("dtSaveRecordBtn").addEventListener("click", ()=>{
   const share = totalSalary/dtFormWorkers.length;
   const workers = dtFormWorkers.map(name=>({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), name, share, salaryBalance:share}));
   note.textContent = "Saving...";
-  const recordData = {
-    days: sortedDays,
-    label: dtBatchLabel(sortedDays),
-    weekKey: dtComputeWeekKey(sortedDays),
-    month: monthKey(sortedDays[0]),
-    kg, totalSalary, workers,
-    createdAt: Date.now()
-  };
-  const ref = dtEditingRecordId ? db.collection("dryerBatches").doc(dtEditingRecordId) : db.collection("dryerBatches").doc();
-  ref.set(recordData).then(()=>{
+  // Always re-fetch the latest dryerBatches from Firestore right before deciding the week —
+  // never trust the in-memory cache here, so a quick save right after opening the page (before
+  // the background list-load finishes) can never miss yesterday's record and wrongly start a new week.
+  db.collection("dryerBatches").get().then((snap)=>{
+    const freshRecords = [];
+    snap.forEach(doc=>{
+      const d = doc.data();
+      freshRecords.push({
+        id: doc.id,
+        days: Array.isArray(d.days) ? d.days : [],
+        weekKey: d.weekKey || (Array.isArray(d.days) && d.days[0] ? d.days[0] : ""),
+        workers: Array.isArray(d.workers) ? d.workers : []
+      });
+    });
+    const recordData = {
+      days: sortedDays,
+      label: dtBatchLabel(sortedDays),
+      weekKey: dtComputeWeekKey(sortedDays, freshRecords),
+      month: monthKey(sortedDays[0]),
+      kg, totalSalary, workers,
+      createdAt: Date.now()
+    };
+    const ref = dtEditingRecordId ? db.collection("dryerBatches").doc(dtEditingRecordId) : db.collection("dryerBatches").doc();
+    return ref.set(recordData);
+  }).then(()=>{
     note.textContent = "Saved";
     dtResetForm();
     loadDryerRecords();
