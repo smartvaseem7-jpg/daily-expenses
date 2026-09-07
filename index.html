@@ -848,14 +848,9 @@
         <h2 class="section-title">DRYER TEAM</h2>
       </div>
 
-      <div class="mt-card" id="dtpCard">
-        <div class="dtp-range" id="dtpRange">No active period yet</div>
-        <div class="dtp-top-stats">
-          <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total KG</span><span class="dtp-top-stat-val mono" id="dtpTotalKg">0</span></div>
-          <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total Salary</span><span class="dtp-top-stat-val mono" id="dtpTotalSalary">&#8377;0</span></div>
-        </div>
+      <div class="mt-card">
+        <div class="mt-card-head"><span class="sec-name display">Add Record</span></div>
 
-        <div class="section-divider"></div>
         <div class="dt-section-label">Add Date</div>
         <div class="dt-field-label" style="margin-top:0;">Date</div>
         <input type="date" id="dtpDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
@@ -879,10 +874,8 @@
         <button class="btn-export no-print" id="dtpAddDateBtn" style="width:100%;font-size:15px;padding:13px 0;">&#10003; Add This Date</button>
         <div class="save-note no-print" id="dtpSaveNote"></div>
 
-        <div id="dtpDaysList"></div>
-
         <div class="section-divider"></div>
-        <div class="dt-section-label">Food Cash</div>
+        <div class="dt-section-label">Add Food Cash</div>
         <div class="dt-field-label" style="margin-top:0;">Worker</div>
         <select id="dtpFoodWorkerSelect" class="no-print" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;background:#fff;"><option value="">Select worker</option></select>
         <div class="dt-field-label">Date</div>
@@ -894,6 +887,19 @@
         </div>
         <button class="fadd no-print" id="dtpFoodAddBtn" style="width:100%;margin-top:8px;">+ Add</button>
         <div class="save-note no-print" id="dtpFoodSaveNote"></div>
+      </div>
+
+      <div class="mt-card" id="dtpCard">
+        <div class="mt-card-head"><span class="sec-name display">Current Period</span></div>
+        <div class="dtp-range" id="dtpRange">No active period yet</div>
+        <div class="dtp-top-stats">
+          <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total KG</span><span class="dtp-top-stat-val mono" id="dtpTotalKg">0</span></div>
+          <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total Salary</span><span class="dtp-top-stat-val mono" id="dtpTotalSalary">&#8377;0</span></div>
+        </div>
+
+        <div id="dtpDaysList"></div>
+
+        <div class="dt-section-label" style="margin-top:16px;">Food Cash</div>
         <div id="dtpFoodList"></div>
 
         <div class="dtp-food-totals">
@@ -2695,6 +2701,8 @@ document.getElementById("dtpFoodAddBtn").addEventListener("click", ()=>{
   const finish = ()=>{
     note.textContent = "Saved";
     setTimeout(()=>{ note.textContent=""; }, 1200);
+    document.getElementById("dtpFoodWorkerSelect").value = "";
+    document.getElementById("dtpFoodDateInput").value = "";
     document.getElementById("dtpFoodMorningInput").value = "";
     document.getElementById("dtpFoodLunchInput").value = "";
     document.getElementById("dtpFoodEveningInput").value = "";
