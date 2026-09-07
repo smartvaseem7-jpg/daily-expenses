@@ -369,10 +369,15 @@
   .dtp-day-row-kg { font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#6B5B45; margin-bottom:6px; }
   .dtp-day-worker-line { display:flex; justify-content:space-between; font-size:13px; color:#4A3B28; padding:3px 0; }
   .dtp-day-worker-line .amt { font-family:'IBM Plex Mono',monospace; font-weight:700; color:#3B6B35; }
-  .dtp-food-entry-row { display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid #D8C89A; border-radius:8px; padding:8px 10px; margin-top:6px; font-size:12.5px; }
-  .dtp-food-entry-name { font-weight:700; color:#2E5233; }
-  .dtp-food-entry-detail { font-size:11px; color:#8A7A5E; }
-  .dtp-food-entry-amt { font-family:'IBM Plex Mono',monospace; font-weight:700; color:#3B6B35; }
+  .dtp-food-worker-group { background:#fff; border:1px solid #D8C89A; border-radius:10px; padding:10px 12px; margin-top:8px; }
+  .dtp-food-worker-head { display:flex; justify-content:space-between; font-weight:800; color:#2E5233; font-size:13.5px; padding-bottom:6px; border-bottom:1px dashed #D8C89A; margin-bottom:6px; }
+  .dtp-food-date-row { padding:5px 0; border-bottom:1px dotted #EAE2CB; }
+  .dtp-food-date-row:last-child { border-bottom:none; }
+  .dtp-food-date-top { display:flex; justify-content:space-between; align-items:center; }
+  .dtp-food-date-label { font-size:12.5px; font-weight:700; color:#4A3B28; }
+  .dtp-food-date-amt { font-family:'IBM Plex Mono',monospace; font-weight:700; color:#3B6B35; font-size:12.5px; margin-left:auto; margin-right:6px; }
+  .dtp-food-meals { display:flex; gap:12px; font-size:11px; color:#8A7A5E; margin-top:2px; }
+  .dtp-food-meals b { color:#4A3B28; font-weight:700; }
   .dtp-food-totals { background:#EAF3EC; border:1px solid #BFDCC4; border-radius:10px; padding:10px 14px; margin:14px 0; }
   .dtp-food-total-line { display:flex; justify-content:space-between; font-size:13px; color:#4A3B28; padding:3px 0; }
   .dtp-food-total-line.total { border-top:1px dashed #9FC4A6; margin-top:4px; padding-top:7px; font-weight:800; }
@@ -2791,25 +2796,49 @@ function dtRenderPeriodCard(){
   dtRenderFoodCashInCard();
 }
 
+// Groups flat food-cash entries by worker name, so each worker appears once with
+// all their dated entries nested underneath, plus a per-worker total.
+function dtGroupFoodByWorker(entries){
+  const groups = {};
+  entries.forEach(e=>{
+    if(!groups[e.name]) groups[e.name] = { name:e.name, total:0, rows:[] };
+    groups[e.name].total += e.total;
+    groups[e.name].rows.push(e);
+  });
+  return Object.values(groups).sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+function dtFoodGroupHtml(groups, editable){
+  return groups.map(g=>{
+    const rows = g.rows.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>{
+      const icons = editable ? `<button class="dt-icon-btn no-print" data-editfood="${e.date}::${e.entryId}" title="Edit">&#9998;</button><button class="dt-icon-btn danger no-print" data-delfood="${e.date}::${e.entryId}" title="Delete">&#128465;</button>` : "";
+      return `<div class="dtp-food-date-row">
+        <div class="dtp-food-date-top">
+          <span class="dtp-food-date-label">${fmtNice(e.date)}</span>
+          <span class="dtp-food-date-amt">\u20b9${rupee(e.total)}</span>
+          ${icons}
+        </div>
+        <div class="dtp-food-meals">
+          <span>Morning <b>\u20b9${rupee(e.morning)}</b></span>
+          <span>Lunch <b>\u20b9${rupee(e.lunch)}</b></span>
+          <span>Evening <b>\u20b9${rupee(e.evening)}</b></span>
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="dtp-food-worker-group">
+      <div class="dtp-food-worker-head"><span>${escapeHtml(g.name.toUpperCase())}</span><span class="mono">\u20b9${rupee(g.total)}</span></div>
+      ${rows}
+    </div>`;
+  }).join("");
+}
+
 function dtRenderFoodCashInCard(){
   const list = document.getElementById("dtpFoodList");
   const entries = dtFoodCashInRange(dtCurrentPeriod);
   if(entries.length===0){
     list.innerHTML = '<p class="empty" style="margin:8px 0;">Food cash entries edhuvum illa.</p>';
   } else {
-    list.innerHTML = entries.map(e=>`
-      <div class="dtp-food-entry-row">
-        <div>
-          <div class="dtp-food-entry-name">${escapeHtml(e.name.toUpperCase())}</div>
-          <div class="dtp-food-entry-detail">${fmtNice(e.date)} \u00b7 M:\u20b9${rupee(e.morning)} L:\u20b9${rupee(e.lunch)} E:\u20b9${rupee(e.evening)}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span class="dtp-food-entry-amt">\u20b9${rupee(e.total)}</span>
-          <button class="dt-icon-btn no-print" data-editfood="${e.date}::${e.entryId}" title="Edit">&#9998;</button>
-          <button class="dt-icon-btn danger no-print" data-delfood="${e.date}::${e.entryId}" title="Delete">&#128465;</button>
-        </div>
-      </div>
-    `).join("");
+    list.innerHTML = dtFoodGroupHtml(dtGroupFoodByWorker(entries), true);
     list.querySelectorAll("[data-editfood]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         const [d,eid] = btn.dataset.editfood.split("::");
@@ -2932,11 +2961,7 @@ function dtRenderPreviousRecords(){
       </div>`;
     }).join("");
 
-    const foodRowsHtml = periodFood.length ? periodFood.map(e=>`
-      <div class="dtp-food-entry-row">
-        <div><div class="dtp-food-entry-name">${escapeHtml(e.name.toUpperCase())}</div><div class="dtp-food-entry-detail">${fmtNice(e.date)} \u00b7 M:\u20b9${rupee(e.morning)} L:\u20b9${rupee(e.lunch)} E:\u20b9${rupee(e.evening)}</div></div>
-        <span class="dtp-food-entry-amt">\u20b9${rupee(e.total)}</span>
-      </div>`).join("") : '<p class="empty" style="margin:6px 0;">Food cash illa.</p>';
+    const foodRowsHtml = periodFood.length ? dtFoodGroupHtml(dtGroupFoodByWorker(periodFood), false) : '<p class="empty" style="margin:6px 0;">Food cash illa.</p>';
 
     const card = document.createElement("div");
     card.className = "dt-record";
