@@ -384,6 +384,14 @@
   .dtp-grand-total { display:flex; justify-content:space-between; align-items:center; background:linear-gradient(90deg,#1F3D24,#2E5233); color:#F3ECD9; border-radius:12px; padding:14px 16px; font-family:'Fraunces',serif; font-weight:800; font-size:15px; margin-bottom:6px; }
   .dtp-grand-total .mono { font-size:20px; }
   .dtp-paid-badge { background:#3B6B35; color:#fff; font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; }
+  #dtpFoodAddBtn, #dtpAddDateBtn { background:linear-gradient(90deg,#3B6B35,#4C8C46); border-radius:999px; font-weight:800; letter-spacing:0.02em; box-shadow:0 3px 8px rgba(59,107,53,0.28); }
+  #dtpFoodAddBtn:active, #dtpAddDateBtn:active { transform:translateY(1px); box-shadow:0 1px 4px rgba(59,107,53,0.28); }
+  .dtp-worker-totals-box { background:#fff; border:1px solid #D8C89A; border-radius:10px; padding:8px 12px; }
+  .dtp-worker-total-row { display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px dotted #EAE2CB; }
+  .dtp-worker-total-row:last-child { border-bottom:none; }
+  .dtp-worker-total-name { font-weight:800; color:#2E5233; font-size:13px; flex:1; }
+  .dtp-worker-total-kg { font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A7A5E; }
+  .dtp-worker-total-amt { font-family:'IBM Plex Mono',monospace; font-weight:800; color:#3B6B35; font-size:13.5px; min-width:70px; text-align:right; }
   .mt-swipe-viewport { overflow:hidden; width:100%; position:relative; }
   .mt-swipe-track { display:flex; width:200%; transition:transform 0.32s cubic-bezier(.22,.68,0,1.01); }
   .mt-swipe-track.dragging { transition:none; }
@@ -2682,14 +2690,8 @@ function dtDeleteDay(dateStr){
   action.then(dtLoadPeriods).catch(()=>{ alert("Couldn't delete. Check internet."); });
 }
 
-// ----- Food cash (within the active period's date range) -----
-function dtFoodCashInRange(period){
-  if(!period) return dtFoodCashCache;
-  const days = Object.keys(period.days||{}).sort();
-  if(days.length===0) return dtFoodCashCache;
-  const start = days[0], end = days[days.length-1];
-  return dtFoodCashCache.filter(e=> e.date>=start && e.date<=end);
-}
+// ----- Food cash: a simple pending pool (not restricted to a period's exact dates,
+// so an entry never appears "missing" just because its date isn't in the KG list yet) -----
 
 document.getElementById("dtpFoodAddBtn").addEventListener("click", ()=>{
   const name = document.getElementById("dtpFoodWorkerSelect").value;
@@ -2787,13 +2789,44 @@ function dtRenderPeriodCard(){
         <div class="dtp-day-row-kg">${d.kg} KG \u00d7 \u20b9${RATE_PER_KG} = \u20b9${rupee(dTotal)} \u00f7 ${d.workers.length} worker${d.workers.length>1?"s":""}</div>
         ${workerLines}
       </div>`;
-    }).join("");
+    }).join("") + dtWorkerTotalsHtml(p);
 
     daysListEl.querySelectorAll("[data-editday]").forEach(btn=>btn.addEventListener("click", ()=>dtEditDay(btn.dataset.editday)));
     daysListEl.querySelectorAll("[data-delday]").forEach(btn=>btn.addEventListener("click", ()=>dtDeleteDay(btn.dataset.delday)));
   }
 
   dtRenderFoodCashInCard();
+}
+
+// Per-worker Total Salary + Total KG across every day in the period (each worker's
+// KG share matches their salary share, since salary = kg \u00d7 rate \u00f7 workers-that-day).
+function dtGroupSalaryByWorker(period){
+  const byName = {};
+  Object.keys(period.days||{}).forEach(ds=>{
+    const d = period.days[ds];
+    const workerCount = d.workers.length || 1;
+    const dTotal = (Number(d.kg)||0)*RATE_PER_KG;
+    const perWorkerSalary = dTotal/workerCount;
+    const perWorkerKg = (Number(d.kg)||0)/workerCount;
+    d.workers.forEach(nm=>{
+      if(!byName[nm]) byName[nm] = {name:nm, salary:0, kg:0};
+      byName[nm].salary += perWorkerSalary;
+      byName[nm].kg += perWorkerKg;
+    });
+  });
+  return Object.values(byName).sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+function dtWorkerTotalsHtml(period){
+  const workers = dtGroupSalaryByWorker(period);
+  if(workers.length===0) return "";
+  const rows = workers.map(w=>`
+    <div class="dtp-worker-total-row">
+      <span class="dtp-worker-total-name">${escapeHtml(w.name.toUpperCase())}</span>
+      <span class="dtp-worker-total-kg">${w.kg % 1 === 0 ? w.kg : w.kg.toFixed(1)} KG</span>
+      <span class="dtp-worker-total-amt">\u20b9${rupee(w.salary)}</span>
+    </div>`).join("");
+  return `<div class="dt-section-label" style="margin-top:16px;">Worker Totals</div><div class="dtp-worker-totals-box">${rows}</div>`;
 }
 
 // Groups flat food-cash entries by worker name, so each worker appears once with
@@ -2834,7 +2867,7 @@ function dtFoodGroupHtml(groups, editable){
 
 function dtRenderFoodCashInCard(){
   const list = document.getElementById("dtpFoodList");
-  const entries = dtFoodCashInRange(dtCurrentPeriod);
+  const entries = dtFoodCashCache;
   if(entries.length===0){
     list.innerHTML = '<p class="empty" style="margin:8px 0;">Food cash entries edhuvum illa.</p>';
   } else {
@@ -2880,9 +2913,10 @@ function dtPayPeriod(period, note, onDone){
       daysByName[nm] = (daysByName[nm]||0) + 1;
     });
   });
-  const periodFood = dtFoodCashInRange(period);
+  const periodFood = dtFoodCashCache.slice(); // all currently-unpaid food cash goes with whichever period is being paid
   const foodByName = {};
   periodFood.forEach(e=>{ foodByName[e.name] = (foodByName[e.name]||0) + e.total; });
+  const foodCashSnapshot = periodFood.map(e=>({date:e.date, name:e.name, morning:e.morning, lunch:e.lunch, evening:e.evening, total:e.total}));
 
   if(note) note.textContent = "Saving...";
   const historyWrites = [];
@@ -2892,7 +2926,7 @@ function dtPayPeriod(period, note, onDone){
   Object.keys(foodByName).forEach(nm=>{
     historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team Food Cash", name:nm, workingDays:0, totalSalary:foodByName[nm], paidDate, period:periodLabel}));
   });
-  const periodWrite = db.collection("dryerPeriods").doc(period.id).update({status:"paid", paidDate});
+  const periodWrite = db.collection("dryerPeriods").doc(period.id).update({status:"paid", paidDate, foodCashSnapshot});
   const foodDates = new Set(periodFood.map(e=>e.date));
   const foodWrites = Array.from(foodDates).map(dateStr=>
     db.collection("foodCash").doc(dateStr).get().then(doc=>{
@@ -2927,6 +2961,18 @@ document.getElementById("dtpPaySalaryBtn").addEventListener("click", ()=>{
   dtPayPeriod(dtCurrentPeriod, note);
 });
 
+// Paid periods carry a frozen foodCashSnapshot (captured at pay time) so history stays
+// accurate even after those entries are marked paid and drop out of the live cache.
+// Still-unpaid older periods fall back to filtering the live cache by their date range.
+function dtFoodCashForPeriod(period){
+  if(!period) return [];
+  if(Array.isArray(period.foodCashSnapshot)) return period.foodCashSnapshot;
+  const days = Object.keys(period.days||{}).sort();
+  if(days.length===0) return [];
+  const start = days[0], end = days[days.length-1];
+  return dtFoodCashCache.filter(e=> e.date>=start && e.date<=end);
+}
+
 // ----- Previous Records -----
 function dtRenderPreviousRecords(){
   const container = document.getElementById("dtpRecordsList");
@@ -2944,7 +2990,7 @@ function dtRenderPreviousRecords(){
     const totalSalary = totalKg*RATE_PER_KG;
     const rangeLabel = days.length===1 ? fmtNice(days[0]) : `${fmtNice(days[0])} \u2013 ${fmtNice(days[days.length-1])}`;
 
-    const periodFood = dtFoodCashInRange(p);
+    const periodFood = dtFoodCashForPeriod(p);
     const foodTotal = periodFood.reduce((s,e)=>s+e.total,0);
     const grandTotal = totalSalary + foodTotal;
     const isPaid = p.status==="paid";
@@ -2975,6 +3021,7 @@ function dtRenderPreviousRecords(){
       </div>
       <div class="dt-equation"><span>Total Salary</span><span class="total">\u20b9${rupee(totalSalary)}</span></div>
       ${dayRowsHtml}
+      ${dtWorkerTotalsHtml(p)}
       <div class="dt-section-label" style="margin-top:14px;">Food Cash <span class="amt">\u20b9${rupee(foodTotal)}</span></div>
       ${foodRowsHtml}
       <div class="dtp-grand-total" style="margin-top:12px;"><span>Grand Total</span><span class="mono">\u20b9${rupee(grandTotal)}</span></div>
