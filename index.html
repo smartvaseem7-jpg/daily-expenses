@@ -386,7 +386,7 @@
   .dtp-paid-badge { background:#3B6B35; color:#fff; font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; }
   #dtpFoodAddBtn, #dtpAddDateBtn { background:linear-gradient(90deg,#3B6B35,#4C8C46); border-radius:999px; font-weight:800; letter-spacing:0.02em; box-shadow:0 3px 8px rgba(59,107,53,0.28); }
   #dtpFoodAddBtn:active, #dtpAddDateBtn:active { transform:translateY(1px); box-shadow:0 1px 4px rgba(59,107,53,0.28); }
-  .dtp-worker-totals-box { background:#fff; border:1px solid #D8C89A; border-radius:10px; padding:8px 12px; }
+  .dtp-worker-totals-box { background:#F3ECD9; border:1px solid #D8C89A; border-radius:10px; padding:8px 12px; }
   .dtp-worker-total-row { display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px dotted #EAE2CB; }
   .dtp-worker-total-row:last-child { border-bottom:none; }
   .dtp-worker-total-name { font-weight:800; color:#2E5233; font-size:13px; flex:1; }
@@ -855,84 +855,102 @@
 
     <!-- ===== DRYER TEAM ===== -->
     <div id="dryerSection" style="display:none;">
-      <div class="section-header">
-        <button class="back-btn no-print" data-home>&#8592; Home</button>
-        <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
-        <h2 class="section-title">DRYER TEAM</h2>
+      <div class="mt-swipe-viewport" id="dtSwipeViewport">
+        <div class="mt-swipe-track" id="dtSwipeTrack">
+
+          <div class="mt-swipe-page" id="dtSwipePage1">
+            <div class="section-header">
+              <button class="back-btn no-print" data-home>&#8592; Home</button>
+              <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
+              <h2 class="section-title">DRYER TEAM</h2>
+            </div>
+
+            <div class="mt-card">
+              <div class="mt-card-head"><span class="sec-name display">Add Record</span></div>
+
+              <div class="dt-section-label">Add Date</div>
+              <div class="dt-field-label" style="margin-top:0;">Date</div>
+              <input type="date" id="dtpDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
+
+              <div class="dt-field-label">Total KG (this date)</div>
+              <input type="number" inputmode="decimal" placeholder="0" id="dtpKgInput" class="dt-kg-input no-print" />
+
+              <div class="dt-field-label">Workers (tap to select)</div>
+              <div id="dtpWorkerChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+              <div class="form-row no-print">
+                <input type="text" placeholder="New worker name" id="dtpNewWorkerInput" style="flex:1;" />
+                <button class="fadd" id="dtpNewWorkerAddBtn">+ Add name</button>
+              </div>
+
+              <div class="dt-calc-box">
+                <div class="dt-calc-line hero" id="dtpCalcLine1"></div>
+                <div class="dt-calc-line" id="dtpCalcLine2"></div>
+                <div class="dt-calc-line" id="dtpCalcLine3"></div>
+              </div>
+
+              <button class="btn-export no-print" id="dtpAddDateBtn" style="width:100%;font-size:15px;padding:13px 0;">&#10003; Add This Date</button>
+              <div class="save-note no-print" id="dtpSaveNote"></div>
+
+              <div class="section-divider"></div>
+              <div class="dt-section-label">Add Food Cash</div>
+              <div class="dt-field-label" style="margin-top:0;">Worker</div>
+              <select id="dtpFoodWorkerSelect" class="no-print" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;background:#fff;"><option value="">Select worker</option></select>
+              <div class="dt-field-label">Date</div>
+              <input type="date" id="dtpFoodDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
+              <div class="form-row no-print" style="margin-top:8px;">
+                <input type="number" inputmode="decimal" placeholder="Morning" id="dtpFoodMorningInput" style="flex:1;min-width:80px;" />
+                <input type="number" inputmode="decimal" placeholder="Lunch" id="dtpFoodLunchInput" style="flex:1;min-width:80px;" />
+                <input type="number" inputmode="decimal" placeholder="Evening" id="dtpFoodEveningInput" style="flex:1;min-width:80px;" />
+              </div>
+              <button class="fadd no-print" id="dtpFoodAddBtn" style="width:100%;margin-top:8px;">+ Add</button>
+              <div class="save-note no-print" id="dtpFoodSaveNote"></div>
+            </div>
+            <p class="empty swipe-hint no-print">Salary paakanumna &#8592; swipe pannunga</p>
+          </div>
+
+          <div class="mt-swipe-page" id="dtSwipePage2">
+            <div class="section-header">
+              <button class="back-btn no-print" data-home>&#8592; Home</button>
+              <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
+              <h2 class="section-title">DRYER TEAM SALARY</h2>
+            </div>
+            <p class="empty swipe-hint no-print">&#8594; swipe pannina Dryer Team-ku thirumba varalam</p>
+
+            <div class="mt-card" id="dtpCard">
+              <div class="mt-card-head"><span class="sec-name display">Current Period</span></div>
+              <div class="dtp-range" id="dtpRange">No active period yet</div>
+              <div class="dtp-top-stats">
+                <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total KG</span><span class="dtp-top-stat-val mono" id="dtpTotalKg">0</span></div>
+                <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total Salary</span><span class="dtp-top-stat-val mono" id="dtpTotalSalary">&#8377;0</span></div>
+              </div>
+
+              <div id="dtpDaysList"></div>
+
+              <div class="dt-section-label" style="margin-top:16px;">Food Cash</div>
+              <div id="dtpFoodList"></div>
+
+              <div class="dtp-food-totals">
+                <div class="dtp-food-total-line"><span>Total Morning Food</span><span class="mono" id="dtpFoodMorningTotal">&#8377;0</span></div>
+                <div class="dtp-food-total-line"><span>Total Lunch Food</span><span class="mono" id="dtpFoodLunchTotal">&#8377;0</span></div>
+                <div class="dtp-food-total-line"><span>Total Evening Food</span><span class="mono" id="dtpFoodEveningTotal">&#8377;0</span></div>
+                <div class="dtp-food-total-line total"><span>Total Food Cash</span><span class="mono" id="dtpFoodGrandTotal">&#8377;0</span></div>
+              </div>
+
+              <div class="dtp-grand-total">
+                <span>GRAND TOTAL CASH</span>
+                <span class="mono" id="dtpGrandTotal">&#8377;0</span>
+              </div>
+
+              <button class="dt-week-done-btn no-print" id="dtpPaySalaryBtn">&#9989; Pay Salary</button>
+              <div class="save-note no-print" id="dtpPayNote"></div>
+            </div>
+
+            <h3 class="sub-title display" style="margin-top:20px;">Previous Records</h3>
+            <div id="dtpRecordsList"></div>
+          </div>
+
+        </div>
       </div>
-
-      <div class="mt-card">
-        <div class="mt-card-head"><span class="sec-name display">Add Record</span></div>
-
-        <div class="dt-section-label">Add Date</div>
-        <div class="dt-field-label" style="margin-top:0;">Date</div>
-        <input type="date" id="dtpDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
-
-        <div class="dt-field-label">Total KG (this date)</div>
-        <input type="number" inputmode="decimal" placeholder="0" id="dtpKgInput" class="dt-kg-input no-print" />
-
-        <div class="dt-field-label">Workers (tap to select)</div>
-        <div id="dtpWorkerChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
-        <div class="form-row no-print">
-          <input type="text" placeholder="New worker name" id="dtpNewWorkerInput" style="flex:1;" />
-          <button class="fadd" id="dtpNewWorkerAddBtn">+ Add name</button>
-        </div>
-
-        <div class="dt-calc-box">
-          <div class="dt-calc-line hero" id="dtpCalcLine1"></div>
-          <div class="dt-calc-line" id="dtpCalcLine2"></div>
-          <div class="dt-calc-line" id="dtpCalcLine3"></div>
-        </div>
-
-        <button class="btn-export no-print" id="dtpAddDateBtn" style="width:100%;font-size:15px;padding:13px 0;">&#10003; Add This Date</button>
-        <div class="save-note no-print" id="dtpSaveNote"></div>
-
-        <div class="section-divider"></div>
-        <div class="dt-section-label">Add Food Cash</div>
-        <div class="dt-field-label" style="margin-top:0;">Worker</div>
-        <select id="dtpFoodWorkerSelect" class="no-print" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;background:#fff;"><option value="">Select worker</option></select>
-        <div class="dt-field-label">Date</div>
-        <input type="date" id="dtpFoodDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
-        <div class="form-row no-print" style="margin-top:8px;">
-          <input type="number" inputmode="decimal" placeholder="Morning" id="dtpFoodMorningInput" style="flex:1;min-width:80px;" />
-          <input type="number" inputmode="decimal" placeholder="Lunch" id="dtpFoodLunchInput" style="flex:1;min-width:80px;" />
-          <input type="number" inputmode="decimal" placeholder="Evening" id="dtpFoodEveningInput" style="flex:1;min-width:80px;" />
-        </div>
-        <button class="fadd no-print" id="dtpFoodAddBtn" style="width:100%;margin-top:8px;">+ Add</button>
-        <div class="save-note no-print" id="dtpFoodSaveNote"></div>
-      </div>
-
-      <div class="mt-card" id="dtpCard">
-        <div class="mt-card-head"><span class="sec-name display">Current Period</span></div>
-        <div class="dtp-range" id="dtpRange">No active period yet</div>
-        <div class="dtp-top-stats">
-          <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total KG</span><span class="dtp-top-stat-val mono" id="dtpTotalKg">0</span></div>
-          <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total Salary</span><span class="dtp-top-stat-val mono" id="dtpTotalSalary">&#8377;0</span></div>
-        </div>
-
-        <div id="dtpDaysList"></div>
-
-        <div class="dt-section-label" style="margin-top:16px;">Food Cash</div>
-        <div id="dtpFoodList"></div>
-
-        <div class="dtp-food-totals">
-          <div class="dtp-food-total-line"><span>Total Morning Food</span><span class="mono" id="dtpFoodMorningTotal">&#8377;0</span></div>
-          <div class="dtp-food-total-line"><span>Total Lunch Food</span><span class="mono" id="dtpFoodLunchTotal">&#8377;0</span></div>
-          <div class="dtp-food-total-line"><span>Total Evening Food</span><span class="mono" id="dtpFoodEveningTotal">&#8377;0</span></div>
-          <div class="dtp-food-total-line total"><span>Total Food Cash</span><span class="mono" id="dtpFoodGrandTotal">&#8377;0</span></div>
-        </div>
-
-        <div class="dtp-grand-total">
-          <span>GRAND TOTAL CASH</span>
-          <span class="mono" id="dtpGrandTotal">&#8377;0</span>
-        </div>
-
-        <button class="dt-week-done-btn no-print" id="dtpPaySalaryBtn">&#9989; Pay Salary</button>
-        <div class="save-note no-print" id="dtpPayNote"></div>
-      </div>
-
-      <h3 class="sub-title display" style="margin-top:20px;">Previous Records</h3>
-      <div id="dtpRecordsList"></div>
     </div>
 
     <!-- ===== DRYER WEIGHT (kaaya kg entry) ===== -->
@@ -2089,6 +2107,63 @@ document.getElementById("mtSalaryClearBtn").addEventListener("click", ()=>{
   });
 })();
 
+// ---------- DRYER TEAM swipe (Page 1: add-record form, Page 2: Dryer Team Salary / Previous Records) ----------
+(function(){
+  const viewport = document.getElementById("dtSwipeViewport");
+  const track = document.getElementById("dtSwipeTrack");
+  if(!viewport || !track) return;
+  let dtSwipePage = 0; // 0 = Dryer Team, 1 = Dryer Team Salary
+  let startX = null, startY = null, currentDeltaX = 0, isDragging = false, lockedAxis = null;
+
+  function setPage(page, animate){
+    dtSwipePage = page;
+    track.style.transition = animate===false ? "none" : "";
+    track.style.transform = `translateX(${page===0 ? "0%" : "-50%"})`;
+  }
+
+  viewport.addEventListener("touchstart", (e)=>{
+    if(e.touches.length!==1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    currentDeltaX = 0;
+    isDragging = true;
+    lockedAxis = null;
+    track.classList.add("dragging");
+  }, {passive:true});
+
+  viewport.addEventListener("touchmove", (e)=>{
+    if(!isDragging || startX===null) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if(lockedAxis===null){
+      lockedAxis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    }
+    if(lockedAxis!=="x") return;
+    // don't swipe past the edges
+    if((dtSwipePage===0 && dx<0) || (dtSwipePage===1 && dx>0)){
+      currentDeltaX = dx;
+      const viewportWidth = viewport.offsetWidth;
+      const basePercent = dtSwipePage===0 ? 0 : -50;
+      const deltaPercent = (dx / viewportWidth) * 50;
+      track.style.transform = `translateX(${basePercent + deltaPercent}%)`;
+      e.preventDefault();
+    }
+  }, {passive:false});
+
+  viewport.addEventListener("touchend", ()=>{
+    if(!isDragging) return;
+    isDragging = false;
+    track.classList.remove("dragging");
+    const threshold = viewport.offsetWidth * 0.18;
+    if(lockedAxis==="x"){
+      if(dtSwipePage===0 && currentDeltaX < -threshold) setPage(1);
+      else if(dtSwipePage===1 && currentDeltaX > threshold) setPage(0);
+      else setPage(dtSwipePage);
+    }
+    startX = null; startY = null; currentDeltaX = 0; lockedAxis = null;
+  });
+})();
+
 function hoursBetween(t1, t2){
   const [h1,m1] = t1.split(":").map(Number);
   const [h2,m2] = t2.split(":").map(Number);
@@ -2505,6 +2580,7 @@ let dtKnownWorkerNames = []; // all distinct known worker names, for the tap-chi
 let dtPeriodsCache = []; // every dryerPeriods doc (open + paid)
 let dtCurrentPeriod = null; // the active (latest open) period, or null
 let dtFoodCashCache = []; // unpaid, non-Machine-Team food cash entries: {date, entryId, name, morning, lunch, evening, total}
+let dtRecordsExpanded = new Set(); // which previous-record period ids are currently opened
 let dtEditingFoodKey = null; // "date::entryId" while editing an existing food cash entry, else null
 
 function nameKey(name){ return name.trim().toLowerCase().replace(/\s+/g,"_"); }
@@ -3009,28 +3085,38 @@ function dtRenderPreviousRecords(){
 
     const foodRowsHtml = periodFood.length ? dtFoodGroupHtml(dtGroupFoodByWorker(periodFood), false) : '<p class="empty" style="margin:6px 0;">Food cash illa.</p>';
 
+    const isOpen = dtRecordsExpanded.has(p.id);
+
     const card = document.createElement("div");
     card.className = "dt-record";
     card.innerHTML = `
-      <div class="dt-record-top">
+      <div class="dt-record-top dt-record-toggle" data-togglerecord="${p.id}" style="cursor:pointer;">
         <div>
           <div class="dtp-range" style="text-align:left;margin-bottom:2px;">${rangeLabel}</div>
           <div class="dt-record-date">${totalKg} KG total</div>
         </div>
-        ${isPaid ? `<span class="dtp-paid-badge">PAID</span>` : `<button class="dt-week-pay-btn no-print" data-payperiod="${p.id}">Pay</button>`}
+        <div class="dt-record-actions">
+          <span class="mono" style="font-weight:800;color:#3B6B35;">\u20b9${rupee(grandTotal)}</span>
+          ${isPaid ? `<span class="dtp-paid-badge">PAID</span>` : `<button class="dt-week-pay-btn no-print" data-payperiod="${p.id}">Pay</button>`}
+          <button class="dt-icon-btn danger no-print" data-delperiod="${p.id}" title="Delete">&#128465;</button>
+          <span class="dt-icon-btn" style="pointer-events:none;">${isOpen ? "&#9650;" : "&#9660;"}</span>
+        </div>
       </div>
+      ${isOpen ? `
       <div class="dt-equation"><span>Total Salary</span><span class="total">\u20b9${rupee(totalSalary)}</span></div>
       ${dayRowsHtml}
       ${dtWorkerTotalsHtml(p)}
       <div class="dt-section-label" style="margin-top:14px;">Food Cash <span class="amt">\u20b9${rupee(foodTotal)}</span></div>
       ${foodRowsHtml}
       <div class="dtp-grand-total" style="margin-top:12px;"><span>Grand Total</span><span class="mono">\u20b9${rupee(grandTotal)}</span></div>
+      ` : ""}
     `;
     container.appendChild(card);
   });
 
   container.querySelectorAll("[data-payperiod]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
+    btn.addEventListener("click", (ev)=>{
+      ev.stopPropagation();
       const p = dtPeriodsCache.find(x=>x.id===btn.dataset.payperiod);
       if(!p) return;
       if(!confirm("Ithu pay pannalama? History-la save aagidum.")) return;
@@ -3038,6 +3124,26 @@ function dtRenderPreviousRecords(){
       btn.disabled = true;
       const fakeNote = { set textContent(v){ btn.textContent = v || originalText; } };
       dtPayPeriod(p, fakeNote);
+    });
+  });
+
+  container.querySelectorAll("[data-delperiod]").forEach(btn=>{
+    btn.addEventListener("click", (ev)=>{
+      ev.stopPropagation();
+      const periodId = btn.dataset.delperiod;
+      if(!confirm("Intha record-a delete pannalama? Ithu thirumba edukka mudiyaadhu.")) return;
+      db.collection("dryerPeriods").doc(periodId).delete().then(dtLoadPeriods).catch(()=>{
+        alert("Couldn't delete. Check internet.");
+      });
+    });
+  });
+
+  container.querySelectorAll("[data-togglerecord]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const id = el.dataset.togglerecord;
+      if(dtRecordsExpanded.has(id)) dtRecordsExpanded.delete(id);
+      else dtRecordsExpanded.add(id);
+      dtRenderPreviousRecords();
     });
   });
 }
