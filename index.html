@@ -305,6 +305,14 @@
     body.print-mt-day .mt-swipe-page, body.print-mt-salary .mt-swipe-page { width:100% !important; padding:0 !important; }
     body.print-mt-salary #mtSwipePage1 { display:none !important; }
     body.print-mt-day #mtSwipePage2 { display:none !important; }
+
+    /* Same idea for the Dryer Team swipe pages: Current Period (page 1) vs
+       Dryer Team Salary / Previous Records (page 2). */
+    body.print-dt-day .mt-swipe-viewport, body.print-dt-salary .mt-swipe-viewport { overflow:visible !important; }
+    body.print-dt-day .mt-swipe-track, body.print-dt-salary .mt-swipe-track { display:block !important; width:100% !important; transform:none !important; }
+    body.print-dt-day .mt-swipe-page, body.print-dt-salary .mt-swipe-page { width:100% !important; padding:0 !important; }
+    body.print-dt-salary #dtSwipePage1 { display:none !important; }
+    body.print-dt-day #dtSwipePage2 { display:none !important; }
   }
   /* ===== DRYER TEAM (redesigned: KG is the hero, weekly salary is prominent, food cash stays quiet) ===== */
   .dt-field-label { font-size:11px; font-weight:700; color:#8A7A5E; text-transform:uppercase; letter-spacing:0.05em; margin:16px 0 6px; }
@@ -933,6 +941,9 @@
 
               <button class="dt-week-done-btn no-print" id="dtpPaySalaryBtn">&#9989; Pay Salary</button>
               <div class="save-note no-print" id="dtpPayNote"></div>
+              <div class="actions no-print">
+                <button class="btn-export" id="dtpPrintBtn" style="flex:1;">&#128424; Print</button>
+              </div>
             </div>
 
             <p class="empty swipe-hint no-print">Salary paakanumna &#8592; swipe pannunga</p>
@@ -945,6 +956,10 @@
               <h2 class="section-title">DRYER TEAM SALARY</h2>
             </div>
             <p class="empty swipe-hint no-print">&#8594; swipe pannina Dryer Team-ku thirumba varalam</p>
+
+            <div class="actions no-print">
+              <button class="btn-export" id="dtpRecordsPrintBtn" style="flex:1;">&#128424; Print</button>
+            </div>
 
             <h3 class="sub-title display" style="margin-top:20px;">Previous Records</h3>
             <div id="dtpRecordsList"></div>
@@ -1816,6 +1831,8 @@ document.getElementById("mtExportBtn").addEventListener("click", ()=>{
 window.addEventListener("afterprint", ()=>{
   document.body.classList.remove("print-mt-day");
   document.body.classList.remove("print-mt-salary");
+  document.body.classList.remove("print-dt-day");
+  document.body.classList.remove("print-dt-salary");
 });
 document.getElementById("mtClearBtn").addEventListener("click", ()=>{
   mtWorkers = [];
@@ -3420,6 +3437,15 @@ document.getElementById("dwSaveBtn").addEventListener("click", ()=>{
 });
 
 document.getElementById("dwPrintBtn").addEventListener("click", ()=>window.print());
+
+document.getElementById("dtpPrintBtn").addEventListener("click", ()=>{
+  document.body.classList.add("print-dt-day");
+  window.print();
+});
+document.getElementById("dtpRecordsPrintBtn").addEventListener("click", ()=>{
+  document.body.classList.add("print-dt-salary");
+  window.print();
+});
 
 function dwLoadRecords(){
   const container = document.getElementById("dwRecordsList");
