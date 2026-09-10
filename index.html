@@ -2706,16 +2706,9 @@ document.getElementById("dtpAddDateBtn").addEventListener("click", ()=>{
 
     let targetPeriod = null;
     if(latestOpen){
-      const existingDays = Object.keys(latestOpen.days).sort();
-      if(existingDays.includes(dateStr)){
-        targetPeriod = latestOpen; // same date already in this period -> update it
-      } else if(existingDays.length>0){
-        const lastDay = existingDays[existingDays.length-1];
-        const prevDate = new Date(dateStr+"T00:00:00"); prevDate.setDate(prevDate.getDate()-1);
-        if(lastDay === fmtDate(prevDate)) targetPeriod = latestOpen; // contiguous -> continue
-      }
-      // else: gap from the latest open period -> leave it as-is (stays open, payable
-      // later from Previous Records) and start a fresh period below.
+      // Always keep adding into the one open (unpaid) period, no matter the date
+      // gap — it only stops being "current" once it's explicitly paid.
+      targetPeriod = latestOpen;
     }
 
     const dayEntry = { kg, workers: Array.from(dtFormWorkers) };
