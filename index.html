@@ -365,7 +365,7 @@
   .dt-foodcash-card .sec-name { font-size:14px; }
 
   /* ===== DRYER TEAM: Salary Period card (rebuilt) ===== */
-  .dtp-range { font-family:'Fraunces',serif; font-weight:800; font-size:17px; color:#1F3D24; text-align:center; margin-bottom:10px; }
+  .dtp-range { font-family:'Fraunces',serif; font-weight:800; font-size:17px; color:#1F3D24; text-align:center; margin-bottom:10px; white-space:nowrap; }
   .dtp-top-stats { display:flex; gap:10px; margin-bottom:6px; }
   .dtp-top-stat { flex:1; background:#fff; border:1px solid #D8C89A; border-radius:10px; padding:10px; text-align:center; }
   .dtp-top-stat-label { display:block; font-size:10.5px; color:#8A7A5E; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:3px; }
@@ -874,8 +874,12 @@
             </div>
 
             <div class="mt-card no-print" id="dtAddRecordCard">
-              <div class="mt-card-head"><span class="sec-name display">Add Record</span></div>
+              <div class="mt-card-head" id="dtAddRecordToggle" style="cursor:pointer;">
+                <span class="sec-name display">Add Record</span>
+                <span class="dt-icon-btn" style="pointer-events:none;" id="dtAddRecordChevron">&#9660;</span>
+              </div>
 
+              <div id="dtAddRecordBody" style="display:none;">
               <div class="dt-section-label">Add Date</div>
               <div class="dt-field-label" style="margin-top:0;">Date</div>
               <input type="date" id="dtpDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
@@ -912,6 +916,7 @@
               </div>
               <button class="fadd no-print" id="dtpFoodAddBtn" style="width:100%;margin-top:8px;">+ Add</button>
               <div class="save-note no-print" id="dtpFoodSaveNote"></div>
+              </div>
             </div>
 
             <div class="mt-card" id="dtpCard">
@@ -1182,6 +1187,15 @@ function fmtDate(d){
 function fmtNice(dstr){
   const d = new Date(dstr+"T00:00:00");
   return d.toLocaleDateString("en-IN",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
+}
+// Compact DD-MM-YY date, used on the Dryer Team page so date ranges fit on one line
+// instead of wrapping across several lines (e.g. "03-09-26" instead of "Thu, 03 Sept, 2026").
+function fmtCompact(dstr){
+  const d = new Date(dstr+"T00:00:00");
+  const day = String(d.getDate()).padStart(2,"0");
+  const month = String(d.getMonth()+1).padStart(2,"0");
+  const year = String(d.getFullYear()).slice(-2);
+  return `${day}-${month}-${year}`;
 }
 function monthKey(dstr){ return dstr.slice(0,7); }
 function monthNice(mk){
@@ -2675,6 +2689,14 @@ function dtRenderWorkerChips(){
   });
 }
 
+document.getElementById("dtAddRecordToggle").addEventListener("click", ()=>{
+  const body = document.getElementById("dtAddRecordBody");
+  const chevron = document.getElementById("dtAddRecordChevron");
+  const isOpen = body.style.display !== "none";
+  body.style.display = isOpen ? "none" : "block";
+  chevron.innerHTML = isOpen ? "&#9660;" : "&#9650;";
+});
+
 document.getElementById("dtpNewWorkerAddBtn").addEventListener("click", ()=>{
   const input = document.getElementById("dtpNewWorkerInput");
   const name = input.value.trim();
@@ -2854,7 +2876,7 @@ function dtRenderPeriodCard(){
     daysListEl.innerHTML = "";
   } else {
     const days = Object.keys(p.days).sort();
-    rangeEl.textContent = days.length===1 ? fmtNice(days[0]) : `${fmtNice(days[0])} \u2013 ${fmtNice(days[days.length-1])}`;
+    rangeEl.textContent = days.length===1 ? fmtCompact(days[0]) : `${fmtCompact(days[0])} \u2013 ${fmtCompact(days[days.length-1])}`;
     let totalKg = 0;
     days.forEach(ds=>{ totalKg += Number(p.days[ds].kg)||0; });
     document.getElementById("dtpTotalKg").textContent = totalKg;
@@ -2867,7 +2889,7 @@ function dtRenderPeriodCard(){
       const workerLines = d.workers.map(nm=>`<div class="dtp-day-worker-line"><span>${escapeHtml(nm.toUpperCase())}</span><span class="amt">\u20b9${rupee(perWorker)}</span></div>`).join("");
       return `<div class="dtp-day-row">
         <div class="dtp-day-row-head">
-          <span class="dtp-day-row-date">${fmtNice(ds)}</span>
+          <span class="dtp-day-row-date">${fmtCompact(ds)}</span>
           <span class="dtp-day-row-actions no-print">
             <button class="dt-icon-btn" data-editday="${ds}" title="Edit">&#9998;</button>
             <button class="dt-icon-btn danger" data-delday="${ds}" title="Delete">&#128465;</button>
@@ -2934,7 +2956,7 @@ function dtFoodGroupHtml(groups, editable){
       const icons = editable ? `<button class="dt-icon-btn no-print" data-editfood="${e.date}::${e.entryId}" title="Edit">&#9998;</button><button class="dt-icon-btn danger no-print" data-delfood="${e.date}::${e.entryId}" title="Delete">&#128465;</button>` : "";
       return `<div class="dtp-food-date-row">
         <div class="dtp-food-date-top">
-          <span class="dtp-food-date-label">${fmtNice(e.date)}</span>
+          <span class="dtp-food-date-label">${fmtCompact(e.date)}</span>
           <span class="dtp-food-date-amt">\u20b9${rupee(e.total)}</span>
           ${icons}
         </div>
@@ -3075,7 +3097,7 @@ function dtRenderPreviousRecords(){
     let totalKg = 0;
     days.forEach(ds=>{ totalKg += Number(p.days[ds].kg)||0; });
     const totalSalary = totalKg*RATE_PER_KG;
-    const rangeLabel = days.length===1 ? fmtNice(days[0]) : `${fmtNice(days[0])} \u2013 ${fmtNice(days[days.length-1])}`;
+    const rangeLabel = days.length===1 ? fmtCompact(days[0]) : `${fmtCompact(days[0])} \u2013 ${fmtCompact(days[days.length-1])}`;
 
     const periodFood = dtFoodCashForPeriod(p);
     const foodTotal = periodFood.reduce((s,e)=>s+e.total,0);
@@ -3088,7 +3110,7 @@ function dtRenderPreviousRecords(){
       const perWorker = d.workers.length>0 ? dTotal/d.workers.length : 0;
       const workerLines = d.workers.map(nm=>`<div class="dtp-day-worker-line"><span>${escapeHtml(nm.toUpperCase())}</span><span class="amt">\u20b9${rupee(perWorker)}</span></div>`).join("");
       return `<div class="dtp-day-row">
-        <div class="dtp-day-row-head"><span class="dtp-day-row-date">${fmtNice(ds)}</span></div>
+        <div class="dtp-day-row-head"><span class="dtp-day-row-date">${fmtCompact(ds)}</span></div>
         <div class="dtp-day-row-kg">${d.kg} KG \u00d7 \u20b9${RATE_PER_KG} = \u20b9${rupee(dTotal)} \u00f7 ${d.workers.length} worker${d.workers.length>1?"s":""}</div>
         ${workerLines}
       </div>`;
