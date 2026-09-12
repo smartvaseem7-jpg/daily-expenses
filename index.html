@@ -3171,7 +3171,7 @@ function dtLoadPeriods(){
 
     pSnap.forEach(doc=>{
       const d = doc.data();
-      dtPeriodsCache.push({ id:doc.id, periodStart:d.periodStart||"", status:d.status||"open", days: d.days||{}, paidDate:d.paidDate||"" });
+      dtPeriodsCache.push({ id:doc.id, periodStart:d.periodStart||"", status:d.status||"open", days: d.days||{}, paidDate:d.paidDate||"", foodCashSnapshot: Array.isArray(d.foodCashSnapshot) ? d.foodCashSnapshot : undefined });
     });
 
     dtFoodCashCache = [];
