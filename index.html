@@ -332,7 +332,7 @@
   .dt-week-group-header .amt { font-family:'IBM Plex Mono',monospace; font-size:13px; color:#3B6B35; text-transform:none; letter-spacing:0; margin-left:auto; }
   .dt-week-pay-btn { border:none; background:#3B6B35; color:#fff; font-family:'Inter',sans-serif; font-weight:700; font-size:11px; text-transform:none; letter-spacing:0; padding:5px 12px; border-radius:999px; cursor:pointer; flex-shrink:0; }
   .dt-record { background:#F3ECD9; border:1px solid #D8C89A; border-radius:14px; padding:18px 16px; margin-bottom:14px; }
-  .dt-record-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .dt-record-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
   .dt-kg-hero { font-family:'Fraunces',serif; font-weight:900; font-size:38px; line-height:1; color:#2E5233; }
   .dt-kg-hero .unit { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; color:#6B5B45; margin-left:5px; }
   .dt-record-actions { display:flex; gap:6px; flex-shrink:0; }
@@ -3123,16 +3123,18 @@ function dtRenderPreviousRecords(){
     const card = document.createElement("div");
     card.className = "dt-record";
     card.innerHTML = `
-      <div class="dt-record-top dt-record-toggle" data-togglerecord="${p.id}" style="cursor:pointer;">
-        <div>
+      <div class="dt-record-toggle" data-togglerecord="${p.id}" style="cursor:pointer;">
+        <div class="dt-record-top">
           <div class="dtp-range" style="text-align:left;margin-bottom:2px;">${rangeLabel}</div>
-          <div class="dt-record-date">${totalKg} KG total</div>
+          <span class="mono" style="font-weight:800;color:#3B6B35;flex-shrink:0;">\u20b9${rupee(grandTotal)}</span>
         </div>
-        <div class="dt-record-actions">
-          <span class="mono" style="font-weight:800;color:#3B6B35;">\u20b9${rupee(grandTotal)}</span>
-          ${isPaid ? `<span class="dtp-paid-badge">PAID</span>` : `<button class="dt-week-pay-btn no-print" data-payperiod="${p.id}">Pay</button>`}
-          <button class="dt-icon-btn danger no-print" data-delperiod="${p.id}" title="Delete">&#128465;</button>
-          <span class="dt-icon-btn" style="pointer-events:none;">${isOpen ? "&#9650;" : "&#9660;"}</span>
+        <div class="dt-record-top" style="margin-top:6px;align-items:center;">
+          <div class="dt-record-date" style="margin:0;">${totalKg} KG total</div>
+          <div class="dt-record-actions">
+            ${isPaid ? `<span class="dtp-paid-badge">PAID</span>` : `<button class="dt-week-pay-btn no-print" data-payperiod="${p.id}">Pay</button>`}
+            <button class="dt-icon-btn danger no-print" data-delperiod="${p.id}" title="Delete">&#128465;</button>
+            <span class="dt-icon-btn" style="pointer-events:none;">${isOpen ? "&#9650;" : "&#9660;"}</span>
+          </div>
         </div>
       </div>
       ${isOpen ? `
