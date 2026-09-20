@@ -1525,7 +1525,25 @@ function totalCash(){ return openingCash + addedCash(); }
 
 function loadDay(dateStr){
   document.getElementById("saveNote").textContent = "Loading...";
-  db.collection("expenses").doc(dateStr).get().then((doc)=>{
+  // Always recompute "yesterday"'s balance fresh from whatever the previous day
+  // currently has saved, instead of trusting a possibly-stale "opening" value
+  // that got baked into this day's own doc the first time it was created.
+  // (Otherwise, if you go back and edit an earlier day's entries later, the
+  // days after it keep showing the old, now-wrong "Yesterday" amount.)
+  Promise.all([
+    db.collection("expenses").doc(dateStr).get(),
+    db.collection("expenses").where("date","<",dateStr).orderBy("date","desc").limit(1).get()
+  ]).then(([doc, prevSnap])=>{
+    let prevBalance = 0;
+    if(!prevSnap.empty){
+      const prev = prevSnap.docs[0].data();
+      const prevOpening = Number(prev.opening)||0;
+      let prevAdded = 0;
+      if(Array.isArray(prev.cashEntries)) prevAdded = prev.cashEntries.reduce((s,c)=>s+Number(c.amount||0),0);
+      else if(prev.cashReceived != null) prevAdded = Number(prev.cashReceived)||0;
+      const prevSpent = (prev.items||[]).reduce((s,i)=>s+Number(i.price),0);
+      prevBalance = prevOpening + prevAdded - prevSpent;
+    }
     if(doc.exists){
       const parsed = doc.data();
       if(Array.isArray(parsed.cashEntries)){
@@ -1536,30 +1554,12 @@ function loadDay(dateStr){
         cashEntries = [];
       }
       items = Array.isArray(parsed.items) ? parsed.items : [];
-      openingCash = Number(parsed.opening)||0;
-      document.getElementById("saveNote").textContent = "";
-      renderDay();
     } else {
-      db.collection("expenses").where("date","<",dateStr).orderBy("date","desc").limit(1).get().then((snap)=>{
-        let prevBalance = 0;
-        if(!snap.empty){
-          const prev = snap.docs[0].data();
-          const prevOpening = Number(prev.opening)||0;
-          let prevAdded = 0;
-          if(Array.isArray(prev.cashEntries)) prevAdded = prev.cashEntries.reduce((s,c)=>s+Number(c.amount||0),0);
-          else if(prev.cashReceived != null) prevAdded = Number(prev.cashReceived)||0;
-          const prevSpent = (prev.items||[]).reduce((s,i)=>s+Number(i.price),0);
-          prevBalance = prevOpening + prevAdded - prevSpent;
-        }
-        cashEntries = []; items = []; openingCash = prevBalance;
-        document.getElementById("saveNote").textContent = "";
-        renderDay();
-      }).catch(()=>{
-        cashEntries = []; items = []; openingCash = 0;
-        document.getElementById("saveNote").textContent = "Couldn't load previous balance.";
-        renderDay();
-      });
+      cashEntries = []; items = [];
     }
+    openingCash = prevBalance;
+    document.getElementById("saveNote").textContent = "";
+    renderDay();
   }).catch((e)=>{
     document.getElementById("saveNote").textContent = "Couldn't load. Check internet.";
     cashEntries = []; items = []; openingCash = 0;
