@@ -1874,11 +1874,11 @@ let mtDailyRate = 0;
 let editingWorkerId = null;
 let mtExpandedWorkers = new Set();
 
-function mtEmptySections(prevSuppliers){
+function mtEmptySections(prevOpenings, prevSuppliers){
   const obj = {};
   SECTION_KEYS.forEach(k=>{
     const suppliers = (prevSuppliers && prevSuppliers[k]) ? prevSuppliers[k].map(sp=>({...sp})) : [];
-    const opening = suppliers.reduce((sum,sp)=>sum+(Number(sp.remainingQuantity)||0),0);
+    const opening = (prevOpenings && prevOpenings[k]) || 0;
     obj[k] = {opening, entries:[], cut:0, cutEntries:[], balance:opening, suppliers};
   });
   return obj;
@@ -1916,8 +1916,8 @@ function mtLoadDay(dateStr){
     db.collection("machineTeam").doc(dateStr).get(),
     db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(30).get()
   ]).then(([doc, snap])=>{
-    const prevSuppliers = {};
-    SECTION_KEYS.forEach(k=>{ prevSuppliers[k]=[]; });
+    const prevOpenings = {}, prevSuppliers = {};
+    SECTION_KEYS.forEach(k=>{ prevOpenings[k]=0; prevSuppliers[k]=[]; });
     // Walk backwards through recent days and use the most recent one that
     // actually has real data (non-zero balance, logged entries, or active
     // suppliers), so a stray "empty" day in between never breaks the
@@ -1935,6 +1935,11 @@ function mtLoadDay(dateStr){
     if(chosen){
       SECTION_KEYS.forEach(k=>{
         const prevSec = chosen.sections && chosen.sections[k];
+        // Opening carries forward as the previous day's ending BALANCE (this is
+        // the original mechanism) — it covers plain "Matta Today" entries/cuts
+        // too, not just suppliers. Suppliers carry forward separately, purely
+        // so each named supplier's own remaining quantity keeps being tracked.
+        prevOpenings[k] = (prevSec && Number(prevSec.balance)) || 0;
         prevSuppliers[k] = (prevSec && Array.isArray(prevSec.suppliers)) ? prevSec.suppliers.map(sp=>({...sp})) : [];
       });
     }
@@ -1952,7 +1957,7 @@ function mtLoadDay(dateStr){
         // saved before the supplier feature existed.
         const suppliers = Array.isArray(s.suppliers) ? s.suppliers.map(sp=>({...sp})) : prevSuppliers[k];
         const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
-        const opening = (typeof s.opening === "number") ? s.opening : suppliers.reduce((sum,sp)=>sum+(Number(sp.remainingQuantity)||0),0);
+        const opening = (typeof s.opening === "number") ? s.opening : prevOpenings[k];
         mtSectionsData[k] = {
           opening,
           entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||"", time:e.time||""})),
@@ -1964,7 +1969,7 @@ function mtLoadDay(dateStr){
       });
     } else {
       mtWorkers = [];
-      mtSectionsData = mtEmptySections(prevSuppliers);
+      mtSectionsData = mtEmptySections(prevOpenings, prevSuppliers);
     }
     document.getElementById("mtSaveNote").textContent = "";
     mtRender();
@@ -2574,7 +2579,7 @@ function mtRender(){
       const s = mtSectionsData[k];
       if(!Array.isArray(s.suppliers)) s.suppliers = [];
       s.suppliers.push({id:Date.now().toString(36), supplierName:name, originalOpeningQuantity:qty, remainingQuantity:qty, status:"active"});
-      s.opening = s.suppliers.reduce((sum,sp)=>sum+(Number(sp.remainingQuantity)||0),0);
+      s.opening = (Number(s.opening)||0) + qty;
       mtRecalc(k);
       mtPersistSection(k);
       mtRender();
