@@ -210,6 +210,28 @@
   .mt-card-head .sec-name { font-family:'Fraunces',serif; font-size:16px; font-weight:700; color:#4A3B28; }
   .mt-card-head .sec-balance { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700; color:#3B6B35; }
   .mt-opening { font-size:14px; color:#4A3B28; font-weight:600; margin-bottom:6px; }
+  .mt-line-link { font-size:14px; color:#4A3B28; font-weight:600; margin-bottom:6px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
+  .mt-line-link .arrow { color:#8A7A5E; }
+  .mt-modal-overlay { position:fixed; inset:0; background:rgba(20,30,15,0.45); display:flex; align-items:flex-end; justify-content:center; z-index:9999; }
+  .mt-modal-sheet { background:#FBF6E9; width:100%; max-width:520px; border-radius:20px 20px 0 0; padding:20px 18px calc(20px + env(safe-area-inset-bottom, 0px)); max-height:85vh; overflow-y:auto; }
+  .mt-modal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; }
+  .mt-modal-title { font-family:'Fraunces',serif; font-weight:800; font-size:18px; color:#1F3D24; display:flex; align-items:center; gap:8px; flex:1; }
+  .mt-modal-close, .mt-modal-back { border:none; background:#EFE6C8; width:32px; height:32px; min-width:32px; border-radius:50%; font-size:15px; cursor:pointer; color:#4A3B28; flex-shrink:0; }
+  .mt-supplier-row { display:flex; align-items:center; gap:12px; padding:12px 4px; border-bottom:1px solid #EEE3C0; cursor:pointer; }
+  .mt-supplier-row:last-child { border-bottom:none; }
+  .mt-supplier-avatar { width:32px; height:32px; border-radius:50%; background:#DCE9DC; color:#2E5233; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex-shrink:0; }
+  .mt-supplier-row .mt-s-name { flex:1; font-weight:700; color:#1F3D24; font-size:14.5px; }
+  .mt-supplier-row .mt-s-amt { font-weight:800; color:#2E5233; font-family:'IBM Plex Mono',monospace; font-size:14.5px; }
+  .mt-detail-card { display:flex; align-items:center; gap:12px; background:#EFE6C8; padding:14px; border-radius:14px; margin-bottom:14px; }
+  .mt-detail-stat-row { display:flex; justify-content:space-between; align-items:center; padding:9px 2px; border-bottom:1px solid #EEE3C0; font-size:14px; color:#4A3B28; }
+  .mt-status-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; }
+  .mt-status-badge.active { background:#DCEEDC; color:#2E6E44; }
+  .mt-status-badge.completed { background:#F8DADA; color:#B33A3A; }
+  .mt-history-row { display:flex; align-items:center; gap:10px; padding:10px 4px; border-bottom:1px solid #EEE3C0; font-size:13px; color:#4A3B28; }
+  .mt-history-row:last-child { border-bottom:none; }
+  .mt-history-tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .mt-history-tabs button { flex:1; border:1px solid #D8C89A; background:#fff; border-radius:999px; padding:8px 0; font-size:13px; font-weight:700; color:#4A3B28; cursor:pointer; }
+  .mt-history-tabs button.active { background:#2E5233; color:#fff; border-color:#2E5233; }
   .person-row { display:flex; justify-content:space-between; padding:6px 2px; font-size:13px; color:#4A3B28; }
   /* ===== DAILY EXPENSES (redesigned) ===== */
   #expensesSection .exp-tagline { font-size:12px; color:#6B5B45; margin:-6px 0 16px 78px; }
@@ -797,6 +819,7 @@
 
             <h3 class="sub-title display">Matta Today</h3>
             <div id="mtSectionsList"></div>
+            <div id="mtModalRoot"></div>
 
             <div id="mtPersonTotals" style="margin:6px 0 10px;"></div>
 
@@ -1867,9 +1890,13 @@ let mtEditMode = false;
 // Supplier system: which sections have their "Active Suppliers" panel open,
 // which have the completed/history sub-view open, and the lazily-loaded
 // completed-supplier history per section (only fetched when the user asks).
-let mtSupplierPanelOpen = new Set();
-let mtSupplierHistoryOpen = new Set();
-let mtSupplierHistoryCache = {};
+// Supplier system UI state: a small navigation stack for the Active
+// Suppliers -> Supplier Details -> Cutting History flow, plus which
+// per-section history tab is selected and its lazily-loaded cache
+// (only fetched when the user actually opens History).
+let mtModalStack = [];
+let mtHistoryTab = {};
+let mtHistoryCache = {};
 let mtDailyRate = 0;
 let editingWorkerId = null;
 let mtExpandedWorkers = new Set();
@@ -2474,52 +2501,7 @@ function mtRender(){
     // Completed ones are archived to machineTeamSupplierHistory and dropped
     // immediately, so this list — and the main page — never grows forever.
     const activeSuppliers = s.suppliers.filter(sp=>Number(sp.remainingQuantity)>0);
-    const panelOpen = mtSupplierPanelOpen.has(k);
-    const historyOpen = mtSupplierHistoryOpen.has(k);
 
-    const supplierRowsHtml = activeSuppliers.length ? activeSuppliers.map(sp=>
-      `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;color:#4A3B28;">${escapeHtml(sp.supplierName.toUpperCase())}</div><div class="iprice mono" style="font-size:14px;color:#3B6B35;">${rupee(sp.remainingQuantity)}</div></div>`
-    ).join("") : `<p class="empty" style="margin:4px 0;">No active suppliers.</p>`;
-
-    const addSupplierFormHtml = mtEditMode ? `
-      <div class="form-row no-print" style="margin:8px 0 0;">
-        <input type="text" placeholder="Supplier name" class="mt-supplier-name" data-sec="${k}" style="flex:1;" />
-        <input type="number" inputmode="decimal" placeholder="Opening qty" class="mt-supplier-qty" data-sec="${k}" style="flex:1;" />
-        <button class="fadd mt-supplier-add" data-sec="${k}">+ Add</button>
-      </div>` : "";
-
-    const historyList = mtSupplierHistoryCache[k];
-    const historyRowsHtml = !historyOpen ? "" : (
-      historyList===undefined ? `<p class="empty" style="margin:4px 0;">Loading...</p>` :
-      historyList.length===0 ? `<p class="empty" style="margin:4px 0;">No completed suppliers yet.</p>` :
-      historyList.map(h=>`<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:13px;color:#8A7A5E;">${escapeHtml((h.supplierName||"").toUpperCase())}</div><div class="iprice mono" style="font-size:13px;color:#8A7A5E;">${rupee(h.originalOpeningQuantity)}${h.completedDate?" \u2013 "+fmtNice(h.completedDate):""}</div></div>`).join("")
-    );
-
-    const supplierPanelHtml = `
-      <div class="dtp-worker-totals-box no-print" style="margin:8px 0;cursor:pointer;" data-suppliertoggle="${k}">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span>&#128101; ${activeSuppliers.length} Active Suppliers</span>
-          <span style="pointer-events:none;">${panelOpen ? "&#9650;" : "&#9660;"} &rsaquo;</span>
-        </div>
-      </div>
-      ${panelOpen ? `
-        ${supplierRowsHtml}
-        ${addSupplierFormHtml}
-        <button class="btn-export no-print mt-supplier-history-toggle" data-sec="${k}" style="width:100%;margin-top:8px;font-size:12px;">${historyOpen ? "Hide" : "View"} Completed / History &rsaquo;</button>
-        ${historyRowsHtml}
-      ` : ""}`;
-
-    const cutHtml = mtEditMode ? `
-      <div class="form-row no-print" style="margin:8px 0 0;">
-        <select class="mt-cut-supplier" data-sec="${k}" style="flex:1;">
-          <option value="">Select supplier</option>
-          ${activeSuppliers.map(sp=>`<option value="${sp.id}">${escapeHtml(sp.supplierName.toUpperCase())} (${rupee(sp.remainingQuantity)})</option>`).join("")}
-        </select>
-        <input type="number" inputmode="decimal" placeholder="Cut amount" class="mt-cut-input" data-sec="${k}" style="flex:1;" />
-        <button class="fadd mt-cut-add" data-sec="${k}">+ Cut</button>
-      </div>` : `<div class="mt-opening">Total cut today &raquo;&raquo; <span style="color:#B33A3A;font-weight:700;">${rupee(s.cut)}</span></div>`;
-
-    const openingHtml = `<div class="mt-opening">Opening: ${rupee(s.opening)}</div>`;
     const badgeColors = {A:"#3B6B35", B:"#2E6E9E", C:"#B5651D", D:"#7A4FA0", E:"#B3396B"};
     card.innerHTML = `
       <div class="mt-card-head">
@@ -2529,11 +2511,17 @@ function mtRender(){
         </span>
         <span class="sec-balance">Balance ${rupee(s.balance)}</span>
       </div>
-      ${openingHtml}
-      ${supplierPanelHtml}
+      <div class="mt-opening">Opening: ${rupee(s.opening)}</div>
+      <div class="mt-line-link no-print" data-open-suppliers="${k}">
+        <span>&#128101; ${activeSuppliers.length} Active Suppliers</span>
+        <span class="arrow">&rsaquo;</span>
+      </div>
+      <div class="mt-line-link no-print" data-open-cut="${k}">
+        <span>Target cutting &raquo;&raquo; <span style="color:#B33A3A;font-weight:700;">${rupee(s.cut)}</span></span>
+        <span class="arrow">&rsaquo;</span>
+      </div>
       ${rowsHtml}
-      ${addFormHtml}
-      ${cutHtml}`;
+      ${addFormHtml}`;
     list.appendChild(card);
   });
 
@@ -2554,94 +2542,250 @@ function mtRender(){
       const name = nameInput.value.trim();
       if(amount<=0) return;
       const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
-      mtSectionsData[k].entries.push({id:Date.now().toString(36), amount, name, time:timeLabel});
+      const s = mtSectionsData[k];
+      s.entries.push({id:Date.now().toString(36), amount, name, time:timeLabel});
+      // This matta also becomes (or tops up) that name's Active Supplier
+      // record, so "Opening" and the Active Suppliers list both reflect it —
+      // one Add flow instead of a separate "Add Supplier" step.
+      if(name){
+        if(!Array.isArray(s.suppliers)) s.suppliers = [];
+        let supplier = s.suppliers.find(sp=>sp.supplierName.toLowerCase()===name.toLowerCase());
+        if(supplier){
+          supplier.originalOpeningQuantity = (Number(supplier.originalOpeningQuantity)||0) + amount;
+          supplier.remainingQuantity = (Number(supplier.remainingQuantity)||0) + amount;
+          supplier.status = "active";
+        } else {
+          s.suppliers.push({id:Date.now().toString(36)+"s", supplierName:name, originalOpeningQuantity:amount, remainingQuantity:amount, status:"active", history:[]});
+        }
+      }
+      s.opening = (Number(s.opening)||0) + amount;
+      mtRecalc(k);
       mtPersist();
       mtRender();
     });
   });
 
-  list.querySelectorAll("[data-suppliertoggle]").forEach(el=>{
+  list.querySelectorAll("[data-open-suppliers]").forEach(el=>{
     el.addEventListener("click", ()=>{
-      const k = el.dataset.suppliertoggle;
-      if(mtSupplierPanelOpen.has(k)) mtSupplierPanelOpen.delete(k); else mtSupplierPanelOpen.add(k);
-      mtRender();
+      mtModalStack = [{type:"suppliers", section:el.dataset.openSuppliers}];
+      mtRenderModals();
     });
   });
-
-  list.querySelectorAll(".mt-supplier-add").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const k = btn.dataset.sec;
-      const nameInput = list.querySelector(`.mt-supplier-name[data-sec="${k}"]`);
-      const qtyInput = list.querySelector(`.mt-supplier-qty[data-sec="${k}"]`);
-      const name = nameInput.value.trim();
-      const qty = Number(qtyInput.value)||0;
-      if(!name || qty<=0) return;
-      const s = mtSectionsData[k];
-      if(!Array.isArray(s.suppliers)) s.suppliers = [];
-      s.suppliers.push({id:Date.now().toString(36), supplierName:name, originalOpeningQuantity:qty, remainingQuantity:qty, status:"active"});
-      s.opening = (Number(s.opening)||0) + qty;
-      mtRecalc(k);
-      mtPersistSection(k);
-      mtRender();
-    });
-  });
-
-  list.querySelectorAll(".mt-cut-add").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const k = btn.dataset.sec;
-      const supplierSelect = list.querySelector(`.mt-cut-supplier[data-sec="${k}"]`);
-      const cutInput = list.querySelector(`.mt-cut-input[data-sec="${k}"]`);
-      const supplierId = supplierSelect.value;
-      let amount = Number(cutInput.value)||0;
-      if(!supplierId || amount<=0) return;
-      const s = mtSectionsData[k];
-      const supplier = (s.suppliers||[]).find(sp=>sp.id===supplierId);
-      if(!supplier) return;
-      amount = Math.min(amount, Number(supplier.remainingQuantity)||0); // can never cut more than what's left
-      supplier.remainingQuantity = Math.max(0, (Number(supplier.remainingQuantity)||0) - amount);
-      if(!Array.isArray(s.cutEntries)) s.cutEntries = [];
-      const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
-      s.cutEntries.push({id:Date.now().toString(36), supplierId, supplierName:supplier.supplierName, amount, time:timeLabel});
-      s.cut = s.cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0);
-      if(supplier.remainingQuantity<=0){
-        // Fully cut: archive as history (never deleted) and drop it out of the
-        // active/carried-forward list so the Active Suppliers list stays short.
-        db.collection("machineTeamSupplierHistory").add({
-          section:k,
-          supplierName: supplier.supplierName,
-          originalOpeningQuantity: supplier.originalOpeningQuantity,
-          completedDate: mtSelectedDate
-        }).catch(()=>{});
-        s.suppliers = s.suppliers.filter(sp=>sp.id!==supplierId);
-        delete mtSupplierHistoryCache[k]; // force a fresh reload next time History is opened
-      }
-      mtRecalc(k);
-      mtPersistSection(k);
-      mtRender();
-    });
-  });
-
-  list.querySelectorAll(".mt-supplier-history-toggle").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const k = btn.dataset.sec;
-      if(mtSupplierHistoryOpen.has(k)){
-        mtSupplierHistoryOpen.delete(k);
-        mtRender();
-        return;
-      }
-      mtSupplierHistoryOpen.add(k);
-      mtRender(); // show "Loading..." immediately
-      db.collection("machineTeamSupplierHistory").where("section","==",k).orderBy("completedDate","desc").limit(50).get().then(snap=>{
-        mtSupplierHistoryCache[k] = snap.docs.map(d=>d.data());
-        mtRender();
-      }).catch(()=>{
-        mtSupplierHistoryCache[k] = [];
-        mtRender();
-      });
+  list.querySelectorAll("[data-open-cut]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      mtModalStack = [{type:"cut", section:el.dataset.openCut}];
+      mtRenderModals();
     });
   });
 
   mtRenderTotalsOnly();
+  mtRenderModals();
+}
+
+// ---------------- Supplier modals: Active Suppliers list -> Supplier
+// Details (with cutting history) -> full Completed/History view. Only the
+// top of mtModalStack is ever rendered; "back" pops it, "close" clears it.
+function mtSupplierById(k, id){
+  return (mtSectionsData[k] && mtSectionsData[k].suppliers || []).find(sp=>sp.id===id);
+}
+
+function mtRenderModals(){
+  const root = document.getElementById("mtModalRoot");
+  if(!root) return;
+  if(mtModalStack.length===0){ root.innerHTML = ""; return; }
+  const top = mtModalStack[mtModalStack.length-1];
+  const k = top.section;
+  const s = mtSectionsData[k] || {suppliers:[]};
+  const activeSuppliers = (s.suppliers||[]).filter(sp=>Number(sp.remainingQuantity)>0);
+  let inner = "";
+
+  if(top.type==="suppliers"){
+    inner = `
+      <div class="mt-modal-head">
+        <span class="mt-modal-title">&#128101; Active Suppliers (${activeSuppliers.length})</span>
+        <button class="mt-modal-close" data-modal-close>&times;</button>
+      </div>
+      ${activeSuppliers.length ? activeSuppliers.map((sp,i)=>`
+        <div class="mt-supplier-row" data-open-detail="${sp.id}">
+          <div class="mt-supplier-avatar">${i+1}</div>
+          <div class="mt-s-name">${escapeHtml(sp.supplierName.toUpperCase())}</div>
+          <div class="mt-s-amt">${rupee(sp.remainingQuantity)}</div>
+        </div>`).join("") : `<p class="empty" style="margin:10px 0;">No active suppliers.</p>`}
+      <button class="btn-export no-print" style="width:100%;margin-top:16px;" data-modal-close>Close</button>`;
+  }
+
+  else if(top.type==="detail"){
+    const sp = mtSupplierById(k, top.supplierId);
+    if(!sp){
+      inner = `<div class="mt-modal-head"><span class="mt-modal-title">Supplier Details</span><button class="mt-modal-close" data-modal-close>&times;</button></div><p class="empty">This supplier is no longer active.</p>`;
+    } else {
+      const status = Number(sp.remainingQuantity)>0 ? "active" : "completed";
+      const history = Array.isArray(sp.history) ? sp.history.slice().reverse() : [];
+      const historyRows = history.length ? history.map(h=>`
+        <div class="mt-history-row">
+          <span>&#128197;</span>
+          <div style="flex:1;">
+            <div>${fmtNice(h.date)}</div>
+            <div>Cut: <span class="mono">${rupee(h.cut)}</span></div>
+          </div>
+          <div style="text-align:right;">
+            <div class="${h.remainingAfter<=0 ? '' : 'mono'}" style="${h.remainingAfter<=0?'color:#B33A3A;font-weight:700;':''}">Remaining: ${rupee(h.remainingAfter)}</div>
+            ${h.remainingAfter<=0 ? `<span class="mt-status-badge completed">Completed</span>` : ""}
+          </div>
+        </div>`).join("") : `<p class="empty" style="margin:8px 0;">No cutting history yet.</p>`;
+      inner = `
+        <div class="mt-modal-head">
+          <button class="mt-modal-back" data-modal-back>&#8592;</button>
+          <span class="mt-modal-title">Supplier Details</span>
+          <button class="mt-modal-close" data-modal-close>&times;</button>
+        </div>
+        <div class="mt-detail-card">
+          <div class="mt-supplier-avatar" style="width:40px;height:40px;font-size:16px;">${escapeHtml(sp.supplierName.charAt(0).toUpperCase())}</div>
+          <div style="font-weight:800;font-size:17px;color:#1F3D24;">${escapeHtml(sp.supplierName.toUpperCase())}</div>
+        </div>
+        <div class="mt-detail-stat-row"><span>Original Quantity</span><span class="mono">${rupee(sp.originalOpeningQuantity)}</span></div>
+        <div class="mt-detail-stat-row"><span>Remaining</span><span class="mono">${rupee(sp.remainingQuantity)}</span></div>
+        <div class="mt-detail-stat-row"><span>Status</span><span class="mt-status-badge ${status}">${status==="active"?"Active":"Completed"}</span></div>
+        <h4 style="margin:16px 0 6px;color:#4A3B28;font-size:14px;">Cutting History</h4>
+        ${historyRows}
+        <button class="btn-export no-print" style="width:100%;margin-top:14px;" data-open-full-history>View in History &rsaquo;</button>`;
+    }
+  }
+
+  else if(top.type==="history"){
+    const tab = mtHistoryTab[k] || "completed";
+    const cached = mtHistoryCache[k];
+    let rows = "";
+    if(cached===undefined){
+      rows = `<p class="empty" style="margin:10px 0;">Loading...</p>`;
+    } else {
+      const completedRows = cached.map(h=>({name:h.supplierName, orig:h.originalOpeningQuantity, cut:h.originalOpeningQuantity, date:h.completedDate, completed:true}));
+      const activeRows = tab==="all" ? activeSuppliers.map(sp=>({name:sp.supplierName, orig:sp.originalOpeningQuantity, cut:(sp.originalOpeningQuantity-sp.remainingQuantity), date:"", completed:false})) : [];
+      const combined = [...completedRows, ...activeRows];
+      rows = combined.length ? combined.map((r,i)=>`
+        <div class="mt-history-row">
+          <div class="mt-supplier-avatar">${i+1}</div>
+          <div style="flex:1;">
+            <div style="font-weight:700;color:#1F3D24;">${escapeHtml((r.name||"").toUpperCase())}</div>
+            <div class="mono" style="font-size:12px;">${rupee(r.orig)} \u00b7 Cut: ${rupee(r.cut)}</div>
+          </div>
+          <div style="text-align:right;">
+            ${r.date ? `<div style="font-size:12px;">${fmtNice(r.date)}</div>` : ""}
+            <span class="mt-status-badge ${r.completed?'completed':'active'}">${r.completed?'Completed':'Active'}</span>
+          </div>
+        </div>`).join("") : `<p class="empty" style="margin:10px 0;">No suppliers here yet.</p>`;
+    }
+    inner = `
+      <div class="mt-modal-head">
+        <button class="mt-modal-back" data-modal-back>&#8592;</button>
+        <span class="mt-modal-title">Supplier History</span>
+        <button class="mt-modal-close" data-modal-close>&times;</button>
+      </div>
+      <div class="mt-history-tabs">
+        <button class="${tab==='completed'?'active':''}" data-history-tab="completed">Completed</button>
+        <button class="${tab==='all'?'active':''}" data-history-tab="all">All</button>
+      </div>
+      ${rows}`;
+  }
+
+  else if(top.type==="cut"){
+    inner = `
+      <div class="mt-modal-head">
+        <span class="mt-modal-title">Cut Mattai \u2014 Section ${k}</span>
+        <button class="mt-modal-close" data-modal-close>&times;</button>
+      </div>
+      <div class="dt-field-label" style="margin-top:0;">Select Supplier</div>
+      <select id="mtCutModalSupplier" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;background:#fff;">
+        <option value="">Select supplier</option>
+        ${activeSuppliers.map(sp=>`<option value="${sp.id}">${escapeHtml(sp.supplierName.toUpperCase())} (${rupee(sp.remainingQuantity)})</option>`).join("")}
+      </select>
+      <div class="dt-field-label">Cut Amount</div>
+      <input type="number" inputmode="decimal" placeholder="0" id="mtCutModalAmount" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
+      <div class="save-note no-print" id="mtCutModalNote"></div>
+      <button class="btn-export no-print" id="mtCutModalSubmit" style="width:100%;margin-top:12px;">&#9986; Cut</button>`;
+  }
+
+  root.innerHTML = `<div class="mt-modal-overlay" data-modal-overlay><div class="mt-modal-sheet">${inner}</div></div>`;
+
+  root.querySelectorAll("[data-modal-close]").forEach(el=>el.addEventListener("click", ()=>{ mtModalStack=[]; mtRenderModals(); }));
+  root.querySelector("[data-modal-overlay]").addEventListener("click", (ev)=>{ if(ev.target===ev.currentTarget){ mtModalStack=[]; mtRenderModals(); } });
+  root.querySelectorAll("[data-modal-back]").forEach(el=>el.addEventListener("click", ()=>{ mtModalStack.pop(); mtRenderModals(); }));
+
+  root.querySelectorAll("[data-open-detail]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      mtModalStack.push({type:"detail", section:k, supplierId:el.dataset.openDetail});
+      mtRenderModals();
+    });
+  });
+
+  const historyBtn = root.querySelector("[data-open-full-history]");
+  if(historyBtn){
+    historyBtn.addEventListener("click", ()=>{
+      mtModalStack.push({type:"history", section:k});
+      mtLoadSupplierHistory(k);
+      mtRenderModals();
+    });
+  }
+
+  root.querySelectorAll("[data-history-tab]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      mtHistoryTab[k] = btn.dataset.historyTab;
+      mtRenderModals();
+    });
+  });
+
+  const cutSubmit = root.querySelector("#mtCutModalSubmit");
+  if(cutSubmit){
+    cutSubmit.addEventListener("click", ()=>{
+      const supplierId = document.getElementById("mtCutModalSupplier").value;
+      const amountInput = document.getElementById("mtCutModalAmount");
+      const note = document.getElementById("mtCutModalNote");
+      let amount = Number(amountInput.value)||0;
+      if(!supplierId){ note.textContent = "Select a supplier first."; return; }
+      if(amount<=0){ note.textContent = "Enter a cut amount."; return; }
+      const sec = mtSectionsData[k];
+      const supplier = mtSupplierById(k, supplierId);
+      if(!supplier) return;
+      amount = Math.min(amount, Number(supplier.remainingQuantity)||0); // can never cut more than what's left
+      supplier.remainingQuantity = Math.max(0, (Number(supplier.remainingQuantity)||0) - amount);
+      if(!Array.isArray(supplier.history)) supplier.history = [];
+      supplier.history.push({date: mtSelectedDate, cut: amount, remainingAfter: supplier.remainingQuantity});
+      if(!Array.isArray(sec.cutEntries)) sec.cutEntries = [];
+      const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+      sec.cutEntries.push({id:Date.now().toString(36), supplierId, supplierName:supplier.supplierName, amount, time:timeLabel});
+      sec.cut = sec.cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0);
+      if(supplier.remainingQuantity<=0){
+        // Fully cut: archive as history (never deleted, full cutting history
+        // included) and drop it out of the active/carried-forward list so
+        // the Active Suppliers list — and the main page — stay short.
+        supplier.status = "completed";
+        db.collection("machineTeamSupplierHistory").add({
+          section:k,
+          supplierName: supplier.supplierName,
+          originalOpeningQuantity: supplier.originalOpeningQuantity,
+          completedDate: mtSelectedDate,
+          history: supplier.history
+        }).catch(()=>{});
+        sec.suppliers = sec.suppliers.filter(x=>x.id!==supplierId);
+        delete mtHistoryCache[k]; // force a fresh reload next time History is opened
+      }
+      mtRecalc(k);
+      mtPersistSection(k);
+      mtModalStack = [];
+      mtRender();
+    });
+  }
+}
+
+function mtLoadSupplierHistory(k){
+  mtHistoryCache[k] = undefined;
+  db.collection("machineTeamSupplierHistory").where("section","==",k).orderBy("completedDate","desc").limit(50).get().then(snap=>{
+    mtHistoryCache[k] = snap.docs.map(d=>d.data());
+    mtRenderModals();
+  }).catch(()=>{
+    mtHistoryCache[k] = [];
+    mtRenderModals();
+  });
 }
 
 document.getElementById("mtToggleEdit").addEventListener("click", ()=>{
