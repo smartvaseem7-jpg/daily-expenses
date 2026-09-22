@@ -1864,13 +1864,23 @@ let mtSelectedDate = fmtDate(new Date());
 let mtWorkers = [];
 let mtSectionsData = {};
 let mtEditMode = false;
+// Supplier system: which sections have their "Active Suppliers" panel open,
+// which have the completed/history sub-view open, and the lazily-loaded
+// completed-supplier history per section (only fetched when the user asks).
+let mtSupplierPanelOpen = new Set();
+let mtSupplierHistoryOpen = new Set();
+let mtSupplierHistoryCache = {};
 let mtDailyRate = 0;
 let editingWorkerId = null;
 let mtExpandedWorkers = new Set();
 
-function mtEmptySections(openings, owners){
+function mtEmptySections(prevSuppliers){
   const obj = {};
-  SECTION_KEYS.forEach(k=>{ obj[k] = {opening:(openings&&openings[k])||0, entries:[], cut:0, balance:(openings&&openings[k])||0, ownerNames:(owners&&owners[k])||[], openingManual:false}; });
+  SECTION_KEYS.forEach(k=>{
+    const suppliers = (prevSuppliers && prevSuppliers[k]) ? prevSuppliers[k].map(sp=>({...sp})) : [];
+    const opening = suppliers.reduce((sum,sp)=>sum+(Number(sp.remainingQuantity)||0),0);
+    obj[k] = {opening, entries:[], cut:0, cutEntries:[], balance:opening, suppliers};
+  });
   return obj;
 }
 SECTION_KEYS.forEach(k=>{}); // no-op, kept for readability
@@ -1906,28 +1916,26 @@ function mtLoadDay(dateStr){
     db.collection("machineTeam").doc(dateStr).get(),
     db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(30).get()
   ]).then(([doc, snap])=>{
-    const prevOpenings = {}, prevOwners = {};
-    SECTION_KEYS.forEach(k=>{ prevOpenings[k]=0; prevOwners[k]=[]; });
+    const prevSuppliers = {};
+    SECTION_KEYS.forEach(k=>{ prevSuppliers[k]=[]; });
     // Walk backwards through recent days and use the most recent one that
-    // actually has real data (non-zero balance or logged entries), so a
-    // stray "empty" day in between never breaks the carry-forward chain.
+    // actually has real data (non-zero balance, logged entries, or active
+    // suppliers), so a stray "empty" day in between never breaks the
+    // carry-forward chain.
     let chosen = null;
     for(const docSnap of snap.docs){
       const d = docSnap.data();
       const hasData = SECTION_KEYS.some(k=>{
         const s = d.sections && d.sections[k];
-        return s && (Number(s.balance)!==0 || (Array.isArray(s.entries) && s.entries.length>0) || Number(s.cut)!==0);
+        return s && (Number(s.balance)!==0 || (Array.isArray(s.entries) && s.entries.length>0) || Number(s.cut)!==0 || (Array.isArray(s.suppliers) && s.suppliers.length>0));
       });
       if(hasData){ chosen = d; break; }
       if(!chosen) chosen = d; // fallback: most recent day even if empty
     }
     if(chosen){
       SECTION_KEYS.forEach(k=>{
-        prevOpenings[k] = (chosen.sections && chosen.sections[k] && Number(chosen.sections[k].balance)) || 0;
         const prevSec = chosen.sections && chosen.sections[k];
-        if(prevSec){
-          prevOwners[k] = Array.isArray(prevSec.ownerNames) ? prevSec.ownerNames.slice() : (prevSec.ownerName ? [prevSec.ownerName] : []);
-        }
+        prevSuppliers[k] = (prevSec && Array.isArray(prevSec.suppliers)) ? prevSec.suppliers.map(sp=>({...sp})) : [];
       });
     }
     if(doc.exists){
@@ -1937,21 +1945,26 @@ function mtLoadDay(dateStr){
       SECTION_KEYS.forEach(k=>{
         const s = (data.sections && data.sections[k]) || {};
         const entries = Array.isArray(s.entries) ? s.entries : [];
-        const manual = !!s.openingManual;
-        const todayOwners = Array.isArray(s.ownerNames) ? s.ownerNames : (s.ownerName ? [s.ownerName] : []);
-        const mergedOwners = Array.from(new Set([...(prevOwners[k]||[]), ...todayOwners]));
+        // If today's own doc already has its own suppliers array, that's the
+        // live, authoritative state (it already reflects any adds/cuts made
+        // earlier today) — don't re-merge with yesterday's snapshot, or we'd
+        // undo today's cuts. Only fall back to yesterday's list for old docs
+        // saved before the supplier feature existed.
+        const suppliers = Array.isArray(s.suppliers) ? s.suppliers.map(sp=>({...sp})) : prevSuppliers[k];
+        const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
+        const opening = (typeof s.opening === "number") ? s.opening : suppliers.reduce((sum,sp)=>sum+(Number(sp.remainingQuantity)||0),0);
         mtSectionsData[k] = {
-          opening: manual ? (Number(s.opening)||0) : prevOpenings[k],
+          opening,
           entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||"", time:e.time||""})),
-          cut: Number(s.cut)||0,
-          balance: 0,
-          ownerNames: mergedOwners,
-          openingManual: manual
+          cut: cutEntries.length ? cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0) : (Number(s.cut)||0),
+          cutEntries,
+          suppliers,
+          balance: 0
         };
       });
     } else {
       mtWorkers = [];
-      mtSectionsData = mtEmptySections(prevOpenings, prevOwners);
+      mtSectionsData = mtEmptySections(prevSuppliers);
     }
     document.getElementById("mtSaveNote").textContent = "";
     mtRender();
@@ -1963,6 +1976,24 @@ function mtLoadDay(dateStr){
 }
 
 let mtPersistPromise = Promise.resolve();
+function mtPersistSection(k){
+  // Targeted save: only writes this one section's data (suppliers, cut, entries,
+  // balance) instead of re-saving workers + every other section, so adding a
+  // supplier or cutting mattai stays a small, fast update.
+  document.getElementById("mtSaveNote").textContent = "Saving...";
+  mtRecalc(k);
+  mtPersistPromise = db.collection("machineTeam").doc(mtSelectedDate).set({
+    date: mtSelectedDate,
+    month: monthKey(mtSelectedDate),
+    sections: { [k]: mtSectionsData[k] }
+  }, {merge:true}).then(()=>{
+    document.getElementById("mtSaveNote").textContent = "Saved";
+    setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
+  }).catch(()=>{
+    document.getElementById("mtSaveNote").textContent = "Couldn't save. Check internet.";
+  });
+}
+
 function mtPersist(){
   document.getElementById("mtSaveNote").textContent = "Saving...";
   SECTION_KEYS.forEach(k=>mtRecalc(k));
@@ -2414,6 +2445,7 @@ function mtRender(){
   SECTION_KEYS.forEach(k=>{
     mtRecalc(k);
     const s = mtSectionsData[k];
+    if(!Array.isArray(s.suppliers)) s.suppliers = [];
     const card = document.createElement("div");
     card.className = "mt-card";
     let rowsHtml = "";
@@ -2432,20 +2464,57 @@ function mtRender(){
         <input type="text" placeholder="Name" class="mt-entry-name" data-sec="${k}" style="flex:1;" />
         <button class="fadd mt-entry-add" data-sec="${k}">+ Add</button>
       </div>` : "";
+
+    // ---- Supplier system: only ACTIVE suppliers ever live in s.suppliers.
+    // Completed ones are archived to machineTeamSupplierHistory and dropped
+    // immediately, so this list — and the main page — never grows forever.
+    const activeSuppliers = s.suppliers.filter(sp=>Number(sp.remainingQuantity)>0);
+    const panelOpen = mtSupplierPanelOpen.has(k);
+    const historyOpen = mtSupplierHistoryOpen.has(k);
+
+    const supplierRowsHtml = activeSuppliers.length ? activeSuppliers.map(sp=>
+      `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;color:#4A3B28;">${escapeHtml(sp.supplierName.toUpperCase())}</div><div class="iprice mono" style="font-size:14px;color:#3B6B35;">${rupee(sp.remainingQuantity)}</div></div>`
+    ).join("") : `<p class="empty" style="margin:4px 0;">No active suppliers.</p>`;
+
+    const addSupplierFormHtml = mtEditMode ? `
+      <div class="form-row no-print" style="margin:8px 0 0;">
+        <input type="text" placeholder="Supplier name" class="mt-supplier-name" data-sec="${k}" style="flex:1;" />
+        <input type="number" inputmode="decimal" placeholder="Opening qty" class="mt-supplier-qty" data-sec="${k}" style="flex:1;" />
+        <button class="fadd mt-supplier-add" data-sec="${k}">+ Add</button>
+      </div>` : "";
+
+    const historyList = mtSupplierHistoryCache[k];
+    const historyRowsHtml = !historyOpen ? "" : (
+      historyList===undefined ? `<p class="empty" style="margin:4px 0;">Loading...</p>` :
+      historyList.length===0 ? `<p class="empty" style="margin:4px 0;">No completed suppliers yet.</p>` :
+      historyList.map(h=>`<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:13px;color:#8A7A5E;">${escapeHtml((h.supplierName||"").toUpperCase())}</div><div class="iprice mono" style="font-size:13px;color:#8A7A5E;">${rupee(h.originalOpeningQuantity)}${h.completedDate?" \u2013 "+fmtNice(h.completedDate):""}</div></div>`).join("")
+    );
+
+    const supplierPanelHtml = `
+      <div class="dtp-worker-totals-box no-print" style="margin:8px 0;cursor:pointer;" data-suppliertoggle="${k}">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span>&#128101; ${activeSuppliers.length} Active Suppliers</span>
+          <span style="pointer-events:none;">${panelOpen ? "&#9650;" : "&#9660;"} &rsaquo;</span>
+        </div>
+      </div>
+      ${panelOpen ? `
+        ${supplierRowsHtml}
+        ${addSupplierFormHtml}
+        <button class="btn-export no-print mt-supplier-history-toggle" data-sec="${k}" style="width:100%;margin-top:8px;font-size:12px;">${historyOpen ? "Hide" : "View"} Completed / History &rsaquo;</button>
+        ${historyRowsHtml}
+      ` : ""}`;
+
     const cutHtml = mtEditMode ? `
       <div class="form-row no-print" style="margin:8px 0 0;">
-        <input type="number" inputmode="decimal" placeholder="Target cutting" value="${s.cut||''}" class="mt-cut-input" data-sec="${k}" style="flex:1;" />
-        <button class="fadd mt-cut-add" data-sec="${k}">+ Add</button>
-      </div>` : `<div class="mt-opening">Target cutting &raquo;&raquo; <span style="color:#B33A3A;font-weight:700;">${rupee(s.cut)}</span></div>`;
-    const namesStr = (s.ownerNames && s.ownerNames.length) ? s.ownerNames.map(n=>escapeHtml(n.toUpperCase())).join(", ") : "—";
-    const lockNote = s.openingManual ? `<span style="color:#B33A3A;font-weight:600;"> &#128274; manual</span> <button class="mt-opening-unlock no-print" data-sec="${k}" style="border:none;background:none;color:#3B6B35;text-decoration:underline;font-size:11px;cursor:pointer;">&#128275; Use automatic</button>` : "";
-    const openingHtml = mtEditMode ? `
-      <div class="form-row no-print" style="margin:0 0 2px;">
-        <input type="number" inputmode="decimal" placeholder="Opening" value="${s.opening||''}" class="mt-opening-input" data-sec="${k}" style="flex:1;" />
-        <input type="text" placeholder="Owner names (comma separated)" value="${escapeHtml((s.ownerNames||[]).join(', '))}" class="mt-opening-owner-input" data-sec="${k}" style="flex:1;" />
-        <button class="fadd mt-opening-save" data-sec="${k}">&#10003; Save</button>
-      </div>
-      <div class="no-print" style="margin:0 0 8px;font-size:11px;">${lockNote}</div>` : `<div class="mt-opening">Opening (${namesStr}): ${rupee(s.opening)}</div>`;
+        <select class="mt-cut-supplier" data-sec="${k}" style="flex:1;">
+          <option value="">Select supplier</option>
+          ${activeSuppliers.map(sp=>`<option value="${sp.id}">${escapeHtml(sp.supplierName.toUpperCase())} (${rupee(sp.remainingQuantity)})</option>`).join("")}
+        </select>
+        <input type="number" inputmode="decimal" placeholder="Cut amount" class="mt-cut-input" data-sec="${k}" style="flex:1;" />
+        <button class="fadd mt-cut-add" data-sec="${k}">+ Cut</button>
+      </div>` : `<div class="mt-opening">Total cut today &raquo;&raquo; <span style="color:#B33A3A;font-weight:700;">${rupee(s.cut)}</span></div>`;
+
+    const openingHtml = `<div class="mt-opening">Opening: ${rupee(s.opening)}</div>`;
     const badgeColors = {A:"#3B6B35", B:"#2E6E9E", C:"#B5651D", D:"#7A4FA0", E:"#B3396B"};
     card.innerHTML = `
       <div class="mt-card-head">
@@ -2456,6 +2525,7 @@ function mtRender(){
         <span class="sec-balance">Balance ${rupee(s.balance)}</span>
       </div>
       ${openingHtml}
+      ${supplierPanelHtml}
       ${rowsHtml}
       ${addFormHtml}
       ${cutHtml}`;
@@ -2480,49 +2550,89 @@ function mtRender(){
       if(amount<=0) return;
       const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
       mtSectionsData[k].entries.push({id:Date.now().toString(36), amount, name, time:timeLabel});
-      if(name){
-        if(!mtSectionsData[k].ownerNames) mtSectionsData[k].ownerNames = [];
-        if(!mtSectionsData[k].ownerNames.includes(name)) mtSectionsData[k].ownerNames.push(name);
-      }
       mtPersist();
       mtRender();
     });
   });
+
+  list.querySelectorAll("[data-suppliertoggle]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const k = el.dataset.suppliertoggle;
+      if(mtSupplierPanelOpen.has(k)) mtSupplierPanelOpen.delete(k); else mtSupplierPanelOpen.add(k);
+      mtRender();
+    });
+  });
+
+  list.querySelectorAll(".mt-supplier-add").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = btn.dataset.sec;
+      const nameInput = list.querySelector(`.mt-supplier-name[data-sec="${k}"]`);
+      const qtyInput = list.querySelector(`.mt-supplier-qty[data-sec="${k}"]`);
+      const name = nameInput.value.trim();
+      const qty = Number(qtyInput.value)||0;
+      if(!name || qty<=0) return;
+      const s = mtSectionsData[k];
+      if(!Array.isArray(s.suppliers)) s.suppliers = [];
+      s.suppliers.push({id:Date.now().toString(36), supplierName:name, originalOpeningQuantity:qty, remainingQuantity:qty, status:"active"});
+      s.opening = s.suppliers.reduce((sum,sp)=>sum+(Number(sp.remainingQuantity)||0),0);
+      mtRecalc(k);
+      mtPersistSection(k);
+      mtRender();
+    });
+  });
+
   list.querySelectorAll(".mt-cut-add").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const k = btn.dataset.sec;
+      const supplierSelect = list.querySelector(`.mt-cut-supplier[data-sec="${k}"]`);
       const cutInput = list.querySelector(`.mt-cut-input[data-sec="${k}"]`);
-      const val = Number(cutInput.value)||0;
-      mtSectionsData[k].cut = val;
+      const supplierId = supplierSelect.value;
+      let amount = Number(cutInput.value)||0;
+      if(!supplierId || amount<=0) return;
+      const s = mtSectionsData[k];
+      const supplier = (s.suppliers||[]).find(sp=>sp.id===supplierId);
+      if(!supplier) return;
+      amount = Math.min(amount, Number(supplier.remainingQuantity)||0); // can never cut more than what's left
+      supplier.remainingQuantity = Math.max(0, (Number(supplier.remainingQuantity)||0) - amount);
+      if(!Array.isArray(s.cutEntries)) s.cutEntries = [];
+      const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+      s.cutEntries.push({id:Date.now().toString(36), supplierId, supplierName:supplier.supplierName, amount, time:timeLabel});
+      s.cut = s.cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0);
+      if(supplier.remainingQuantity<=0){
+        // Fully cut: archive as history (never deleted) and drop it out of the
+        // active/carried-forward list so the Active Suppliers list stays short.
+        db.collection("machineTeamSupplierHistory").add({
+          section:k,
+          supplierName: supplier.supplierName,
+          originalOpeningQuantity: supplier.originalOpeningQuantity,
+          completedDate: mtSelectedDate
+        }).catch(()=>{});
+        s.suppliers = s.suppliers.filter(sp=>sp.id!==supplierId);
+        delete mtSupplierHistoryCache[k]; // force a fresh reload next time History is opened
+      }
       mtRecalc(k);
-      mtPersist();
-      mtRenderTotalsOnly();
-      const card = btn.closest(".mt-card");
-      card.querySelector(".sec-balance").textContent = "Balance " + rupee(mtSectionsData[k].balance);
+      mtPersistSection(k);
+      mtRender();
     });
   });
-  list.querySelectorAll(".mt-opening-save").forEach(btn=>{
+
+  list.querySelectorAll(".mt-supplier-history-toggle").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const k = btn.dataset.sec;
-      const openInput = list.querySelector(`.mt-opening-input[data-sec="${k}"]`);
-      const ownerInput = list.querySelector(`.mt-opening-owner-input[data-sec="${k}"]`);
-      const val = Number(openInput.value)||0;
-      mtSectionsData[k].opening = val;
-      mtSectionsData[k].ownerNames = ownerInput.value.split(",").map(s=>s.trim()).filter(Boolean);
-      mtSectionsData[k].openingManual = true;
-      mtRecalc(k);
-      mtPersist();
-      mtRenderTotalsOnly();
-      const card = btn.closest(".mt-card");
-      card.querySelector(".sec-balance").textContent = "Balance " + rupee(mtSectionsData[k].balance);
-    });
-  });
-  list.querySelectorAll(".mt-opening-unlock").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const k = btn.dataset.sec;
-      mtSectionsData[k].openingManual = false;
-      mtPersist();
-      mtLoadDay(mtSelectedDate);
+      if(mtSupplierHistoryOpen.has(k)){
+        mtSupplierHistoryOpen.delete(k);
+        mtRender();
+        return;
+      }
+      mtSupplierHistoryOpen.add(k);
+      mtRender(); // show "Loading..." immediately
+      db.collection("machineTeamSupplierHistory").where("section","==",k).orderBy("completedDate","desc").limit(50).get().then(snap=>{
+        mtSupplierHistoryCache[k] = snap.docs.map(d=>d.data());
+        mtRender();
+      }).catch(()=>{
+        mtSupplierHistoryCache[k] = [];
+        mtRender();
+      });
     });
   });
 
