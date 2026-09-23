@@ -327,6 +327,7 @@
     body.print-mt-day .mt-swipe-page, body.print-mt-salary .mt-swipe-page { width:100% !important; padding:0 !important; }
     body.print-mt-salary #mtSwipePage1 { display:none !important; }
     body.print-mt-day #mtSwipePage2 { display:none !important; }
+    body.print-mt-day #mtSwipePageWorkers, body.print-mt-salary #mtSwipePageWorkers { display:none !important; }
 
     /* Same idea for the Dryer Team swipe pages: Current Period (page 1) vs
        Dryer Team Salary / Previous Records (page 2). */
@@ -427,6 +428,14 @@
   .mt-swipe-track.dragging { transition:none; }
   .mt-swipe-page { width:50%; flex-shrink:0; box-sizing:border-box; padding-right:4px; }
   .mt-swipe-page + .mt-swipe-page { padding-right:0; padding-left:4px; }
+  /* Machine Team now has 3 swipe pages (Matta / Workers / Salary) instead of
+     the shared 2-page default, so its track/pages get their own widths here
+     — scoped by ID so Dryer Team's 2-page swipe (still 200%/50%) is untouched. */
+  #mtSwipeTrack { width:300%; }
+  #mtSwipeTrack > .mt-swipe-page { width:33.3334%; }
+  .mt-page-tabs { display:flex; gap:8px; margin:0 0 16px; }
+  .mt-page-tab { flex:1; text-align:center; padding:8px 0; border-radius:999px; background:#EFE6C8; color:#8A7A5E; font-weight:700; font-size:11.5px; letter-spacing:0.04em; cursor:pointer; border:none; }
+  .mt-page-tab.active { background:#2E5233; color:#fff; }
   .swipe-hint { text-align:center; font-size:11px; opacity:0.7; margin-top:10px; }
 </style>
 </head>
@@ -790,6 +799,12 @@
               <h2 class="section-title">MACHINE TEAM</h2>
             </div>
 
+            <div class="mt-page-tabs no-print">
+              <button class="mt-page-tab active" data-page="0">MATTA</button>
+              <button class="mt-page-tab" data-page="1">WORKERS</button>
+              <button class="mt-page-tab" data-page="2">SALARY</button>
+            </div>
+
             <div class="datenav">
               <button id="mtPrevDay" class="no-print">&#8592;</button>
               <span class="mono" id="mtNiceDate" style="font-size:13px;color:#6B5B45;"></span>
@@ -803,19 +818,6 @@
               <button class="fadd" id="mtRateSaveBtn">&#10003; Save rate</button>
             </div>
             <p class="empty" id="mtRateDisplay" style="display:none;"></p>
-
-            <h3 class="sub-title display">Workers Today</h3>
-            <div id="mtWorkersList"></div>
-            <div class="form-row no-print" id="mtWorkerFormRow" style="display:none;">
-              <input type="text" placeholder="Worker name" id="mtWorkerNameInput" list="machineWorkerNamesList" style="flex:2;min-width:100px;" />
-              <input type="time" id="mtWorkerTimeIn" style="flex:1;min-width:90px;" />
-              <input type="time" id="mtWorkerTimeOut" style="flex:1;min-width:90px;" />
-              <input type="number" inputmode="decimal" placeholder="Morning food" id="mtWorkerMorningInput" style="flex:1;min-width:90px;" />
-              <input type="number" inputmode="decimal" placeholder="Lunch food" id="mtWorkerLunchInput" style="flex:1;min-width:90px;" />
-              <input type="number" inputmode="decimal" placeholder="Evening food" id="mtWorkerEveningInput" style="flex:1;min-width:90px;" />
-              <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
-            </div>
-            <p class="empty" id="mtWorkersCount"></p>
 
             <h3 class="sub-title display">Matta Today</h3>
             <div id="mtSectionsList"></div>
@@ -842,7 +844,36 @@
               <button class="btn-export" id="mtExportBtn" style="flex:1;">&#128424; Export day (PDF)</button>
               <button class="btn-clear" id="mtClearBtn">&#8635; Clear</button>
             </div>
-            <p class="empty swipe-hint no-print">Salary paakanumna &#8592; swipe pannunga</p>
+            <p class="empty swipe-hint no-print">Workers paakanumna &#8592; swipe pannunga</p>
+          </div>
+
+          <div class="mt-swipe-page" id="mtSwipePageWorkers">
+            <div class="section-header">
+              <button class="back-btn no-print" data-home>&#8592; Home</button>
+              <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
+              <h2 class="section-title">WORKERS</h2>
+            </div>
+
+            <div class="mt-page-tabs no-print">
+              <button class="mt-page-tab" data-page="0">MATTA</button>
+              <button class="mt-page-tab active" data-page="1">WORKERS</button>
+              <button class="mt-page-tab" data-page="2">SALARY</button>
+            </div>
+
+            <p class="empty swipe-hint no-print">&#8592; Matta &nbsp;|&nbsp; Salary &#8594;</p>
+
+            <h3 class="sub-title display">Workers Today</h3>
+            <div id="mtWorkersList"></div>
+            <div class="form-row no-print" id="mtWorkerFormRow" style="display:none;">
+              <input type="text" placeholder="Worker name" id="mtWorkerNameInput" list="machineWorkerNamesList" style="flex:2;min-width:100px;" />
+              <input type="time" id="mtWorkerTimeIn" style="flex:1;min-width:90px;" />
+              <input type="time" id="mtWorkerTimeOut" style="flex:1;min-width:90px;" />
+              <input type="number" inputmode="decimal" placeholder="Morning food" id="mtWorkerMorningInput" style="flex:1;min-width:90px;" />
+              <input type="number" inputmode="decimal" placeholder="Lunch food" id="mtWorkerLunchInput" style="flex:1;min-width:90px;" />
+              <input type="number" inputmode="decimal" placeholder="Evening food" id="mtWorkerEveningInput" style="flex:1;min-width:90px;" />
+              <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
+            </div>
+            <p class="empty" id="mtWorkersCount"></p>
           </div>
 
           <div class="mt-swipe-page" id="mtSwipePage2">
@@ -851,7 +882,13 @@
               <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
               <h2 class="section-title">MACHINE TEAM SALARY</h2>
             </div>
-            <p class="empty swipe-hint no-print">&#8594; swipe pannina Machine Team-ku thirumba varalam</p>
+
+            <div class="mt-page-tabs no-print">
+              <button class="mt-page-tab" data-page="0">MATTA</button>
+              <button class="mt-page-tab" data-page="1">WORKERS</button>
+              <button class="mt-page-tab active" data-page="2">SALARY</button>
+            </div>
+            <p class="empty swipe-hint no-print">&#8594; swipe pannina Workers-ku thirumba varalam</p>
 
             <h3 class="sub-title display">Salary</h3>
             <div id="mtSalaryList"></div>
@@ -2151,19 +2188,34 @@ document.getElementById("mtSalaryClearBtn").addEventListener("click", ()=>{
   });
 });
 
-// ---------- MACHINE TEAM swipe (Page 1: daily view, Page 2: salary list) ----------
+// ---------- MACHINE TEAM swipe (Page 1: Matta, Page 2: Workers, Page 3: Salary) ----------
 (function(){
   const viewport = document.querySelector(".mt-swipe-viewport");
   const track = document.getElementById("mtSwipeTrack");
-  let mtSwipePage = 0; // 0 = Machine Team, 1 = Machine Team Salary
+  const totalPages = 3;
+  let mtSwipePage = 0; // 0 = Matta, 1 = Workers, 2 = Salary
   let startX = null, startY = null, currentDeltaX = 0, isDragging = false, lockedAxis = null;
+
+  function pagePercent(page){ return -(page * (100/totalPages)); }
+
+  function updateTabs(){
+    document.querySelectorAll(".mt-page-tab").forEach(el=>{
+      el.classList.toggle("active", Number(el.dataset.page)===mtSwipePage);
+    });
+  }
 
   function setPage(page, animate){
     mtSwipePage = page;
     track.style.transition = animate===false ? "none" : "";
-    track.style.transform = `translateX(${page===0 ? "0%" : "-50%"})`;
-    if(page===1) loadMachineTeamSalary();
+    track.style.transform = `translateX(${pagePercent(page)}%)`;
+    if(page===2) loadMachineTeamSalary();
+    updateTabs();
   }
+  window.mtSetPage = setPage; // lets the MATTA/WORKERS/SALARY tabs jump straight to a page
+
+  document.querySelectorAll(".mt-page-tab").forEach(el=>{
+    el.addEventListener("click", ()=> setPage(Number(el.dataset.page)));
+  });
 
   viewport.addEventListener("touchstart", (e)=>{
     if(e.touches.length!==1) return;
@@ -2183,12 +2235,12 @@ document.getElementById("mtSalaryClearBtn").addEventListener("click", ()=>{
       lockedAxis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
     }
     if(lockedAxis!=="x") return;
-    // don't swipe past the edges
-    if((mtSwipePage===0 && dx<0) || (mtSwipePage===1 && dx>0)){
+    // don't swipe past the first or last page
+    if((mtSwipePage===0 && dx<0) || (mtSwipePage===totalPages-1 && dx>0) || (mtSwipePage>0 && mtSwipePage<totalPages-1)){
       currentDeltaX = dx;
       const viewportWidth = viewport.offsetWidth;
-      const basePercent = mtSwipePage===0 ? 0 : -50;
-      const deltaPercent = (dx / viewportWidth) * 50;
+      const basePercent = pagePercent(mtSwipePage);
+      const deltaPercent = (dx / viewportWidth) * (100/totalPages);
       track.style.transform = `translateX(${basePercent + deltaPercent}%)`;
       e.preventDefault();
     }
@@ -2200,8 +2252,8 @@ document.getElementById("mtSalaryClearBtn").addEventListener("click", ()=>{
     track.classList.remove("dragging");
     const threshold = viewport.offsetWidth * 0.18;
     if(lockedAxis==="x"){
-      if(mtSwipePage===0 && currentDeltaX < -threshold) setPage(1);
-      else if(mtSwipePage===1 && currentDeltaX > threshold) setPage(0);
+      if(currentDeltaX < -threshold && mtSwipePage < totalPages-1) setPage(mtSwipePage+1);
+      else if(currentDeltaX > threshold && mtSwipePage > 0) setPage(mtSwipePage-1);
       else setPage(mtSwipePage);
     }
     startX = null; startY = null; currentDeltaX = 0; lockedAxis = null;
