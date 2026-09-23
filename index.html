@@ -819,7 +819,6 @@
 
             <h3 class="sub-title display">Matta Today</h3>
             <div id="mtSectionsList"></div>
-            <div id="mtModalRoot"></div>
 
             <div id="mtPersonTotals" style="margin:6px 0 10px;"></div>
 
@@ -882,6 +881,13 @@
 
         </div>
       </div>
+      <!-- Kept outside .mt-swipe-track on purpose: that track has a CSS
+           transform on it for the swipe animation, and a transformed
+           ancestor turns position:fixed children into "fixed relative to
+           that ancestor" instead of the real screen — which was making the
+           supplier modals render squashed inside the card instead of
+           covering the whole screen. -->
+      <div id="mtModalRoot"></div>
     </div>
 
     <!-- ===== DRYER TEAM ===== -->
