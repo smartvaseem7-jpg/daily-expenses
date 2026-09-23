@@ -2558,7 +2558,9 @@ function mtRender(){
           s.suppliers.push({id:Date.now().toString(36)+"s", supplierName:name, originalOpeningQuantity:amount, remainingQuantity:amount, status:"active", history:[]});
         }
       }
-      s.opening = (Number(s.opening)||0) + amount;
+      // Note: this entry's amount already flows into the balance via
+      // s.entries (added), so it must NOT also be added to s.opening here —
+      // doing both was double-counting the same matta into the balance.
       mtRecalc(k);
       mtPersist();
       mtRender();
