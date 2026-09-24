@@ -809,9 +809,13 @@
 
             <div class="datenav">
               <button id="mtPrevDay" class="no-print">&#8592;</button>
-              <span class="mono" id="mtNiceDate" style="font-size:13px;color:#6B5B45;"></span>
+              <span class="mono" id="mtNiceDate" style="font-size:13px;color:#6B5B45;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;"></span>
               <button id="mtNextDay" class="no-print">&#8594;</button>
             </div>
+            <!-- Tapping the date text above opens this native calendar picker
+                 (mtOpenDatePicker) so you can jump straight to any date
+                 instead of only stepping one day at a time. -->
+            <input type="date" id="mtDatePicker" class="no-print" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" />
 
             <button class="btn-clear no-print" id="mtToggleEdit" style="width:100%;margin-bottom:14px;">&#9998; Edit</button>
 
@@ -858,7 +862,7 @@
 
             <div class="datenav">
               <button id="mtWorkersPrevDay" class="no-print">&#8592;</button>
-              <span class="mono" id="mtWorkersNiceDate" style="font-size:13px;color:#6B5B45;"></span>
+              <span class="mono" id="mtWorkersNiceDate" style="font-size:13px;color:#6B5B45;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;"></span>
               <button id="mtWorkersNextDay" class="no-print">&#8594;</button>
             </div>
 
@@ -2588,7 +2592,23 @@ function mtRender(){
   list.querySelectorAll(".idel").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const k = btn.dataset.sec, eid = btn.dataset.eid;
-      mtSectionsData[k].entries = mtSectionsData[k].entries.filter(e=>e.id!==eid);
+      const s = mtSectionsData[k];
+      const entry = s.entries.find(e=>e.id===eid);
+      s.entries = s.entries.filter(e=>e.id!==eid);
+      // Undo the top-up this entry made to the Active Suppliers list when it
+      // was added — otherwise deleting the matta entry left the supplier's
+      // name and amount still showing in Active Suppliers.
+      if(entry && entry.name && Array.isArray(s.suppliers)){
+        const supplier = s.suppliers.find(sp=>sp.supplierName.toLowerCase()===entry.name.toLowerCase());
+        if(supplier){
+          supplier.originalOpeningQuantity = Math.max(0, (Number(supplier.originalOpeningQuantity)||0) - (Number(entry.amount)||0));
+          supplier.remainingQuantity = Math.max(0, (Number(supplier.remainingQuantity)||0) - (Number(entry.amount)||0));
+          if(supplier.originalOpeningQuantity<=0 || supplier.remainingQuantity<=0){
+            s.suppliers = s.suppliers.filter(sp=>sp.id!==supplier.id);
+          }
+        }
+      }
+      mtRecalc(k);
       mtPersist();
       mtRender();
     });
@@ -2904,6 +2924,26 @@ document.getElementById("mtAddWorkerBtn").addEventListener("click", ()=>{
     loadMachineWorkerNamesList();
     clearForm();
     mtRender();
+  });
+});
+
+// Tapping the date text opens a native calendar picker so you can jump to
+// any date directly instead of stepping day-by-day. Both the Matta page's
+// and the Workers page's date text share the same picker/date.
+function mtOpenDatePicker(){
+  const picker = document.getElementById("mtDatePicker");
+  picker.value = mtSelectedDate;
+  if(picker.showPicker){ picker.showPicker(); } else { picker.focus(); picker.click(); }
+}
+document.getElementById("mtNiceDate").addEventListener("click", mtOpenDatePicker);
+document.getElementById("mtWorkersNiceDate").addEventListener("click", mtOpenDatePicker);
+document.getElementById("mtDatePicker").addEventListener("change", (e)=>{
+  const val = e.target.value;
+  if(!val) return;
+  document.getElementById("mtSaveNote").textContent = "Please wait...";
+  mtPersistPromise.then(()=>{
+    mtSelectedDate = val;
+    mtLoadDay(mtSelectedDate);
   });
 });
 
