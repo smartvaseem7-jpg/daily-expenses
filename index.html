@@ -789,6 +789,14 @@
 
     <!-- ===== MACHINE TEAM ===== -->
     <div id="machineSection" style="display:none;">
+      <!-- Single shared tab bar, kept OUTSIDE .mt-swipe-track on purpose: the
+           track slides via CSS transform during swipe, and this bar must
+           stay put while only the page underneath it changes. -->
+      <div class="mt-page-tabs no-print" style="margin:0 0 10px;">
+        <button class="mt-page-tab active" data-page="0">MATTA</button>
+        <button class="mt-page-tab" data-page="1">WORKERS</button>
+        <button class="mt-page-tab" data-page="2">SALARY</button>
+      </div>
       <div class="mt-swipe-viewport">
         <div class="mt-swipe-track" id="mtSwipeTrack">
 
@@ -797,12 +805,6 @@
               <button class="back-btn no-print" data-home>&#8592; Home</button>
               <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
               <h2 class="section-title">MACHINE TEAM</h2>
-            </div>
-
-            <div class="mt-page-tabs no-print">
-              <button class="mt-page-tab active" data-page="0">MATTA</button>
-              <button class="mt-page-tab" data-page="1">WORKERS</button>
-              <button class="mt-page-tab" data-page="2">SALARY</button>
             </div>
 
             <div class="datenav">
@@ -854,10 +856,10 @@
               <h2 class="section-title">WORKERS</h2>
             </div>
 
-            <div class="mt-page-tabs no-print">
-              <button class="mt-page-tab" data-page="0">MATTA</button>
-              <button class="mt-page-tab active" data-page="1">WORKERS</button>
-              <button class="mt-page-tab" data-page="2">SALARY</button>
+            <div class="datenav">
+              <button id="mtWorkersPrevDay" class="no-print">&#8592;</button>
+              <span class="mono" id="mtWorkersNiceDate" style="font-size:13px;color:#6B5B45;"></span>
+              <button id="mtWorkersNextDay" class="no-print">&#8594;</button>
             </div>
 
             <p class="empty swipe-hint no-print">&#8592; Matta &nbsp;|&nbsp; Salary &#8594;</p>
@@ -883,11 +885,6 @@
               <h2 class="section-title">MACHINE TEAM SALARY</h2>
             </div>
 
-            <div class="mt-page-tabs no-print">
-              <button class="mt-page-tab" data-page="0">MATTA</button>
-              <button class="mt-page-tab" data-page="1">WORKERS</button>
-              <button class="mt-page-tab active" data-page="2">SALARY</button>
-            </div>
             <p class="empty swipe-hint no-print">&#8594; swipe pannina Workers-ku thirumba varalam</p>
 
             <h3 class="sub-title display">Salary</h3>
@@ -1915,10 +1912,14 @@ window.addEventListener("afterprint", ()=>{
   document.body.classList.remove("print-dt-salary");
 });
 document.getElementById("mtClearBtn").addEventListener("click", ()=>{
+  if(!confirm("Ella Section A-E calculations um, ella supplier names um clear pannalama? Ithu thirumba edukka mudiyaadhu.")) return;
   mtWorkers = [];
   SECTION_KEYS.forEach(k=>{
     mtSectionsData[k].entries = [];
     mtSectionsData[k].cut = 0;
+    mtSectionsData[k].cutEntries = [];
+    mtSectionsData[k].opening = 0;
+    mtSectionsData[k].suppliers = [];
     mtRecalc(k);
   });
   mtPersist();
@@ -2408,6 +2409,7 @@ function mtRenderWorkerCount(){
 
 function mtRender(){
   document.getElementById("mtNiceDate").textContent = fmtNice(mtSelectedDate);
+  document.getElementById("mtWorkersNiceDate").textContent = fmtNice(mtSelectedDate);
 
   // Workers list
   const wList = document.getElementById("mtWorkersList");
@@ -2913,6 +2915,24 @@ document.getElementById("mtPrevDay").addEventListener("click", ()=>{
   });
 });
 document.getElementById("mtNextDay").addEventListener("click", ()=>{
+  document.getElementById("mtSaveNote").textContent = "Please wait...";
+  mtPersistPromise.then(()=>{
+    const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
+    mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
+  });
+});
+// Workers page has its own prev/next controls so you don't have to swipe
+// back to Matta just to change the date — both pages show the same day's
+// data (workers + matta are saved together per date), so moving the date
+// here moves it for Matta too, and vice versa.
+document.getElementById("mtWorkersPrevDay").addEventListener("click", ()=>{
+  document.getElementById("mtSaveNote").textContent = "Please wait...";
+  mtPersistPromise.then(()=>{
+    const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
+    mtSelectedDate = fmtDate(d); mtLoadDay(mtSelectedDate);
+  });
+});
+document.getElementById("mtWorkersNextDay").addEventListener("click", ()=>{
   document.getElementById("mtSaveNote").textContent = "Please wait...";
   mtPersistPromise.then(()=>{
     const d = new Date(mtSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
