@@ -1968,6 +1968,11 @@ document.getElementById("mtClearBtn").addEventListener("click", ()=>{
     mtSectionsData[k].cut = 0;
     mtSectionsData[k].cutEntries = [];
     mtSectionsData[k].opening = 0;
+    // Marks this date as a deliberate reset point: later days' Opening will
+    // correctly stop carrying forward from before this date, and this date
+    // itself will keep showing 0 (not silently pick the old balance back up)
+    // the next time you open it.
+    mtSectionsData[k].resetMarker = true;
     mtGlobalSuppliers[k] = [];
     mtSectionsData[k].suppliers = mtGlobalSuppliers[k];
     mtRecalc(k);
@@ -2056,7 +2061,12 @@ function mtLoadDay(dateStr){
       const d = docSnap.data();
       const hasData = SECTION_KEYS.some(k=>{
         const s = d.sections && d.sections[k];
-        return s && (Number(s.balance)!==0 || (Array.isArray(s.entries) && s.entries.length>0) || Number(s.cut)!==0);
+        // A day that was explicitly Cleared (resetMarker) counts as "real
+        // data" too, even though its balance/entries/cut are all zero —
+        // otherwise the walk-back skipped straight past a cleared day and
+        // picked up an even older balance, undoing the clear for every day
+        // after it.
+        return s && (s.resetMarker || Number(s.balance)!==0 || (Array.isArray(s.entries) && s.entries.length>0) || Number(s.cut)!==0);
       });
       if(hasData){ chosen = d; break; }
       if(!chosen) chosen = d; // fallback: most recent day even if empty
@@ -2084,11 +2094,15 @@ function mtLoadDay(dateStr){
         const entries = Array.isArray(s.entries) ? s.entries : [];
         const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
         mtSectionsData[k] = {
-          opening: prevOpenings[k],
+          // A day you explicitly Cleared keeps its own opening (0) pinned —
+          // it must NOT be recomputed from the day before, or the clear
+          // would silently undo itself the next time this day is opened.
+          opening: s.resetMarker ? (Number(s.opening)||0) : prevOpenings[k],
           entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||"", time:e.time||""})),
           cut: cutEntries.length ? cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0) : (Number(s.cut)||0),
           cutEntries,
           suppliers: mtGlobalSuppliers[k],
+          resetMarker: !!s.resetMarker,
           balance: 0
         };
       });
