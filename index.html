@@ -1968,8 +1968,10 @@ document.getElementById("mtClearBtn").addEventListener("click", ()=>{
     mtSectionsData[k].cut = 0;
     mtSectionsData[k].cutEntries = [];
     mtSectionsData[k].opening = 0;
-    mtSectionsData[k].suppliers = [];
+    mtGlobalSuppliers[k] = [];
+    mtSectionsData[k].suppliers = mtGlobalSuppliers[k];
     mtRecalc(k);
+    mtPersistSuppliers(k);
   });
   mtPersist();
   mtRender();
@@ -1979,6 +1981,9 @@ document.getElementById("mtClearBtn").addEventListener("click", ()=>{
 let mtSelectedDate = fmtDate(new Date());
 let mtWorkers = [];
 let mtSectionsData = {};
+// Active Suppliers: one ongoing list per section (A-E), completely separate
+// from any single date's doc, saved in machineTeamSuppliers/current.
+let mtGlobalSuppliers = {};
 let mtEditMode = false;
 // Supplier system: which sections have their "Active Suppliers" panel open,
 // which have the completed/history sub-view open, and the lazily-loaded
@@ -2034,20 +2039,24 @@ function mtLoadDay(dateStr){
   document.getElementById("mtSaveNote").textContent = "Loading...";
   Promise.all([
     db.collection("machineTeam").doc(dateStr).get(),
-    db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(30).get()
-  ]).then(([doc, snap])=>{
-    const prevOpenings = {}, prevSuppliers = {};
-    SECTION_KEYS.forEach(k=>{ prevOpenings[k]=0; prevSuppliers[k]=[]; });
+    db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(30).get(),
+    db.collection("machineTeamSuppliers").doc("current").get()
+  ]).then(([doc, snap, suppliersDoc])=>{
+    const prevOpenings = {};
+    SECTION_KEYS.forEach(k=>{ prevOpenings[k]=0; });
     // Walk backwards through recent days and use the most recent one that
-    // actually has real data (non-zero balance, logged entries, or active
-    // suppliers), so a stray "empty" day in between never breaks the
-    // carry-forward chain.
+    // actually has real data (non-zero balance, logged entries, or cuts), so
+    // a stray "empty" day in between never breaks the carry-forward chain.
+    // This ALWAYS recomputes fresh from whatever that earlier day currently
+    // holds — so editing an earlier day's matta correctly updates every
+    // later day's Opening too, instead of a later day staying stuck with
+    // whatever Opening it happened to have the first time it was visited.
     let chosen = null;
     for(const docSnap of snap.docs){
       const d = docSnap.data();
       const hasData = SECTION_KEYS.some(k=>{
         const s = d.sections && d.sections[k];
-        return s && (Number(s.balance)!==0 || (Array.isArray(s.entries) && s.entries.length>0) || Number(s.cut)!==0 || (Array.isArray(s.suppliers) && s.suppliers.length>0));
+        return s && (Number(s.balance)!==0 || (Array.isArray(s.entries) && s.entries.length>0) || Number(s.cut)!==0);
       });
       if(hasData){ chosen = d; break; }
       if(!chosen) chosen = d; // fallback: most recent day even if empty
@@ -2055,14 +2064,17 @@ function mtLoadDay(dateStr){
     if(chosen){
       SECTION_KEYS.forEach(k=>{
         const prevSec = chosen.sections && chosen.sections[k];
-        // Opening carries forward as the previous day's ending BALANCE (this is
-        // the original mechanism) — it covers plain "Matta Today" entries/cuts
-        // too, not just suppliers. Suppliers carry forward separately, purely
-        // so each named supplier's own remaining quantity keeps being tracked.
         prevOpenings[k] = (prevSec && Number(prevSec.balance)) || 0;
-        prevSuppliers[k] = (prevSec && Array.isArray(prevSec.suppliers)) ? prevSec.suppliers.map(sp=>({...sp})) : [];
       });
     }
+    // Active Suppliers are now a single ongoing list per section, completely
+    // separate from any one date's doc — so adding/cutting/deleting a
+    // supplier is the same action no matter which date you're looking at,
+    // and never gets "stuck" tied to the date it happened to be entered on.
+    const suppliersData = suppliersDoc.exists ? suppliersDoc.data() : {};
+    mtGlobalSuppliers = {};
+    SECTION_KEYS.forEach(k=>{ mtGlobalSuppliers[k] = Array.isArray(suppliersData[k]) ? suppliersData[k] : []; });
+
     if(doc.exists){
       const data = doc.data();
       mtWorkers = Array.isArray(data.workers) ? data.workers : [];
@@ -2070,37 +2082,37 @@ function mtLoadDay(dateStr){
       SECTION_KEYS.forEach(k=>{
         const s = (data.sections && data.sections[k]) || {};
         const entries = Array.isArray(s.entries) ? s.entries : [];
-        // If today's own doc already has its own suppliers array, that's the
-        // live, authoritative state (it already reflects any adds/cuts made
-        // earlier today) — don't re-merge with yesterday's snapshot, or we'd
-        // undo today's cuts. Only fall back to yesterday's list for old docs
-        // saved before the supplier feature existed.
-        const suppliers = Array.isArray(s.suppliers) ? s.suppliers.map(sp=>({...sp})) : prevSuppliers[k];
         const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
-        const opening = (typeof s.opening === "number") ? s.opening : prevOpenings[k];
         mtSectionsData[k] = {
-          opening,
+          opening: prevOpenings[k],
           entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||"", time:e.time||""})),
           cut: cutEntries.length ? cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0) : (Number(s.cut)||0),
           cutEntries,
-          suppliers,
+          suppliers: mtGlobalSuppliers[k],
           balance: 0
         };
       });
     } else {
       mtWorkers = [];
-      mtSectionsData = mtEmptySections(prevOpenings, prevSuppliers);
+      mtSectionsData = mtEmptySections(prevOpenings, mtGlobalSuppliers);
     }
     document.getElementById("mtSaveNote").textContent = "";
     mtRender();
   }).catch((e)=>{
-    mtWorkers = []; mtSectionsData = mtEmptySections();
+    mtWorkers = []; mtSectionsData = mtEmptySections(null, mtGlobalSuppliers);
     document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
     mtRender();
   });
 }
 
 let mtPersistPromise = Promise.resolve();
+function mtPersistSuppliers(k){
+  // Active Suppliers live in one ongoing global collection now (not tied to
+  // any single date's doc), so any add/cut/delete of a supplier must be
+  // saved here — this was previously missing in a few places, which let
+  // supplier edits look right on screen but silently fail to actually save.
+  db.collection("machineTeamSuppliers").doc("current").set({ [k]: mtGlobalSuppliers[k] }, {merge:true}).catch(()=>{});
+}
 function mtPersistSection(k){
   // Targeted save: only writes this one section's data (suppliers, cut, entries,
   // balance) instead of re-saving workers + every other section, so adding a
@@ -2642,15 +2654,19 @@ function mtRender(){
       s.entries = s.entries.filter(e=>e.id!==eid);
       // Undo the top-up this entry made to the Active Suppliers list when it
       // was added — otherwise deleting the matta entry left the supplier's
-      // name and amount still showing in Active Suppliers.
-      if(entry && entry.name && Array.isArray(s.suppliers)){
-        const supplier = s.suppliers.find(sp=>sp.supplierName.toLowerCase()===entry.name.toLowerCase());
+      // name and amount still showing in Active Suppliers. Mutate the global
+      // supplier list directly (not a possibly-stale local alias) and save
+      // it, so the removal actually persists instead of reappearing on reload.
+      if(entry && entry.name && Array.isArray(mtGlobalSuppliers[k])){
+        const supplier = mtGlobalSuppliers[k].find(sp=>sp.supplierName.toLowerCase()===entry.name.toLowerCase());
         if(supplier){
           supplier.originalOpeningQuantity = Math.max(0, (Number(supplier.originalOpeningQuantity)||0) - (Number(entry.amount)||0));
           supplier.remainingQuantity = Math.max(0, (Number(supplier.remainingQuantity)||0) - (Number(entry.amount)||0));
           if(supplier.originalOpeningQuantity<=0 || supplier.remainingQuantity<=0){
-            s.suppliers = s.suppliers.filter(sp=>sp.id!==supplier.id);
+            mtGlobalSuppliers[k] = mtGlobalSuppliers[k].filter(sp=>sp.id!==supplier.id);
           }
+          s.suppliers = mtGlobalSuppliers[k];
+          mtPersistSuppliers(k);
         }
       }
       mtRecalc(k);
@@ -2671,17 +2687,20 @@ function mtRender(){
       s.entries.push({id:Date.now().toString(36), amount, name, time:timeLabel});
       // This matta also becomes (or tops up) that name's Active Supplier
       // record, so "Opening" and the Active Suppliers list both reflect it —
-      // one Add flow instead of a separate "Add Supplier" step.
+      // one Add flow instead of a separate "Add Supplier" step. Mutate the
+      // global supplier list directly and save it there.
       if(name){
-        if(!Array.isArray(s.suppliers)) s.suppliers = [];
-        let supplier = s.suppliers.find(sp=>sp.supplierName.toLowerCase()===name.toLowerCase());
+        if(!Array.isArray(mtGlobalSuppliers[k])) mtGlobalSuppliers[k] = [];
+        let supplier = mtGlobalSuppliers[k].find(sp=>sp.supplierName.toLowerCase()===name.toLowerCase());
         if(supplier){
           supplier.originalOpeningQuantity = (Number(supplier.originalOpeningQuantity)||0) + amount;
           supplier.remainingQuantity = (Number(supplier.remainingQuantity)||0) + amount;
           supplier.status = "active";
         } else {
-          s.suppliers.push({id:Date.now().toString(36)+"s", supplierName:name, originalOpeningQuantity:amount, remainingQuantity:amount, status:"active", history:[]});
+          mtGlobalSuppliers[k].push({id:Date.now().toString(36)+"s", supplierName:name, originalOpeningQuantity:amount, remainingQuantity:amount, status:"active", history:[]});
         }
+        s.suppliers = mtGlobalSuppliers[k];
+        mtPersistSuppliers(k);
       }
       // Note: this entry's amount already flows into the balance via
       // s.entries (added), so it must NOT also be added to s.opening here —
@@ -2713,7 +2732,7 @@ function mtRender(){
 // Details (with cutting history) -> full Completed/History view. Only the
 // top of mtModalStack is ever rendered; "back" pops it, "close" clears it.
 function mtSupplierById(k, id){
-  return (mtSectionsData[k] && mtSectionsData[k].suppliers || []).find(sp=>sp.id===id);
+  return (mtGlobalSuppliers[k] || []).find(sp=>sp.id===id);
 }
 
 function mtRenderModals(){
@@ -2893,9 +2912,11 @@ function mtRenderModals(){
           completedDate: mtSelectedDate,
           history: supplier.history
         }).catch(()=>{});
-        sec.suppliers = sec.suppliers.filter(x=>x.id!==supplierId);
+        sec.suppliers = mtGlobalSuppliers[k] = mtGlobalSuppliers[k].filter(x=>x.id!==supplierId);
         delete mtHistoryCache[k]; // force a fresh reload next time History is opened
       }
+      sec.suppliers = mtGlobalSuppliers[k];
+      mtPersistSuppliers(k);
       mtRecalc(k);
       mtPersistSection(k);
       mtModalStack = [];
