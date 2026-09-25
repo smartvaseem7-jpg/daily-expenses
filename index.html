@@ -862,14 +862,6 @@
                  instead of only stepping one day at a time. -->
             <input type="date" id="mtDatePicker" class="no-print" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" />
 
-            <button class="btn-clear no-print" id="mtToggleEdit" style="width:100%;margin-bottom:14px;">&#9998; Edit</button>
-
-            <div class="form-row no-print" id="mtRateFormRow" style="display:none;">
-              <input type="number" inputmode="decimal" placeholder="Daily rate per worker" id="mtRateInput" style="flex:1;" />
-              <button class="fadd" id="mtRateSaveBtn">&#10003; Save rate</button>
-            </div>
-            <p class="empty" id="mtRateDisplay" style="display:none;"></p>
-
             <h3 class="sub-title display">Matta Today</h3>
             <div id="mtSectionsList"></div>
 
@@ -912,6 +904,14 @@
             </div>
 
             <p class="empty swipe-hint no-print">&#8592; Matta &nbsp;|&nbsp; Salary &#8594;</p>
+
+            <button class="btn-clear no-print" id="mtToggleEdit" style="width:100%;margin-bottom:14px;">&#9998; Edit</button>
+
+            <div class="form-row no-print" id="mtRateFormRow" style="display:none;">
+              <input type="number" inputmode="decimal" placeholder="Daily rate per worker" id="mtRateInput" style="flex:1;" />
+              <button class="fadd" id="mtRateSaveBtn">&#10003; Save rate</button>
+            </div>
+            <p class="empty" id="mtRateDisplay" style="display:none;"></p>
 
             <h3 class="sub-title display">Workers Today</h3>
             <div id="mtWorkersList"></div>
@@ -2620,17 +2620,20 @@ function mtRender(){
       rowsHtml = `<p class="empty" style="margin:4px 0;">No matta added yet.</p>`;
     } else {
       s.entries.forEach(e=>{
-        const icon = mtEditMode ? `<button class="idel no-print" data-sec="${k}" data-eid="${e.id}">&#128465;</button>` : "";
+        const icon = `<button class="idel no-print" data-sec="${k}" data-eid="${e.id}">&#128465;</button>`;
         const timeLabel = e.time ? `<div class="icat" style="font-family:'IBM Plex Mono',monospace;">${e.time}</div>` : "";
         rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;color:#B5651D;">${escapeHtml((e.name||"—").toUpperCase())}${timeLabel}</div><div class="iprice mono" style="font-size:14px;color:#3B6B35;">+${rupee(e.amount)}</div>${icon}</div>`;
       });
     }
-    const addFormHtml = mtEditMode ? `
+    // Matta page no longer has its own Edit toggle — adding (and deleting) a
+    // matta entry works straight away on every Section A-E card. Edit mode
+    // now only applies to the Workers page.
+    const addFormHtml = `
       <div class="form-row no-print" style="margin:8px 0 0;">
         <input type="number" inputmode="decimal" placeholder="Matta" class="mt-entry-amount" data-sec="${k}" style="flex:1;" />
         <input type="text" placeholder="Name" class="mt-entry-name" data-sec="${k}" style="flex:1;" />
         <button class="fadd mt-entry-add" data-sec="${k}">+ Add</button>
-      </div>` : "";
+      </div>`;
 
     // ---- Supplier system: only ACTIVE suppliers ever live in s.suppliers.
     // Completed ones are archived to machineTeamSupplierHistory and dropped
