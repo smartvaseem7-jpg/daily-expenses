@@ -2230,6 +2230,7 @@ function mtLoadDay(dateStr){
         prevOpenings[k] = (prevSec && Number(prevSec.balance)) || 0;
       });
     }
+    console.log("mtLoadDay", dateStr, "found", snap.docs.length, "earlier days; chosen date:", chosen && chosen.date, "prevOpenings:", prevOpenings);
     // Active Suppliers are now a single ongoing list per section, completely
     // separate from any one date's doc — so adding/cutting/deleting a
     // supplier is the same action no matter which date you're looking at,
@@ -2267,6 +2268,12 @@ function mtLoadDay(dateStr){
     mtRender();
     mtLoadSupplierAccounts();
   }).catch((e)=>{
+    // Loud on purpose: a silent "0 balance" here looks exactly like a real
+    // empty day, so if the Opening carry-forward ever looks wrong again,
+    // check for this alert first — it tells us the actual Firestore error
+    // instead of guessing.
+    console.error("mtLoadDay failed:", e);
+    alert("Machine Team data load pannumbodhu error vandhuchu: " + (e && e.message ? e.message : e) + "\n\nIntha screen-oda screenshot anuppunga.");
     mtWorkers = []; mtSectionsData = mtEmptySections(null, mtGlobalSuppliers);
     document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
     mtRender();
