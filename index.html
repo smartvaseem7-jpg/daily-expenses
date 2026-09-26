@@ -2805,6 +2805,7 @@ function mtRender(){
     const activeSuppliers = s.suppliers.filter(sp=>Number(sp.remainingQuantity)>0);
 
     const badgeColors = {A:"#3B6B35", B:"#2E6E9E", C:"#B5651D", D:"#7A4FA0", E:"#B3396B"};
+    const addedTotal = s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0);
     card.innerHTML = `
       <div class="mt-card-head">
         <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
@@ -2814,6 +2815,7 @@ function mtRender(){
         <span class="sec-balance">Balance ${rupee(s.balance)}</span>
       </div>
       <div class="mt-opening">Opening: ${rupee(s.opening)}</div>
+      <div class="mt-opening" style="font-size:11.5px;color:#8A7A5E;">(${rupee(s.opening)} opening + ${rupee(addedTotal)} added &minus; ${rupee(s.cut)} cut = ${rupee(s.balance)})</div>
       <div class="mt-line-link no-print" data-open-suppliers="${k}">
         <span>&#128101; ${activeSuppliers.length} Active Suppliers</span>
         <span class="arrow">&rsaquo;</span>
