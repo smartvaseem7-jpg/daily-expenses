@@ -500,6 +500,36 @@
   </div>
 </div>
 
+<!-- ===== SUPPLIER PORTAL (separate from the main app + PIN lock) ===== -->
+<!-- Reached only via a link with ?supplier=1 — never shown as part of the
+     normal admin flow, and the supplier never sees the main app at all. -->
+<div id="supplierLoginScreen" style="display:none;">
+  <div class="lock-card">
+    <img src="logo.png" alt="SHAM Coco Production logo" style="width:74px;height:74px;object-fit:contain;margin-bottom:8px;" />
+    <h1 class="display" style="font-size:20px;margin:0 0 2px;">S.H.A.M COCO PRODUCTION</h1>
+    <p style="font-size:12.5px;letter-spacing:0.06em;text-transform:uppercase;color:#9FBB90 !important;margin:0 0 18px;font-weight:600;">Supplier Login</p>
+    <div class="pin-panel">
+      <p style="font-size:12.5px;margin:0 0 10px;color:#4A3B28 !important;font-weight:600;">Login to add your matta</p>
+      <input type="text" id="supplierUsernameInput" placeholder="Username" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;margin-bottom:8px;box-sizing:border-box;" />
+      <input type="password" id="supplierPasswordInput" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;margin-bottom:8px;box-sizing:border-box;" />
+      <div class="lock-error" id="supplierLoginError"></div>
+      <button id="supplierLoginBtn">Login</button>
+    </div>
+  </div>
+</div>
+
+<div id="supplierViewScreen" style="display:none;">
+  <div class="wrap" style="max-width:520px;margin:0 auto;padding:16px;">
+    <div class="section-header">
+      <img src="logo.png" alt="SHAM Coco Production logo" style="width:56px;height:56px;object-fit:contain;" />
+      <h2 class="section-title" id="supplierWelcomeTitle">SUPPLIER</h2>
+    </div>
+    <p class="empty" id="supplierViewDate" style="margin-bottom:14px;"></p>
+    <div id="supplierSectionsList"></div>
+    <button class="btn-clear no-print" id="supplierLogoutBtn" style="width:100%;margin-top:16px;">&#128274; Logout</button>
+  </div>
+</div>
+
 <datalist id="workerNamesList"></datalist>
 <datalist id="machineWorkerNamesList"></datalist>
 <div class="wrap" id="appRoot" style="display:none;">
@@ -925,6 +955,18 @@
               <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
             </div>
             <p class="empty" id="mtWorkersCount"></p>
+
+            <div class="section-divider"></div>
+            <h3 class="sub-title display">Supplier Logins</h3>
+            <p class="empty" style="margin-top:0;">Give each supplier this link + their own username/password: add <span class="mono">?supplier=1</span> to the site's URL.</p>
+            <div id="mtSupplierAccountsList"></div>
+            <div class="form-row no-print" style="margin-top:8px;">
+              <input type="text" placeholder="Username" id="mtNewSupplierUser" style="flex:1;min-width:90px;" />
+              <input type="password" placeholder="Password" id="mtNewSupplierPass" style="flex:1;min-width:90px;" />
+              <input type="text" placeholder="Display name" id="mtNewSupplierName" style="flex:1;min-width:90px;" />
+              <button class="fadd" id="mtAddSupplierAccountBtn">+ Add</button>
+            </div>
+            <div class="save-note no-print" id="mtSupplierAccountNote"></div>
           </div>
 
           <div class="mt-swipe-page" id="mtSwipePage2">
@@ -1396,8 +1438,119 @@ function loadMachineWorkerNamesList(){
   }).catch(()=>{});
 }
 
-if(localStorage.getItem("sham-unlocked") === "true"){
+// ---------- SUPPLIER PORTAL ----------
+// A supplier reaches this via a link like yoursite.github.io/?supplier=1 —
+// they never see the PIN screen or the main app, only their own restricted
+// "add matta" view for whichever sections you've told them about. This must
+// be checked before the normal auto-unlock below, so a supplier opening the
+// link on a device that has the admin app already unlocked never glimpses
+// the full app first.
+const IS_SUPPLIER_LINK = new URLSearchParams(window.location.search).get("supplier") === "1";
+
+if(!IS_SUPPLIER_LINK && localStorage.getItem("sham-unlocked") === "true"){
   showApp();
+}
+
+// ---------- SUPPLIER PORTAL ----------
+// A supplier reaches this via a link like yoursite.github.io/?supplier=1 —
+// they never see the PIN screen or the main app, only their own restricted
+// "add matta" view for whichever sections you've told them about.
+let supplierUsername = "", supplierName = "";
+
+function supplierBoot(){
+  document.getElementById("lockScreen").style.display = "none";
+  document.getElementById("appRoot").style.display = "none";
+  const savedUser = sessionStorage.getItem("supplierUser");
+  const savedName = sessionStorage.getItem("supplierName");
+  if(savedUser){
+    supplierUsername = savedUser;
+    supplierName = savedName || savedUser;
+    showSupplierView();
+  } else {
+    document.getElementById("supplierLoginScreen").style.display = "flex";
+  }
+}
+
+function supplierTryLogin(){
+  const u = document.getElementById("supplierUsernameInput").value.trim();
+  const p = document.getElementById("supplierPasswordInput").value;
+  const errEl = document.getElementById("supplierLoginError");
+  if(!u || !p){ errEl.textContent = "Enter username and password."; return; }
+  errEl.textContent = "Checking...";
+  auth.signInAnonymously().then(()=>{
+    return db.collection("supplierAccounts").doc(u.toLowerCase()).get();
+  }).then((doc)=>{
+    if(!doc.exists || doc.data().password !== p){
+      errEl.textContent = "Wrong username or password.";
+      return;
+    }
+    supplierUsername = u.toLowerCase();
+    supplierName = doc.data().name || u;
+    sessionStorage.setItem("supplierUser", supplierUsername);
+    sessionStorage.setItem("supplierName", supplierName);
+    document.getElementById("supplierLoginScreen").style.display = "none";
+    showSupplierView();
+  }).catch(()=>{
+    errEl.textContent = "Connection error. Check internet.";
+  });
+}
+document.getElementById("supplierLoginBtn").addEventListener("click", supplierTryLogin);
+document.getElementById("supplierPasswordInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") supplierTryLogin(); });
+
+document.getElementById("supplierLogoutBtn").addEventListener("click", ()=>{
+  sessionStorage.removeItem("supplierUser");
+  sessionStorage.removeItem("supplierName");
+  document.getElementById("supplierViewScreen").style.display = "none";
+  document.getElementById("supplierLoginScreen").style.display = "flex";
+  document.getElementById("supplierUsernameInput").value = "";
+  document.getElementById("supplierPasswordInput").value = "";
+});
+
+function showSupplierView(){
+  document.getElementById("supplierWelcomeTitle").textContent = "HI, " + supplierName.toUpperCase();
+  const todayStr = fmtDate(new Date());
+  document.getElementById("supplierViewDate").textContent = fmtNice(todayStr);
+  const list = document.getElementById("supplierSectionsList");
+  list.innerHTML = "";
+  SECTION_KEYS.forEach(k=>{
+    const card = document.createElement("div");
+    card.className = "mt-card";
+    card.innerHTML = `
+      <div class="mt-card-head"><span class="sec-name display">Section ${k}</span></div>
+      <div class="form-row no-print" style="margin-top:6px;">
+        <input type="number" inputmode="decimal" placeholder="Matta amount" class="supplier-amount-input" data-sec="${k}" style="flex:1;" />
+        <button class="fadd supplier-add-btn" data-sec="${k}">+ Add</button>
+      </div>
+      <div class="save-note no-print" id="supplierNote-${k}"></div>`;
+    list.appendChild(card);
+  });
+  list.querySelectorAll(".supplier-add-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = btn.dataset.sec;
+      const input = list.querySelector(`.supplier-amount-input[data-sec="${k}"]`);
+      const note = document.getElementById("supplierNote-"+k);
+      const amount = Number(input.value)||0;
+      if(amount<=0){ note.textContent = "Enter an amount first."; return; }
+      note.textContent = "Saving...";
+      const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+      const entry = {id:Date.now().toString(36), amount, name:supplierName, time:timeLabel, source:"supplier", addedBy:supplierUsername};
+      db.collection("machineTeam").doc(todayStr).set({
+        date: todayStr,
+        month: monthKey(todayStr),
+        sections: { [k]: { entries: firebase.firestore.FieldValue.arrayUnion(entry) } }
+      }, {merge:true}).then(()=>{
+        note.textContent = "Added!";
+        input.value = "";
+        setTimeout(()=>{ note.textContent=""; }, 1500);
+      }).catch(()=>{
+        note.textContent = "Couldn't save. Check internet.";
+      });
+    });
+  });
+}
+
+if(IS_SUPPLIER_LINK){
+  supplierBoot();
 }
 
 // ---------- SCREEN NAVIGATION ----------
@@ -2098,7 +2251,7 @@ function mtLoadDay(dateStr){
           // it must NOT be recomputed from the day before, or the clear
           // would silently undo itself the next time this day is opened.
           opening: s.resetMarker ? (Number(s.opening)||0) : prevOpenings[k],
-          entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||"", time:e.time||""})),
+          entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||"", time:e.time||"", source:e.source||"", addedBy:e.addedBy||""})),
           cut: cutEntries.length ? cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0) : (Number(s.cut)||0),
           cutEntries,
           suppliers: mtGlobalSuppliers[k],
@@ -2112,6 +2265,7 @@ function mtLoadDay(dateStr){
     }
     document.getElementById("mtSaveNote").textContent = "";
     mtRender();
+    mtLoadSupplierAccounts();
   }).catch((e)=>{
     mtWorkers = []; mtSectionsData = mtEmptySections(null, mtGlobalSuppliers);
     document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
@@ -2436,7 +2590,7 @@ function mtRenderTotalsOnly(){
   const logRows = [];
   SECTION_KEYS.forEach(k=>{
     mtSectionsData[k].entries.forEach(e=>{
-      logRows.push({time:e.time||"", section:k, name:e.name||"—", amount:e.amount});
+      logRows.push({time:e.time||"", section:k, name:e.name||"—", amount:e.amount, source:e.source||""});
     });
   });
   logRows.sort((a,b)=> a.time.localeCompare(b.time));
@@ -2448,7 +2602,9 @@ function mtRenderTotalsOnly(){
     logRows.forEach(r=>{
       const row = document.createElement("div");
       row.className = "ledger-row display";
-      row.innerHTML = `<div class="iname" style="font-size:13px;">${r.time ? r.time+" &middot; " : ""}Section ${r.section} &middot; ${escapeHtml(r.name.toUpperCase())}</div><div class="iprice mono" style="font-size:13px;">+${rupee(r.amount)}</div>`;
+      const nameColor = r.source==="supplier" ? "color:#2E6E9E;" : "";
+      const supplierTag = r.source==="supplier" ? ` <span style="font-size:9.5px;font-weight:700;color:#2E6E9E;border:1px solid #2E6E9E;border-radius:999px;padding:1px 5px;">SUPPLIER</span>` : "";
+      row.innerHTML = `<div class="iname" style="font-size:13px;${nameColor}">${r.time ? r.time+" &middot; " : ""}Section ${r.section} &middot; ${escapeHtml(r.name.toUpperCase())}${supplierTag}</div><div class="iprice mono" style="font-size:13px;">+${rupee(r.amount)}</div>`;
       logDiv.appendChild(row);
     });
   }
@@ -2622,7 +2778,12 @@ function mtRender(){
       s.entries.forEach(e=>{
         const icon = `<button class="idel no-print" data-sec="${k}" data-eid="${e.id}">&#128465;</button>`;
         const timeLabel = e.time ? `<div class="icat" style="font-family:'IBM Plex Mono',monospace;">${e.time}</div>` : "";
-        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;color:#B5651D;">${escapeHtml((e.name||"—").toUpperCase())}${timeLabel}</div><div class="iprice mono" style="font-size:14px;color:#3B6B35;">+${rupee(e.amount)}</div>${icon}</div>`;
+        // Matta a supplier added themselves (via their own restricted login)
+        // shows in blue instead of the usual admin-entry orange, so it's
+        // obvious at a glance who added what.
+        const nameColor = e.source==="supplier" ? "#2E6E9E" : "#B5651D";
+        const supplierTag = e.source==="supplier" ? `<span style="font-size:10px;font-weight:700;color:#2E6E9E;border:1px solid #2E6E9E;border-radius:999px;padding:1px 6px;margin-left:6px;">SUPPLIER</span>` : "";
+        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;color:${nameColor};">${escapeHtml((e.name||"—").toUpperCase())}${supplierTag}${timeLabel}</div><div class="iprice mono" style="font-size:14px;color:#3B6B35;">+${rupee(e.amount)}</div>${icon}</div>`;
       });
     }
     // Matta page no longer has its own Edit toggle — adding (and deleting) a
@@ -2971,6 +3132,54 @@ document.getElementById("mtRateSaveBtn").addEventListener("click", ()=>{
     setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
   }).catch(()=>{
     document.getElementById("mtSaveNote").textContent = "Couldn't save rate.";
+  });
+});
+
+// ---------- Supplier account management (Workers page) ----------
+function mtLoadSupplierAccounts(){
+  const list = document.getElementById("mtSupplierAccountsList");
+  if(!list) return;
+  db.collection("supplierAccounts").get().then(snap=>{
+    list.innerHTML = "";
+    if(snap.empty){
+      list.innerHTML = '<p class="empty" style="margin:4px 0;">No supplier logins yet.</p>';
+      return;
+    }
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const row = document.createElement("div");
+      row.className = "ledger-row display";
+      row.innerHTML = `<div class="iname">${escapeHtml((d.name||doc.id).toUpperCase())} <span class="icat">(${escapeHtml(doc.id)})</span></div><button class="idel no-print" data-supplieruser="${doc.id}">&#128465;</button>`;
+      list.appendChild(row);
+    });
+    list.querySelectorAll("[data-supplieruser]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        if(!confirm("Ithu supplier login-a delete pannalama?")) return;
+        db.collection("supplierAccounts").doc(btn.dataset.supplieruser).delete().then(mtLoadSupplierAccounts);
+      });
+    });
+  }).catch(()=>{
+    list.innerHTML = '<p class="empty" style="margin:4px 0;">Couldn\'t load. Check internet.</p>';
+  });
+}
+
+document.getElementById("mtAddSupplierAccountBtn").addEventListener("click", ()=>{
+  const userInput = document.getElementById("mtNewSupplierUser");
+  const passInput = document.getElementById("mtNewSupplierPass");
+  const nameInput = document.getElementById("mtNewSupplierName");
+  const note = document.getElementById("mtSupplierAccountNote");
+  const username = userInput.value.trim().toLowerCase();
+  const password = passInput.value;
+  const name = nameInput.value.trim() || username;
+  if(!username || !password){ note.textContent = "Username and password thevai."; return; }
+  note.textContent = "Saving...";
+  db.collection("supplierAccounts").doc(username).set({name, password}).then(()=>{
+    note.textContent = "Added!";
+    userInput.value = ""; passInput.value = ""; nameInput.value = "";
+    setTimeout(()=>{ note.textContent=""; }, 1200);
+    mtLoadSupplierAccounts();
+  }).catch(()=>{
+    note.textContent = "Couldn't save. Check internet.";
   });
 });
 
