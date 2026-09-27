@@ -2829,15 +2829,6 @@ function mtRender(){
     const activeSuppliers = s.suppliers.filter(sp=>Number(sp.remainingQuantity)>0);
 
     const badgeColors = {A:"#3B6B35", B:"#2E6E9E", C:"#B5651D", D:"#7A4FA0", E:"#B3396B"};
-    const addedTotal = s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0);
-    // If this date was explicitly Cleared, its Opening is pinned and does
-    // NOT carry forward from earlier dates on purpose — show that plainly,
-    // with a one-tap way to undo it if it was cleared by accident.
-    const resetNoticeHtml = s.resetMarker ? `
-      <div class="no-print" style="background:#F8DADA;border:1px solid #E3A0A0;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:12px;color:#8A3B3B;">
-        &#9888; Idhu "reset" pannina date — Opening munnadi date-la irundhu carry aagathu.
-        <button class="mt-undo-reset" data-sec="${k}" style="border:none;background:#8A3B3B;color:#fff;border-radius:999px;padding:3px 10px;font-size:11px;margin-left:4px;cursor:pointer;">Undo reset</button>
-      </div>` : "";
     card.innerHTML = `
       <div class="mt-card-head">
         <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
@@ -2847,8 +2838,6 @@ function mtRender(){
         <span class="sec-balance">Balance ${rupee(s.balance)}</span>
       </div>
       <div class="mt-opening">Opening: ${rupee(s.opening)}</div>
-      <div class="mt-opening" style="font-size:11.5px;color:#8A7A5E;">(${rupee(s.opening)} opening + ${rupee(addedTotal)} added &minus; ${rupee(s.cut)} cut = ${rupee(s.balance)})</div>
-      ${resetNoticeHtml}
       <div class="mt-line-link no-print" data-open-suppliers="${k}">
         <span>&#128101; ${activeSuppliers.length} Active Suppliers</span>
         <span class="arrow">&rsaquo;</span>
@@ -2924,16 +2913,6 @@ function mtRender(){
       mtRecalc(k);
       mtPersist();
       mtRender();
-    });
-  });
-
-  list.querySelectorAll(".mt-undo-reset").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const k = btn.dataset.sec;
-      if(!confirm("Idha 'reset' point-a remove pannalama? Ithu pannina odaney, munnadi dates-oda balance thirumba idhula carry aagum.")) return;
-      mtSectionsData[k].resetMarker = false;
-      mtPersist();
-      mtLoadDay(mtSelectedDate); // reload so Opening recomputes fresh from before
     });
   });
 
