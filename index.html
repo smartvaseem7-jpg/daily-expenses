@@ -248,6 +248,50 @@
   .lock-card input { font-size:24px; letter-spacing:8px; text-align:center; width:170px; padding:13px 10px; border-radius:10px; border:1px solid #C9BC9C; margin:0 0 12px; background:#FFFFFF; }
   .lock-card button { padding:12px 34px; border-radius:10px; border:none; background:#3B6B35; color:#F3ECD9; font-size:15px; font-weight:700; cursor:pointer; width:100%; }
   .lock-error { color:#B33A3A; font-size:13px; min-height:18px; }
+  /* ---- Login chooser + Supplier portal ---- */
+  .lock-card .choose-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:14px 16px; border-radius:12px; margin-bottom:12px; font-size:16px; }
+  .lock-card .choose-btn small { font-size:11.5px; font-weight:500; opacity:0.88; }
+  .lock-card .choose-btn.admin { background:#1F4D2B; }
+  .lock-card .choose-btn.supplier { background:#4C9A72; }
+  .lock-card .link-btn { background:none; color:#3B6B35; text-decoration:underline; font-size:13px; padding:8px; width:auto; font-weight:600; margin-top:4px; }
+  .lock-card .sup-input { font-size:15px; letter-spacing:normal; text-align:left; width:100%; box-sizing:border-box; padding:12px; margin:0 0 12px; }
+  .lock-card .sup-label { align-self:flex-start; font-size:12.5px; font-weight:700; color:#4A3B28 !important; margin:0 0 4px; }
+  .sup-pass-wrap { position:relative; width:100%; }
+  .sup-pass-wrap .sup-input { padding-right:46px; }
+  .lock-card .sup-eye { position:absolute; right:4px; top:3px; width:auto; background:none; color:#4A3B28; padding:9px 10px; font-size:17px; }
+  .sup-avatar { width:60px; height:60px; border-radius:50%; background:#1F4D2B; color:#fff; display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 0 10px; }
+  #supplierViewScreen { display:none; position:fixed; inset:0; z-index:90; background:#F6F1E3; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .sup-header { position:sticky; top:0; z-index:2; background:#2E5233; color:#F3ECD9; padding:14px 16px; display:flex; align-items:center; gap:10px; }
+  .sup-header h2 { margin:0; flex:1; font-family:'Fraunces',serif; font-size:17px; color:#F3ECD9; }
+  .sup-header .sup-user { font-size:13px; font-weight:600; white-space:nowrap; }
+  .sup-header button { border:none; background:rgba(255,255,255,0.16); color:#F3ECD9; border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:600; cursor:pointer; }
+  .sup-body { max-width:520px; margin:0 auto; padding:16px 16px 40px; }
+  .sup-loc-card { display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:14px; margin-bottom:12px; cursor:pointer; }
+  .sup-loc-card .circle { width:36px; height:36px; border-radius:50%; color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sup-loc-card .label { flex:1; font-weight:700; color:#2E3B2A; }
+  .sup-loc-card .chev { color:#6B7B66; font-size:22px; }
+  .sup-note { background:#E8F0E4; border-radius:12px; padding:12px 14px; font-size:12.5px; line-height:1.5; color:#4A5B45; margin-top:6px; }
+  .sup-form-card { background:#fff; border:1px solid #E4D8B4; border-radius:14px; padding:16px; margin-bottom:18px; }
+  .sup-form-card label { display:block; font-size:12.5px; font-weight:700; color:#4A3B28; margin:0 0 4px; }
+  .sup-form-card input, .sup-form-card select { width:100%; box-sizing:border-box; padding:12px; border-radius:8px; border:1px solid #C9BC9C; font-size:16px; margin-bottom:12px; background:#fff; }
+  .sup-msg { min-height:16px; font-size:12px; color:#8A7A5E; margin:-4px 0 6px; }
+  .sup-add-btn { width:100%; border:none; background:#2E5233; color:#fff; border-radius:10px; padding:14px; font-size:16px; font-weight:700; cursor:pointer; }
+  .sup-add-btn:disabled { opacity:0.6; }
+  .sup-table { width:100%; border-collapse:separate; border-spacing:0 6px; font-size:13px; }
+  .sup-table th { text-align:left; color:#6B5B45; font-size:11.5px; font-weight:700; padding:2px 8px; }
+  .sup-table td { padding:10px 8px; vertical-align:top; color:#2E3B2A; }
+  .sup-table tr.by-supplier td { background:#FCE8CC; }
+  .sup-table tr.by-admin td { background:#E3F1DF; }
+  .sup-table td:first-child { border-radius:10px 0 0 10px; }
+  .sup-table td:last-child { border-radius:0 10px 10px 0; }
+  /* Same two colours on the admin side: orange = supplier added it, green = we added it */
+  .entry-tag { display:inline-block; font-size:10.5px; font-weight:700; border-radius:6px; padding:2px 7px; margin-top:3px; color:#fff; }
+  .entry-tag.supplier { background:#F09A1A; }
+  .entry-tag.admin { background:#3E9B4F; }
+  .ledger-row.entry-supplier { background:#FCE8CC; border-radius:10px; padding:8px 10px !important; margin:5px 0; border-bottom:none !important; }
+  .ledger-row.entry-admin { background:#E3F1DF; border-radius:10px; padding:8px 10px !important; margin:5px 0; border-bottom:none !important; }
+  .entry-legend { display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:#6B5B45; margin:0 0 8px; align-items:center; }
+  .entry-legend i { display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
   .worker-row { display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px dotted #B8A87E; font-size:14px; font-weight:600; }
   .worker-row input[type=checkbox] { width:18px; height:18px; accent-color:#3B6B35; }
   .mt-card { background:#EFE7D3; border:1px solid #D8C89A; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
@@ -491,42 +535,68 @@
     <img src="logo.png" alt="SHAM Coco Production logo" style="width:74px;height:74px;object-fit:contain;margin-bottom:8px;" />
     <h1 class="display" style="font-size:20px;margin:0 0 2px;">S.H.A.M COCO PRODUCTION</h1>
     <p style="font-size:12.5px;letter-spacing:0.06em;text-transform:uppercase;color:#9FBB90 !important;margin:0 0 18px;font-weight:600;">Factory Management System</p>
-    <div class="pin-panel">
+
+    <!-- Step 1: who is logging in? -->
+    <div class="pin-panel" id="loginChooser">
+      <p style="font-size:18px;margin:0 0 14px;color:#1F3D24 !important;font-weight:800;">Login</p>
+      <button class="choose-btn admin" id="chooseAdminBtn"><span>&#128100; Admin Login</span><small>Full Access (All Pages)</small></button>
+      <button class="choose-btn supplier" id="chooseSupplierBtn"><span>&#128101; Supplier Login</span><small>Limited Access (A &ndash; E Only)</small></button>
+      <p style="font-size:12px;margin:2px 0 0;color:#8A7A5E !important;">Select your login type</p>
+    </div>
+
+    <!-- Step 2a: Admin — the existing PIN -->
+    <div class="pin-panel" id="adminPinPanel" style="display:none;">
       <p style="font-size:12.5px;margin:0 0 10px;color:#4A3B28 !important;font-weight:600;">Enter PIN to view</p>
-      <input type="password" inputmode="numeric" maxlength="6" id="pinInput" placeholder="••••" />
+      <input type="password" inputmode="numeric" maxlength="6" id="pinInput" placeholder="&bull;&bull;&bull;&bull;" />
       <div class="lock-error" id="lockError"></div>
       <button id="pinSubmit">Unlock</button>
+      <button class="link-btn" data-login-back>&#8592; Back</button>
     </div>
-  </div>
-</div>
 
-<!-- ===== SUPPLIER PORTAL (separate from the main app + PIN lock) ===== -->
-<!-- Reached only via a link with ?supplier=1 — never shown as part of the
-     normal admin flow, and the supplier never sees the main app at all. -->
-<div id="supplierLoginScreen" style="display:none;">
-  <div class="lock-card">
-    <img src="logo.png" alt="SHAM Coco Production logo" style="width:74px;height:74px;object-fit:contain;margin-bottom:8px;" />
-    <h1 class="display" style="font-size:20px;margin:0 0 2px;">S.H.A.M COCO PRODUCTION</h1>
-    <p style="font-size:12.5px;letter-spacing:0.06em;text-transform:uppercase;color:#9FBB90 !important;margin:0 0 18px;font-weight:600;">Supplier Login</p>
-    <div class="pin-panel">
-      <p style="font-size:12.5px;margin:0 0 10px;color:#4A3B28 !important;font-weight:600;">Login to add your matta</p>
-      <input type="text" id="supplierUsernameInput" placeholder="Username" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;margin-bottom:8px;box-sizing:border-box;" />
-      <input type="password" id="supplierPasswordInput" placeholder="Password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;margin-bottom:8px;box-sizing:border-box;" />
+    <!-- Step 2b: Supplier — own username + password -->
+    <div class="pin-panel" id="supplierLoginPanel" style="display:none;">
+      <div class="sup-avatar">&#128100;</div>
+      <p style="font-size:16px;margin:0 0 12px;color:#1F3D24 !important;font-weight:800;">Supplier Login</p>
+      <label class="sup-label" for="supplierUsernameInput">Username</label>
+      <input class="sup-input" type="text" id="supplierUsernameInput" autocomplete="username" autocapitalize="none" spellcheck="false" />
+      <label class="sup-label" for="supplierPasswordInput">Password</label>
+      <div class="sup-pass-wrap">
+        <input class="sup-input" type="password" id="supplierPasswordInput" autocomplete="current-password" />
+        <button class="sup-eye" id="supplierEyeBtn" type="button" aria-label="Show or hide password">&#128065;</button>
+      </div>
       <div class="lock-error" id="supplierLoginError"></div>
       <button id="supplierLoginBtn">Login</button>
+      <button class="link-btn" data-login-back>Back to Home</button>
     </div>
   </div>
 </div>
 
-<div id="supplierViewScreen" style="display:none;">
-  <div class="wrap" style="max-width:520px;margin:0 auto;padding:16px;">
-    <div class="section-header">
-      <img src="logo.png" alt="SHAM Coco Production logo" style="width:56px;height:56px;object-fit:contain;" />
-      <h2 class="section-title" id="supplierWelcomeTitle">SUPPLIER</h2>
+<!-- ===== SUPPLIER PANEL: a supplier only ever sees this — never the main app ===== -->
+<div id="supplierViewScreen">
+  <div class="sup-header">
+    <button id="supplierBackBtn" style="display:none;" aria-label="Back">&#8592;</button>
+    <h2 id="supplierHeaderTitle">Supplier Panel</h2>
+    <span class="sup-user">&#128100; <span id="supplierHeaderName"></span></span>
+    <button id="supplierLogoutBtn">Logout</button>
+  </div>
+  <div class="sup-body">
+    <div id="supplierLocationsView">
+      <h3 class="display" style="margin:0 0 14px;color:#1F3D24;font-size:19px;">Add Mattai (A &ndash; E)</h3>
+      <div id="supplierLocationsList"></div>
+      <div class="sup-note">You can only add mattai for these locations.<br/>You cannot edit or delete existing data.</div>
     </div>
-    <p class="empty" id="supplierViewDate" style="margin-bottom:14px;"></p>
-    <div id="supplierSectionsList"></div>
-    <button class="btn-clear no-print" id="supplierLogoutBtn" style="width:100%;margin-top:16px;">&#128274; Logout</button>
+    <div id="supplierLocationView" style="display:none;">
+      <div class="sup-form-card">
+        <label for="supplierNameSelect">Supplier Name</label>
+        <select id="supplierNameSelect" disabled><option id="supplierNameOption"></option></select>
+        <label for="supplierCountInput">Mattai Count</label>
+        <input type="number" inputmode="numeric" id="supplierCountInput" placeholder="0" />
+        <div class="sup-msg" id="supplierAddNote"></div>
+        <button class="sup-add-btn" id="supplierAddBtn">Add</button>
+      </div>
+      <h3 class="display" id="supplierEntriesTitle" style="margin:0 0 8px;color:#1F3D24;font-size:16px;">Today's Entries</h3>
+      <div id="supplierEntriesList"></div>
+    </div>
   </div>
 </div>
 
@@ -893,6 +963,7 @@
             <input type="date" id="mtDatePicker" class="no-print" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" />
 
             <h3 class="sub-title display">Matta Today</h3>
+            <div class="entry-legend no-print"><span><i style="background:#F09A1A;"></i>Supplier Added</span><span><i style="background:#3E9B4F;"></i>Added by Admin</span></div>
             <div id="mtSectionsList"></div>
 
             <div id="mtPersonTotals" style="margin:6px 0 10px;"></div>
@@ -958,7 +1029,7 @@
 
             <div class="section-divider"></div>
             <h3 class="sub-title display">Supplier Logins</h3>
-            <p class="empty" style="margin-top:0;">Give each supplier this link + their own username/password: add <span class="mono">?supplier=1</span> to the site's URL.</p>
+            <p class="empty" style="margin-top:0;">Supplier just opens this same website and taps <b>Supplier Login</b> — give them the username + password you create here.</p>
             <div id="mtSupplierAccountsList"></div>
             <div class="form-row no-print" style="margin-top:8px;">
               <input type="text" placeholder="Username" id="mtNewSupplierUser" style="flex:1;min-width:90px;" />
@@ -1381,6 +1452,7 @@ function tryUnlock(){
   const val = document.getElementById("pinInput").value.trim();
   if(val === ACCESS_PIN){
     localStorage.setItem("sham-unlocked","true");
+    localStorage.removeItem("supplierUser"); localStorage.removeItem("supplierName"); // one role at a time on a device
     showApp();
   } else {
     document.getElementById("lockError").textContent = "Wrong PIN, try again.";
@@ -1393,6 +1465,7 @@ document.getElementById("lockAgainBtn").addEventListener("click", ()=>{
   document.getElementById("appRoot").style.display="none";
   document.getElementById("lockScreen").style.display="flex";
   document.getElementById("pinInput").value="";
+  showLoginPanel("chooser");
 });
 
 function showApp(){
@@ -1438,58 +1511,49 @@ function loadMachineWorkerNamesList(){
   }).catch(()=>{});
 }
 
-// ---------- SUPPLIER PORTAL ----------
-// A supplier reaches this via a link like yoursite.github.io/?supplier=1 —
-// they never see the PIN screen or the main app, only their own restricted
-// "add matta" view for whichever sections you've told them about. This must
-// be checked before the normal auto-unlock below, so a supplier opening the
-// link on a device that has the admin app already unlocked never glimpses
-// the full app first.
+// ---------- LOGIN CHOOSER + SUPPLIER PORTAL ----------
+// One website, two doors: "Admin Login" (the PIN, full access) and "Supplier
+// Login" (own username/password, only Locations A-E, add-only). A supplier
+// who logs in never sees the main app at all.
+// (?supplier=1 still works as a shortcut straight to the supplier login.)
 const IS_SUPPLIER_LINK = new URLSearchParams(window.location.search).get("supplier") === "1";
+let supplierUsername = "", supplierName = "", supplierCurrentSec = null;
 
-if(!IS_SUPPLIER_LINK && localStorage.getItem("sham-unlocked") === "true"){
-  showApp();
+function showLoginPanel(which){ // "chooser" | "admin" | "supplier"
+  document.getElementById("loginChooser").style.display = which==="chooser" ? "flex" : "none";
+  document.getElementById("adminPinPanel").style.display = which==="admin" ? "flex" : "none";
+  document.getElementById("supplierLoginPanel").style.display = which==="supplier" ? "flex" : "none";
+  document.getElementById("lockError").textContent = "";
+  document.getElementById("supplierLoginError").textContent = "";
 }
+document.getElementById("chooseAdminBtn").addEventListener("click", ()=>{ showLoginPanel("admin"); document.getElementById("pinInput").focus(); });
+document.getElementById("chooseSupplierBtn").addEventListener("click", ()=>{ showLoginPanel("supplier"); });
+document.querySelectorAll("[data-login-back]").forEach(b=>b.addEventListener("click", ()=>showLoginPanel("chooser")));
 
-// ---------- SUPPLIER PORTAL ----------
-// A supplier reaches this via a link like yoursite.github.io/?supplier=1 —
-// they never see the PIN screen or the main app, only their own restricted
-// "add matta" view for whichever sections you've told them about.
-let supplierUsername = "", supplierName = "";
+document.getElementById("supplierEyeBtn").addEventListener("click", ()=>{
+  const inp = document.getElementById("supplierPasswordInput");
+  inp.type = inp.type==="password" ? "text" : "password";
+});
 
-function supplierBoot(){
-  document.getElementById("lockScreen").style.display = "none";
-  document.getElementById("appRoot").style.display = "none";
-  const savedUser = sessionStorage.getItem("supplierUser");
-  const savedName = sessionStorage.getItem("supplierName");
-  if(savedUser){
-    supplierUsername = savedUser;
-    supplierName = savedName || savedUser;
-    showSupplierView();
-  } else {
-    document.getElementById("supplierLoginScreen").style.display = "flex";
-  }
-}
+function supplierSaveSession(u, n){ localStorage.setItem("supplierUser", u); localStorage.setItem("supplierName", n); }
+function supplierClearSession(){ localStorage.removeItem("supplierUser"); localStorage.removeItem("supplierName"); }
 
 function supplierTryLogin(){
-  const u = document.getElementById("supplierUsernameInput").value.trim();
+  const u = document.getElementById("supplierUsernameInput").value.trim().toLowerCase();
   const p = document.getElementById("supplierPasswordInput").value;
   const errEl = document.getElementById("supplierLoginError");
   if(!u || !p){ errEl.textContent = "Enter username and password."; return; }
   errEl.textContent = "Checking...";
-  auth.signInAnonymously().then(()=>{
-    return db.collection("supplierAccounts").doc(u.toLowerCase()).get();
-  }).then((doc)=>{
+  auth.signInAnonymously().then(()=>db.collection("supplierAccounts").doc(u).get()).then((doc)=>{
     if(!doc.exists || doc.data().password !== p){
       errEl.textContent = "Wrong username or password.";
       return;
     }
-    supplierUsername = u.toLowerCase();
-    supplierName = doc.data().name || u;
-    sessionStorage.setItem("supplierUser", supplierUsername);
-    sessionStorage.setItem("supplierName", supplierName);
-    document.getElementById("supplierLoginScreen").style.display = "none";
-    showSupplierView();
+    const name = doc.data().name || u;
+    localStorage.removeItem("sham-unlocked"); // one role at a time on a device
+    supplierSaveSession(u, name);
+    document.getElementById("supplierPasswordInput").value = "";
+    enterSupplierPortal(u, name);
   }).catch(()=>{
     errEl.textContent = "Connection error. Check internet.";
   });
@@ -1497,61 +1561,157 @@ function supplierTryLogin(){
 document.getElementById("supplierLoginBtn").addEventListener("click", supplierTryLogin);
 document.getElementById("supplierPasswordInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") supplierTryLogin(); });
 
-document.getElementById("supplierLogoutBtn").addEventListener("click", ()=>{
-  sessionStorage.removeItem("supplierUser");
-  sessionStorage.removeItem("supplierName");
+function supplierLogout(){
+  supplierClearSession();
+  supplierUsername = ""; supplierName = ""; supplierCurrentSec = null;
   document.getElementById("supplierViewScreen").style.display = "none";
-  document.getElementById("supplierLoginScreen").style.display = "flex";
+  document.getElementById("lockScreen").style.display = "flex";
   document.getElementById("supplierUsernameInput").value = "";
   document.getElementById("supplierPasswordInput").value = "";
-});
+  showLoginPanel("chooser");
+}
+document.getElementById("supplierLogoutBtn").addEventListener("click", supplierLogout);
+document.getElementById("supplierBackBtn").addEventListener("click", ()=>supplierShowLocations());
 
-function showSupplierView(){
-  document.getElementById("supplierWelcomeTitle").textContent = "HI, " + supplierName.toUpperCase();
-  const todayStr = fmtDate(new Date());
-  document.getElementById("supplierViewDate").textContent = fmtNice(todayStr);
-  const list = document.getElementById("supplierSectionsList");
+function enterSupplierPortal(u, n){
+  supplierUsername = u; supplierName = n || u;
+  document.getElementById("lockScreen").style.display = "none";
+  document.getElementById("appRoot").style.display = "none";
+  document.getElementById("supplierViewScreen").style.display = "block";
+  document.getElementById("supplierHeaderName").textContent = supplierName;
+  supplierShowLocations();
+  // If the admin deleted this supplier's login, don't keep them signed in.
+  auth.signInAnonymously().then(()=>db.collection("supplierAccounts").doc(u).get()).then((doc)=>{
+    if(!doc.exists) supplierLogout();
+  }).catch(()=>{});
+}
+
+const SUP_LOC_COLORS = {A:["#3B8DDE","#E4F0FB"], B:["#3EA55A","#E4F5E6"], C:["#F2A33A","#FDEBD0"], D:["#8B5CC7","#EFE6FA"], E:["#E0527A","#FBE4EA"]};
+
+function supplierShowLocations(){
+  supplierCurrentSec = null;
+  document.getElementById("supplierBackBtn").style.display = "none";
+  document.getElementById("supplierHeaderTitle").textContent = "Supplier Panel";
+  document.getElementById("supplierLocationsView").style.display = "block";
+  document.getElementById("supplierLocationView").style.display = "none";
+  const list = document.getElementById("supplierLocationsList");
   list.innerHTML = "";
   SECTION_KEYS.forEach(k=>{
+    const [dark, light] = SUP_LOC_COLORS[k];
     const card = document.createElement("div");
-    card.className = "mt-card";
-    card.innerHTML = `
-      <div class="mt-card-head"><span class="sec-name display">Section ${k}</span></div>
-      <div class="form-row no-print" style="margin-top:6px;">
-        <input type="number" inputmode="decimal" placeholder="Matta amount" class="supplier-amount-input" data-sec="${k}" style="flex:1;" />
-        <button class="fadd supplier-add-btn" data-sec="${k}">+ Add</button>
-      </div>
-      <div class="save-note no-print" id="supplierNote-${k}"></div>`;
+    card.className = "sup-loc-card";
+    card.style.background = light;
+    card.innerHTML = `<span class="circle" style="background:${dark};">${k}</span><span class="label">Location ${k}</span><span class="chev">&rsaquo;</span>`;
+    card.addEventListener("click", ()=>supplierOpenLocation(k));
     list.appendChild(card);
-  });
-  list.querySelectorAll(".supplier-add-btn").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const k = btn.dataset.sec;
-      const input = list.querySelector(`.supplier-amount-input[data-sec="${k}"]`);
-      const note = document.getElementById("supplierNote-"+k);
-      const amount = Number(input.value)||0;
-      if(amount<=0){ note.textContent = "Enter an amount first."; return; }
-      note.textContent = "Saving...";
-      const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
-      const entry = {id:Date.now().toString(36), amount, name:supplierName, time:timeLabel, source:"supplier", addedBy:supplierUsername};
-      db.collection("machineTeam").doc(todayStr).set({
-        date: todayStr,
-        month: monthKey(todayStr),
-        sections: { [k]: { entries: firebase.firestore.FieldValue.arrayUnion(entry) } }
-      }, {merge:true}).then(()=>{
-        note.textContent = "Added!";
-        input.value = "";
-        setTimeout(()=>{ note.textContent=""; }, 1500);
-      }).catch(()=>{
-        note.textContent = "Couldn't save. Check internet.";
-      });
-    });
   });
 }
 
-if(IS_SUPPLIER_LINK){
-  supplierBoot();
+function supplierOpenLocation(k){
+  supplierCurrentSec = k;
+  document.getElementById("supplierBackBtn").style.display = "inline-block";
+  document.getElementById("supplierHeaderTitle").textContent = k + " - Location";
+  document.getElementById("supplierLocationsView").style.display = "none";
+  document.getElementById("supplierLocationView").style.display = "block";
+  document.getElementById("supplierNameOption").textContent = supplierName;
+  document.getElementById("supplierCountInput").value = "";
+  document.getElementById("supplierAddNote").textContent = "";
+  document.getElementById("supplierEntriesTitle").textContent = "Today's Entries (" + k + ")";
+  supplierLoadEntries(k);
+  document.getElementById("supplierViewScreen").scrollTop = 0;
 }
+
+// Read-only list of today's entries for this location — the supplier's own
+// in orange, ours in green (same two colours you see on the admin side).
+function supplierLoadEntries(k){
+  const list = document.getElementById("supplierEntriesList");
+  list.innerHTML = '<p class="empty">Loading...</p>';
+  const todayStr = fmtDate(new Date());
+  db.collection("machineTeam").doc(todayStr).get().then((doc)=>{
+    const sec = doc.exists && doc.data().sections && doc.data().sections[k];
+    const entries = (sec && Array.isArray(sec.entries)) ? sec.entries : [];
+    if(entries.length===0){
+      list.innerHTML = '<p class="empty">No entries today yet.</p>';
+      return;
+    }
+    let rows = "";
+    entries.forEach((e,i)=>{
+      const bySupplier = e.source==="supplier";
+      rows += `<tr class="${bySupplier?'by-supplier':'by-admin'}">
+        <td>${i+1}</td>
+        <td>${escapeHtml(e.name||"—")}<br/><span class="entry-tag ${bySupplier?'supplier':'admin'}">${bySupplier?'Supplier Added':'Added by Admin'}</span></td>
+        <td class="mono">${rupee(e.amount)}</td>
+        <td>${bySupplier?'Supplier':'Admin'}</td>
+      </tr>`;
+    });
+    list.innerHTML = `<table class="sup-table"><thead><tr><th>No</th><th>Supplier</th><th>Mattai</th><th>Added By</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }).catch(()=>{
+    list.innerHTML = '<p class="empty">Couldn\'t load. Check internet.</p>';
+  });
+}
+
+// A supplier's matta also becomes / tops up their record in Active Suppliers,
+// exactly like an entry typed in by us — so cutting later can target them.
+function supplierTopUpSupplierRecord(k, amount){
+  const ref = db.collection("machineTeamSuppliers").doc("current");
+  return db.runTransaction((tx)=>tx.get(ref).then((snap)=>{
+    const data = snap.exists ? snap.data() : {};
+    const list = Array.isArray(data[k]) ? data[k].slice() : [];
+    const idx = list.findIndex(sp=>(sp.supplierName||"").toLowerCase()===supplierName.toLowerCase());
+    if(idx>=0){
+      const sp = Object.assign({}, list[idx]);
+      sp.originalOpeningQuantity = (Number(sp.originalOpeningQuantity)||0) + amount;
+      sp.remainingQuantity = (Number(sp.remainingQuantity)||0) + amount;
+      sp.status = "active";
+      list[idx] = sp;
+    } else {
+      list.push({id:Date.now().toString(36)+"s", supplierName:supplierName, originalOpeningQuantity:amount, remainingQuantity:amount, status:"active", history:[]});
+    }
+    tx.set(ref, {[k]:list}, {merge:true});
+  }));
+}
+
+document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
+  const k = supplierCurrentSec;
+  if(!k) return;
+  const btn = document.getElementById("supplierAddBtn");
+  const input = document.getElementById("supplierCountInput");
+  const note = document.getElementById("supplierAddNote");
+  const amount = Number(input.value)||0;
+  if(amount<=0){ note.textContent = "Enter the mattai count first."; return; }
+  btn.disabled = true;
+  note.textContent = "Saving...";
+  const todayStr = fmtDate(new Date());
+  const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+  const entry = {id:Date.now().toString(36), amount, name:supplierName, time:timeLabel, source:"supplier", addedBy:supplierUsername};
+  db.collection("machineTeam").doc(todayStr).set({
+    date: todayStr,
+    month: monthKey(todayStr),
+    sections: { [k]: { entries: firebase.firestore.FieldValue.arrayUnion(entry) } }
+  }, {merge:true}).then(()=>supplierTopUpSupplierRecord(k, amount)).then(()=>{
+    note.textContent = "Added!";
+    input.value = "";
+    btn.disabled = false;
+    setTimeout(()=>{ if(document.getElementById("supplierAddNote").textContent==="Added!") document.getElementById("supplierAddNote").textContent=""; }, 1500);
+    supplierLoadEntries(k);
+  }).catch(()=>{
+    note.textContent = "Couldn't save. Check internet and try again.";
+    btn.disabled = false;
+  });
+});
+
+// ---- Boot: decide which screen to show first ----
+(function bootLogin(){
+  const savedSupplier = localStorage.getItem("supplierUser");
+  if(IS_SUPPLIER_LINK){
+    if(savedSupplier){ enterSupplierPortal(savedSupplier, localStorage.getItem("supplierName")); }
+    else { showLoginPanel("supplier"); }
+    return;
+  }
+  if(localStorage.getItem("sham-unlocked") === "true"){ showApp(); return; }
+  if(savedSupplier){ enterSupplierPortal(savedSupplier, localStorage.getItem("supplierName")); return; }
+  showLoginPanel("chooser");
+})();
 
 // ---------- SCREEN NAVIGATION ----------
 const SCREENS = ["homeScreen","expensesSection","machineSection","dryerSection","dryerWeightSection","storeSection","loanSection","salarySection","monthReportSection","dashboardSection"];
@@ -2287,6 +2447,7 @@ function mtLoadDay(dateStr){
     document.getElementById("mtSaveNote").textContent = "";
     mtRender();
     mtLoadSupplierAccounts();
+    mtStartLiveSync(dateStr);
   }).catch((e)=>{
     // Loud on purpose: a silent "0 balance" here looks exactly like a real
     // empty day, so if the Opening carry-forward ever looks wrong again,
@@ -2298,6 +2459,54 @@ function mtLoadDay(dateStr){
     document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
     mtRender();
   });
+}
+
+
+// Live sync: a supplier can add matta from their own phone while this screen
+// is open. Without this, our next save would overwrite the day with older
+// data and silently wipe the supplier's entry. So: pull any new supplier
+// entries (and supplier-list changes) into memory the moment they happen.
+let mtDayUnsub = null, mtSuppliersUnsub = null;
+function mtStable(v){
+  if(Array.isArray(v)) return "["+v.map(mtStable).join(",")+"]";
+  if(v && typeof v==="object") return "{"+Object.keys(v).sort().map(x=>JSON.stringify(x)+":"+mtStable(v[x])).join(",")+"}";
+  return JSON.stringify(v);
+}
+function mtStartLiveSync(dateStr){
+  if(mtDayUnsub){ mtDayUnsub(); mtDayUnsub = null; }
+  mtDayUnsub = db.collection("machineTeam").doc(dateStr).onSnapshot((snap)=>{
+    if(dateStr!==mtSelectedDate || !snap.exists) return;
+    const secs = snap.data().sections || {};
+    let changed = false;
+    SECTION_KEYS.forEach(k=>{
+      const mem = mtSectionsData[k];
+      const srv = secs[k] && Array.isArray(secs[k].entries) ? secs[k].entries : [];
+      if(!mem) return;
+      srv.forEach(e=>{
+        if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id)){
+          mem.entries.push({id:e.id, amount:Number(e.amount)||0, name:e.name||"", time:e.time||"", source:"supplier", addedBy:e.addedBy||""});
+          changed = true;
+        }
+      });
+    });
+    if(changed){ SECTION_KEYS.forEach(k=>mtRecalc(k)); mtRender(); }
+  }, ()=>{});
+  if(!mtSuppliersUnsub){
+    mtSuppliersUnsub = db.collection("machineTeamSuppliers").doc("current").onSnapshot((snap)=>{
+      if(snap.metadata.hasPendingWrites) return;
+      const d = snap.exists ? snap.data() : {};
+      let changed = false;
+      SECTION_KEYS.forEach(k=>{
+        const srv = Array.isArray(d[k]) ? d[k] : [];
+        if(mtStable(srv)!==mtStable(mtGlobalSuppliers[k]||[])){
+          mtGlobalSuppliers[k] = srv;
+          if(mtSectionsData[k]) mtSectionsData[k].suppliers = srv;
+          changed = true;
+        }
+      });
+      if(changed) mtRender();
+    }, ()=>{});
+  }
 }
 
 let mtPersistPromise = Promise.resolve();
@@ -2628,10 +2837,10 @@ function mtRenderTotalsOnly(){
   } else {
     logRows.forEach(r=>{
       const row = document.createElement("div");
-      row.className = "ledger-row display";
-      const nameColor = r.source==="supplier" ? "color:#2E6E9E;" : "";
-      const supplierTag = r.source==="supplier" ? ` <span style="font-size:9.5px;font-weight:700;color:#2E6E9E;border:1px solid #2E6E9E;border-radius:999px;padding:1px 5px;">SUPPLIER</span>` : "";
-      row.innerHTML = `<div class="iname" style="font-size:13px;${nameColor}">${r.time ? r.time+" &middot; " : ""}Section ${r.section} &middot; ${escapeHtml(r.name.toUpperCase())}${supplierTag}</div><div class="iprice mono" style="font-size:13px;">+${rupee(r.amount)}</div>`;
+      const bySupplier = r.source==="supplier";
+      row.className = "ledger-row display " + (bySupplier ? "entry-supplier" : "entry-admin");
+      const tag = bySupplier ? `<span class="entry-tag supplier">Supplier Added</span>` : `<span class="entry-tag admin">Added by Admin</span>`;
+      row.innerHTML = `<div class="iname" style="font-size:13px;color:#2E3B2A;">${r.time ? r.time+" &middot; " : ""}Section ${r.section} &middot; ${escapeHtml(r.name.toUpperCase())}<div>${tag}</div></div><div class="iprice mono" style="font-size:13px;color:#2E5233;">+${rupee(r.amount)}</div>`;
       logDiv.appendChild(row);
     });
   }
@@ -2805,12 +3014,11 @@ function mtRender(){
       s.entries.forEach(e=>{
         const icon = `<button class="idel no-print" data-sec="${k}" data-eid="${e.id}">&#128465;</button>`;
         const timeLabel = e.time ? `<div class="icat" style="font-family:'IBM Plex Mono',monospace;">${e.time}</div>` : "";
-        // Matta a supplier added themselves (via their own restricted login)
-        // shows in blue instead of the usual admin-entry orange, so it's
-        // obvious at a glance who added what.
-        const nameColor = e.source==="supplier" ? "#2E6E9E" : "#B5651D";
-        const supplierTag = e.source==="supplier" ? `<span style="font-size:10px;font-weight:700;color:#2E6E9E;border:1px solid #2E6E9E;border-radius:999px;padding:1px 6px;margin-left:6px;">SUPPLIER</span>` : "";
-        rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;color:${nameColor};">${escapeHtml((e.name||"—").toUpperCase())}${supplierTag}${timeLabel}</div><div class="iprice mono" style="font-size:14px;color:#3B6B35;">+${rupee(e.amount)}</div>${icon}</div>`;
+        // Orange row = the supplier added it themselves (own login);
+        // green row = we (admin) added it. Same colours the supplier sees.
+        const bySupplier = e.source==="supplier";
+        const tag = bySupplier ? `<span class="entry-tag supplier">Supplier Added</span>` : `<span class="entry-tag admin">Added by Admin</span>`;
+        rowsHtml += `<div class="ledger-row display ${bySupplier?'entry-supplier':'entry-admin'}"><div class="iname" style="font-size:14px;color:#2E3B2A;">${escapeHtml((e.name||"—").toUpperCase())}<div>${tag}</div>${timeLabel}</div><div class="iprice mono" style="font-size:14px;color:#2E5233;">+${rupee(e.amount)}</div>${icon}</div>`;
       });
     }
     // Matta page no longer has its own Edit toggle — adding (and deleting) a
