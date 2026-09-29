@@ -2378,6 +2378,7 @@ document.getElementById("mtClearBtn").addEventListener("click", ()=>{
 
 // ---------- MACHINE TEAM STATE ----------
 let mtSelectedDate = fmtDate(new Date());
+let mtLoadedAt = 0; // Date.now() when the current mtSectionsData was loaded — used to tell a genuinely-missed supplier entry (created after this) apart from one you deliberately deleted (existed before this).
 let mtWorkers = [];
 let mtSectionsData = {};
 // Active Suppliers: one ongoing list per section (A-E), completely separate
@@ -2528,6 +2529,7 @@ function mtLoadDay(dateStr){
     document.getElementById("mtSaveNote").textContent = "";
     mtRender();
     mtLoadSupplierAccounts();
+    mtLoadedAt = Date.now();
     mtStartLiveSync(dateStr);
   }).catch((e)=>{
     // Loud on purpose: a silent "0 balance" here looks exactly like a real
@@ -2564,7 +2566,7 @@ function mtStartLiveSync(dateStr){
       const srv = secs[k] && Array.isArray(secs[k].entries) ? secs[k].entries : [];
       if(!mem) return;
       srv.forEach(e=>{
-        if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id)){
+        if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id) && parseInt(e.id,36) > mtLoadedAt){
           mem.entries.push({id:e.id, amount:Number(e.amount)||0, name:e.name||"", time:e.time||"", source:"supplier", addedBy:e.addedBy||""});
           changed = true;
         }
@@ -2611,7 +2613,7 @@ function mtPersistSection(k){
     const srv = Array.isArray(serverSec && serverSec.entries) ? serverSec.entries : [];
     const mem = mtSectionsData[k];
     srv.forEach(e=>{
-      if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id)) mem.entries.push(e);
+      if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id) && parseInt(e.id,36) > mtLoadedAt) mem.entries.push(e);
     });
     mtRecalc(k);
     return db.collection("machineTeam").doc(saveDate).set({
@@ -2643,7 +2645,10 @@ function mtPersist(){
       const mem = mtSectionsData[k]; if(!mem) return;
       const srv = Array.isArray(serverSecs[k] && serverSecs[k].entries) ? serverSecs[k].entries : [];
       srv.forEach(e=>{
-        if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id)) mem.entries.push(e);
+        // Only re-add it if it was created AFTER we loaded (a genuine race) —
+        // never re-add one that existed at load time, since its absence now
+        // means you deliberately deleted it.
+        if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id) && parseInt(e.id,36) > mtLoadedAt) mem.entries.push(e);
       });
     });
     SECTION_KEYS.forEach(k=>mtRecalc(k));
