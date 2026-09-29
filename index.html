@@ -292,6 +292,14 @@
   .ledger-row.entry-admin { background:#E3F1DF; border-radius:10px; padding:8px 10px !important; margin:5px 0; border-bottom:none !important; }
   .entry-legend { display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:#6B5B45; margin:0 0 8px; align-items:center; }
   .entry-legend i { display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+  .sup-datenav { display:flex; align-items:center; justify-content:center; gap:12px; margin:0 0 14px; }
+  .sup-datenav button { border:none; background:#fff; border:1px solid #E4D8B4; border-radius:50%; width:36px; height:36px; font-size:15px; cursor:pointer; color:#2E5233; }
+  .sup-datenav #supplierDateLabel { font-family:'IBM Plex Mono',monospace; font-weight:700; color:#2E3B2A; font-size:14px; cursor:pointer; text-decoration:underline; text-decoration-style:dotted; }
+  .sup-status-card { display:flex; justify-content:space-around; background:#EFE6C8; border-radius:14px; padding:12px 10px; margin-bottom:16px; }
+  .sup-status-card > div { text-align:center; }
+  .sup-status-card span { display:block; font-size:11px; color:#8A7A5E; font-weight:700; text-transform:uppercase; margin-bottom:3px; }
+  .sup-status-card b { font-size:18px; color:#2E5233; font-family:'IBM Plex Mono',monospace; }
+  .sup-status-card b.cut-red { color:#D64545; }
   .worker-row { display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px dotted #B8A87E; font-size:14px; font-weight:600; }
   .worker-row input[type=checkbox] { width:18px; height:18px; accent-color:#3B6B35; }
   .mt-card { background:#EFE7D3; border:1px solid #D8C89A; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
@@ -586,6 +594,20 @@
       <div class="sup-note">You can only add mattai for these locations.<br/>You cannot edit or delete existing data.</div>
     </div>
     <div id="supplierLocationView" style="display:none;">
+      <div class="sup-datenav">
+        <button id="supplierPrevDay" aria-label="Previous day">&#8592;</button>
+        <span id="supplierDateLabel"></span>
+        <button id="supplierCalBtn" aria-label="Pick a date">&#128197;</button>
+        <button id="supplierNextDay" aria-label="Next day">&#8594;</button>
+      </div>
+      <input type="date" id="supplierDatePicker" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" />
+
+      <div class="sup-status-card" id="supplierStatusCard" style="display:none;">
+        <div><span>Original</span><b id="supplierStatusOriginal">0</b></div>
+        <div><span>Remaining</span><b id="supplierStatusRemaining">0</b></div>
+        <div id="supplierStatusCutWrap" style="display:none;"><span>Cut</span><b id="supplierStatusCut" class="cut-red">0</b></div>
+      </div>
+
       <div class="sup-form-card">
         <label for="supplierNameSelect">Supplier Name</label>
         <select id="supplierNameSelect" disabled><option id="supplierNameOption"></option></select>
@@ -594,7 +616,7 @@
         <div class="sup-msg" id="supplierAddNote"></div>
         <button class="sup-add-btn" id="supplierAddBtn">Add</button>
       </div>
-      <h3 class="display" id="supplierEntriesTitle" style="margin:0 0 8px;color:#1F3D24;font-size:16px;">Today's Entries</h3>
+      <h3 class="display" id="supplierEntriesTitle" style="margin:0 0 8px;color:#1F3D24;font-size:16px;">My Entries</h3>
       <div id="supplierEntriesList"></div>
     </div>
   </div>
@@ -1607,8 +1629,11 @@ function supplierShowLocations(){
   });
 }
 
+let supplierSelectedDate = fmtDate(new Date());
+
 function supplierOpenLocation(k){
   supplierCurrentSec = k;
+  supplierSelectedDate = fmtDate(new Date());
   document.getElementById("supplierBackBtn").style.display = "inline-block";
   document.getElementById("supplierHeaderTitle").textContent = k + " - Location";
   document.getElementById("supplierLocationsView").style.display = "none";
@@ -1616,35 +1641,90 @@ function supplierOpenLocation(k){
   document.getElementById("supplierNameOption").textContent = supplierName;
   document.getElementById("supplierCountInput").value = "";
   document.getElementById("supplierAddNote").textContent = "";
-  document.getElementById("supplierEntriesTitle").textContent = "Today's Entries (" + k + ")";
+  supplierRenderDateLabel();
+  supplierLoadStatus(k);
   supplierLoadEntries(k);
   document.getElementById("supplierViewScreen").scrollTop = 0;
 }
 
+function supplierRenderDateLabel(){
+  document.getElementById("supplierDateLabel").textContent = fmtNice(supplierSelectedDate);
+  document.getElementById("supplierEntriesTitle").textContent = "My Entries (" + supplierCurrentSec + ")";
+}
+
+function supplierGotoDate(newDateStr){
+  supplierSelectedDate = newDateStr;
+  supplierRenderDateLabel();
+  supplierLoadEntries(supplierCurrentSec);
+}
+
+document.getElementById("supplierPrevDay").addEventListener("click", ()=>{
+  const d = new Date(supplierSelectedDate+"T00:00:00"); d.setDate(d.getDate()-1);
+  supplierGotoDate(fmtDate(d));
+});
+document.getElementById("supplierNextDay").addEventListener("click", ()=>{
+  const d = new Date(supplierSelectedDate+"T00:00:00"); d.setDate(d.getDate()+1);
+  supplierGotoDate(fmtDate(d));
+});
+// Tapping the date, or the calendar icon, opens the phone's own calendar
+// picker — same as the admin page — so a supplier can jump to any date
+// instead of only stepping one day at a time.
+function supplierOpenDatePicker(){
+  const picker = document.getElementById("supplierDatePicker");
+  picker.value = supplierSelectedDate;
+  if(picker.showPicker){ picker.showPicker(); } else { picker.focus(); picker.click(); }
+}
+document.getElementById("supplierDateLabel").addEventListener("click", supplierOpenDatePicker);
+document.getElementById("supplierCalBtn").addEventListener("click", supplierOpenDatePicker);
+document.getElementById("supplierDatePicker").addEventListener("change", (e)=>{
+  if(e.target.value) supplierGotoDate(e.target.value);
+});
+
+// "My Supply Status": this supplier's own running total for this location —
+// Original / Remaining, and (only when something has actually been cut)
+// Cut shown in red, so they can see at a glance if their mattai was reduced.
+function supplierLoadStatus(k){
+  const card = document.getElementById("supplierStatusCard");
+  db.collection("machineTeamSuppliers").doc("current").get().then((doc)=>{
+    const list = doc.exists && Array.isArray(doc.data()[k]) ? doc.data()[k] : [];
+    const sp = list.find(x=>(x.supplierName||"").toLowerCase()===supplierName.toLowerCase());
+    if(!sp){ card.style.display = "none"; return; }
+    const original = Number(sp.originalOpeningQuantity)||0;
+    const remaining = Number(sp.remainingQuantity)||0;
+    const cut = Math.max(0, original - remaining);
+    document.getElementById("supplierStatusOriginal").textContent = rupee(original);
+    document.getElementById("supplierStatusRemaining").textContent = rupee(remaining);
+    document.getElementById("supplierStatusCut").textContent = rupee(cut);
+    document.getElementById("supplierStatusCutWrap").style.display = cut>0 ? "block" : "none";
+    card.style.display = "flex";
+  }).catch(()=>{ card.style.display = "none"; });
+}
+
 // Read-only list of today's entries for this location — the supplier's own
 // in orange, ours in green (same two colours you see on the admin side).
+// Shows only THIS supplier's own entries (by name) for the selected date —
+// they don't need to see our entries or other suppliers' entries here.
 function supplierLoadEntries(k){
   const list = document.getElementById("supplierEntriesList");
   list.innerHTML = '<p class="empty">Loading...</p>';
-  const todayStr = fmtDate(new Date());
-  db.collection("machineTeam").doc(todayStr).get().then((doc)=>{
+  const dateStr = supplierSelectedDate;
+  db.collection("machineTeam").doc(dateStr).get().then((doc)=>{
     const sec = doc.exists && doc.data().sections && doc.data().sections[k];
-    const entries = (sec && Array.isArray(sec.entries)) ? sec.entries : [];
+    const allEntries = (sec && Array.isArray(sec.entries)) ? sec.entries : [];
+    const entries = allEntries.filter(e=>(e.name||"").toLowerCase()===supplierName.toLowerCase());
     if(entries.length===0){
-      list.innerHTML = '<p class="empty">No entries today yet.</p>';
+      list.innerHTML = '<p class="empty">No entries from you on this date.</p>';
       return;
     }
     let rows = "";
     entries.forEach((e,i)=>{
-      const bySupplier = e.source==="supplier";
-      rows += `<tr class="${bySupplier?'by-supplier':'by-admin'}">
+      rows += `<tr class="by-supplier">
         <td>${i+1}</td>
-        <td>${escapeHtml(e.name||"—")}<br/><span class="entry-tag ${bySupplier?'supplier':'admin'}">${bySupplier?'Supplier Added':'Added by Admin'}</span></td>
+        <td class="mono">${e.time||""}</td>
         <td class="mono">${rupee(e.amount)}</td>
-        <td>${bySupplier?'Supplier':'Admin'}</td>
       </tr>`;
     });
-    list.innerHTML = `<table class="sup-table"><thead><tr><th>No</th><th>Supplier</th><th>Mattai</th><th>Added By</th></tr></thead><tbody>${rows}</tbody></table>`;
+    list.innerHTML = `<table class="sup-table"><thead><tr><th>No</th><th>Time</th><th>Mattai</th></tr></thead><tbody>${rows}</tbody></table>`;
   }).catch(()=>{
     list.innerHTML = '<p class="empty">Couldn\'t load. Check internet.</p>';
   });
@@ -1681,12 +1761,12 @@ document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
   if(amount<=0){ note.textContent = "Enter the mattai count first."; return; }
   btn.disabled = true;
   note.textContent = "Saving...";
-  const todayStr = fmtDate(new Date());
+  const dateStr = supplierSelectedDate;
   const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
   const entry = {id:Date.now().toString(36), amount, name:supplierName, time:timeLabel, source:"supplier", addedBy:supplierUsername};
-  db.collection("machineTeam").doc(todayStr).set({
-    date: todayStr,
-    month: monthKey(todayStr),
+  db.collection("machineTeam").doc(dateStr).set({
+    date: dateStr,
+    month: monthKey(dateStr),
     sections: { [k]: { entries: firebase.firestore.FieldValue.arrayUnion(entry) } }
   }, {merge:true}).then(()=>supplierTopUpSupplierRecord(k, amount)).then(()=>{
     note.textContent = "Added!";
@@ -1694,6 +1774,7 @@ document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
     btn.disabled = false;
     setTimeout(()=>{ if(document.getElementById("supplierAddNote").textContent==="Added!") document.getElementById("supplierAddNote").textContent=""; }, 1500);
     supplierLoadEntries(k);
+    supplierLoadStatus(k);
   }).catch(()=>{
     note.textContent = "Couldn't save. Check internet and try again.";
     btn.disabled = false;
@@ -2522,12 +2603,24 @@ function mtPersistSection(k){
   // balance) instead of re-saving workers + every other section, so adding a
   // supplier or cutting mattai stays a small, fast update.
   document.getElementById("mtSaveNote").textContent = "Saving...";
-  mtRecalc(k);
-  mtPersistPromise = db.collection("machineTeam").doc(mtSelectedDate).set({
-    date: mtSelectedDate,
-    month: monthKey(mtSelectedDate),
-    sections: { [k]: mtSectionsData[k] }
-  }, {merge:true}).then(()=>{
+  const saveDate = mtSelectedDate;
+  mtPersistPromise = db.collection("machineTeam").doc(saveDate).get().then((snap)=>{
+    // Same protection as mtPersist(): don't let this overwrite wipe out a
+    // supplier's entry that isn't in our in-memory copy yet.
+    const serverSec = snap.exists && snap.data().sections && snap.data().sections[k];
+    const srv = Array.isArray(serverSec && serverSec.entries) ? serverSec.entries : [];
+    const mem = mtSectionsData[k];
+    srv.forEach(e=>{
+      if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id)) mem.entries.push(e);
+    });
+    mtRecalc(k);
+    return db.collection("machineTeam").doc(saveDate).set({
+      date: saveDate,
+      month: monthKey(saveDate),
+      sections: { [k]: mtSectionsData[k] }
+    }, {merge:true});
+  }).then(()=>{
+    if(saveDate===mtSelectedDate) mtRender();
     document.getElementById("mtSaveNote").textContent = "Saved";
     setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
   }).catch(()=>{
@@ -2537,14 +2630,32 @@ function mtPersistSection(k){
 
 function mtPersist(){
   document.getElementById("mtSaveNote").textContent = "Saving...";
-  SECTION_KEYS.forEach(k=>mtRecalc(k));
-  mtWorkers.forEach(mtRecalcWorkerLoan);
-  mtPersistPromise = db.collection("machineTeam").doc(mtSelectedDate).set({
-    date: mtSelectedDate,
-    month: monthKey(mtSelectedDate),
-    workers: mtWorkers,
-    sections: mtSectionsData
+  const saveDate = mtSelectedDate;
+  // Before overwriting the day's doc, pull in any supplier-added entries
+  // that exist on the server but aren't in our in-memory copy yet (e.g. a
+  // supplier added matta from their phone while this screen was open, and
+  // for whatever reason live-sync hasn't caught it yet). Otherwise this
+  // save — which replaces the whole entries list — would silently delete
+  // their entry from Firestore.
+  mtPersistPromise = db.collection("machineTeam").doc(saveDate).get().then((snap)=>{
+    const serverSecs = (snap.exists && snap.data().sections) || {};
+    SECTION_KEYS.forEach(k=>{
+      const mem = mtSectionsData[k]; if(!mem) return;
+      const srv = Array.isArray(serverSecs[k] && serverSecs[k].entries) ? serverSecs[k].entries : [];
+      srv.forEach(e=>{
+        if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id)) mem.entries.push(e);
+      });
+    });
+    SECTION_KEYS.forEach(k=>mtRecalc(k));
+    mtWorkers.forEach(mtRecalcWorkerLoan);
+    return db.collection("machineTeam").doc(saveDate).set({
+      date: saveDate,
+      month: monthKey(saveDate),
+      workers: mtWorkers,
+      sections: mtSectionsData
+    });
   }).then(()=>{
+    if(saveDate===mtSelectedDate) mtRender();
     document.getElementById("mtSaveNote").textContent = "Saved";
     setTimeout(()=>{ document.getElementById("mtSaveNote").textContent=""; }, 1200);
     mtWorkers.forEach(w=>{
