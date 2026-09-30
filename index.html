@@ -1715,9 +1715,10 @@ document.getElementById("supplierSummaryBtn").addEventListener("click", ()=>{
   document.getElementById("supplierBackBtn").style.display = "none";
   document.getElementById("supplierHeaderTitle").textContent = "Supplier Panel";
   if(!supplierSummaryRange){
-    const to = fmtDate(new Date());
-    const fromD = new Date(); fromD.setDate(fromD.getDate()-29);
-    supplierSummaryRange = {from: fmtDate(fromD), to};
+    // Default to just today — older dates stay a deliberate choice via the
+    // date-range picker, instead of always loading a month of history.
+    const today = fmtDate(new Date());
+    supplierSummaryRange = {from: today, to: today};
   }
   supplierUpdateRangeLabel();
   supplierLoadSummary();
