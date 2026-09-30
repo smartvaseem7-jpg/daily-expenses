@@ -300,6 +300,36 @@
   .sup-status-card span { display:block; font-size:11px; color:#8A7A5E; font-weight:700; text-transform:uppercase; margin-bottom:3px; }
   .sup-status-card b { font-size:18px; color:#2E5233; font-family:'IBM Plex Mono',monospace; }
   .sup-status-card b.cut-red { color:#D64545; }
+  /* ---- Restyled location cards + Matta Summary ---- */
+  .sup-loc-card.sup-loc-plain { background:#fff !important; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+  .sup-loc-card .label-wrap { flex:1; }
+  .sup-loc-card .label-wrap .label { display:block; font-weight:700; color:#1F3D24; font-size:15px; }
+  .sup-loc-card .label-wrap .sub { display:block; font-size:12px; color:#8A8A8A; margin-top:2px; }
+  .sup-summary-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; border:none; background:#1F4D2B; color:#fff; border-radius:12px; padding:15px; font-size:16px; font-weight:700; cursor:pointer; margin-top:18px; }
+  .sup-summary-btn .chev { margin-left:auto; font-size:20px; }
+  .sup-summary-back { display:flex; align-items:center; gap:10px; border:none; background:none; padding:0; margin:0 0 16px; font-size:19px; font-weight:800; color:#1F3D24; font-family:'Fraunces',serif; cursor:pointer; }
+  .sup-summary-toolbar { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .sup-daterange-btn { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid #DDE3D8; border-radius:10px; padding:11px 14px; font-size:13.5px; color:#3B4A3A; font-weight:600; cursor:pointer; flex:1; min-width:170px; }
+  .sup-daterange-btn .chev { margin-left:auto; color:#8A8A8A; }
+  .sup-search-wrap { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid #DDE3D8; border-radius:10px; padding:11px 14px; flex:1; min-width:140px; }
+  .sup-search-wrap input { border:none; outline:none; font-size:14px; width:100%; background:transparent; }
+  .sup-info-banner { display:flex; gap:10px; align-items:flex-start; background:#E9F5EA; border-radius:10px; padding:12px 14px; font-size:12.5px; color:#3B5B3E; line-height:1.5; margin-bottom:16px; }
+  .sup-date-card { background:#fff; border:1px solid #E7ECE4; border-radius:14px; padding:14px 16px; margin-bottom:14px; }
+  .sup-date-card .head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .sup-date-card .head .datelabel { font-weight:800; color:#1F3D24; font-size:15px; display:flex; align-items:center; gap:8px; }
+  .sup-load-badge { background:#E9F5EA; color:#2E7D42; font-size:11.5px; font-weight:700; padding:3px 11px; border-radius:999px; }
+  .sup-date-card .row { display:flex; align-items:center; justify-content:space-between; padding:7px 2px; font-size:14px; color:#3B4A3A; }
+  .sup-date-card .row .num { color:#8A8A8A; margin-right:8px; }
+  .sup-date-card .row .edit-btn { border:none; background:none; color:#8A8A8A; font-size:14px; cursor:pointer; margin-left:8px; }
+  .sup-date-total { display:flex; align-items:center; gap:8px; background:#E9F5EA; color:#2E7D42; font-weight:700; font-size:13.5px; border-radius:8px; padding:9px 12px; margin-top:8px; }
+  .sup-grand-total { display:flex; align-items:center; justify-content:space-between; background:#1F4D2B; color:#fff; border-radius:14px; padding:16px 18px; margin-top:6px; font-size:13px; }
+  .sup-grand-total b { display:block; font-size:20px; margin-top:2px; }
+  .sup-grand-sub { font-size:11.5px; opacity:0.8; text-align:right; }
+  .sup-edit-inline { display:flex; gap:8px; align-items:center; margin:4px 0; }
+  .sup-edit-inline input { flex:1; padding:8px; border-radius:6px; border:1px solid #C9BC9C; font-size:14px; }
+  .sup-edit-inline button { border:none; border-radius:6px; padding:8px 12px; font-size:12.5px; font-weight:700; cursor:pointer; }
+  .sup-edit-inline .save-btn { background:#1F4D2B; color:#fff; }
+  .sup-edit-inline .cancel-btn { background:#EEE; color:#555; }
   .worker-row { display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px dotted #B8A87E; font-size:14px; font-weight:600; }
   .worker-row input[type=checkbox] { width:18px; height:18px; accent-color:#3B6B35; }
   .mt-card { background:#EFE7D3; border:1px solid #D8C89A; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
@@ -593,8 +623,26 @@
       <div id="supplierLocationsList"></div>
       <div class="sup-note">You can only add mattai for these locations.<br/>You cannot edit or delete existing data.</div>
 
+      <button class="sup-summary-btn" id="supplierSummaryBtn">&#128196; <span>Matta Summary</span> <span class="chev">&rsaquo;</span></button>
+
       <h3 class="display" style="margin:22px 0 10px;color:#1F3D24;font-size:16px;">My Active Mattai (by Location)</h3>
       <div id="supplierActiveSummaryList"></div>
+    </div>
+
+    <div id="supplierSummaryView" style="display:none;">
+      <button class="sup-summary-back" id="supplierSummaryBackBtn">&#8592; <span>Matta Summary</span></button>
+      <div class="sup-summary-toolbar">
+        <button class="sup-daterange-btn" id="supplierRangeBtn">&#128197; <span id="supplierRangeLabel">Select Date Range</span> <span class="chev">&#9662;</span></button>
+        <div class="sup-search-wrap"><span>&#128269;</span><input type="text" id="supplierSummarySearch" placeholder="Search..." /></div>
+      </div>
+      <input type="date" id="supplierRangeFrom" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" />
+      <input type="date" id="supplierRangeTo" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" />
+      <div class="sup-info-banner">&#128218; This summary shows all supplier-added mattai records across all locations (A - E) and dates.</div>
+      <div id="supplierSummaryList"></div>
+      <div class="sup-grand-total">
+        <span>&#128196; Grand Total Mattai<br/><b id="supplierGrandTotal">0 Mattai</b></span>
+        <span class="sup-grand-sub">(All Dates &amp; Locations)</span>
+      </div>
     </div>
     <div id="supplierLocationView" style="display:none;">
       <div class="sup-datenav">
@@ -1624,9 +1672,8 @@ function supplierShowLocations(){
   SECTION_KEYS.forEach(k=>{
     const [dark, light] = SUP_LOC_COLORS[k];
     const card = document.createElement("div");
-    card.className = "sup-loc-card";
-    card.style.background = light;
-    card.innerHTML = `<span class="circle" style="background:${dark};">${k}</span><span class="label">Location ${k}</span><span class="chev">&rsaquo;</span>`;
+    card.className = "sup-loc-card sup-loc-plain";
+    card.innerHTML = `<span class="circle" style="background:${dark};">${k}</span><span class="label-wrap"><span class="label">Location ${k}</span><span class="sub">Add mattai details for Location ${k}</span></span><span class="chev">&rsaquo;</span>`;
     card.addEventListener("click", ()=>supplierOpenLocation(k));
     list.appendChild(card);
   });
@@ -1653,6 +1700,160 @@ function supplierLoadActiveSummary(){
     }).join("");
   }).catch(()=>{
     box.innerHTML = '<p class="empty">Couldn\'t load. Check internet.</p>';
+  });
+}
+
+// ---------------- Matta Summary: every mattai THIS supplier added, across
+// every location and date, grouped by date, with a date-range filter, a
+// search box, and an inline edit (amount only) for their own mistakes.
+let supplierSummaryRange = null; // {from, to} or null = last 30 days default
+let supplierSummaryRaw = []; // flat list of {date, section, id, amount, time}
+
+document.getElementById("supplierSummaryBtn").addEventListener("click", ()=>{
+  document.getElementById("supplierLocationsView").style.display = "none";
+  document.getElementById("supplierSummaryView").style.display = "block";
+  document.getElementById("supplierBackBtn").style.display = "none";
+  document.getElementById("supplierHeaderTitle").textContent = "Supplier Panel";
+  if(!supplierSummaryRange){
+    const to = fmtDate(new Date());
+    const fromD = new Date(); fromD.setDate(fromD.getDate()-29);
+    supplierSummaryRange = {from: fmtDate(fromD), to};
+  }
+  supplierUpdateRangeLabel();
+  supplierLoadSummary();
+});
+document.getElementById("supplierSummaryBackBtn").addEventListener("click", ()=>{
+  document.getElementById("supplierSummaryView").style.display = "none";
+  document.getElementById("supplierLocationsView").style.display = "block";
+});
+
+function supplierUpdateRangeLabel(){
+  const {from, to} = supplierSummaryRange;
+  document.getElementById("supplierRangeLabel").textContent = fmtCompact(from) + " - " + fmtCompact(to);
+}
+function supplierOpenRangePicker(){
+  document.getElementById("supplierRangeFrom").value = supplierSummaryRange.from;
+  document.getElementById("supplierRangeFrom").onchange = (e)=>{
+    supplierSummaryRange.from = e.target.value;
+    supplierUpdateRangeLabel(); supplierLoadSummary();
+    document.getElementById("supplierRangeTo").value = supplierSummaryRange.to;
+    const toPicker = document.getElementById("supplierRangeTo");
+    if(toPicker.showPicker) toPicker.showPicker(); else toPicker.click();
+  };
+  const picker = document.getElementById("supplierRangeFrom");
+  if(picker.showPicker) picker.showPicker(); else picker.click();
+}
+document.getElementById("supplierRangeTo").addEventListener("change", (e)=>{
+  supplierSummaryRange.to = e.target.value;
+  supplierUpdateRangeLabel(); supplierLoadSummary();
+});
+document.getElementById("supplierRangeBtn").addEventListener("click", supplierOpenRangePicker);
+document.getElementById("supplierSummarySearch").addEventListener("input", supplierRenderSummary);
+
+function supplierLoadSummary(){
+  const listEl = document.getElementById("supplierSummaryList");
+  listEl.innerHTML = '<p class="empty">Loading...</p>';
+  const {from, to} = supplierSummaryRange;
+  db.collection("machineTeam").where("date",">=",from).where("date","<=",to).get().then((snap)=>{
+    supplierSummaryRaw = [];
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const dateStr = d.date || doc.id;
+      SECTION_KEYS.forEach(k=>{
+        const sec = d.sections && d.sections[k];
+        const entries = (sec && Array.isArray(sec.entries)) ? sec.entries : [];
+        entries.forEach(e=>{
+          if((e.name||"").toLowerCase()===supplierName.toLowerCase()){
+            supplierSummaryRaw.push({date:dateStr, section:k, id:e.id, amount:Number(e.amount)||0, time:e.time||""});
+          }
+        });
+      });
+    });
+    supplierRenderSummary();
+  }).catch(()=>{
+    listEl.innerHTML = '<p class="empty">Couldn\'t load. Check internet.</p>';
+  });
+}
+
+function supplierRenderSummary(){
+  const listEl = document.getElementById("supplierSummaryList");
+  const q = document.getElementById("supplierSummarySearch").value.trim().toLowerCase();
+  let rows = supplierSummaryRaw;
+  if(q){
+    rows = rows.filter(r=> fmtNice(r.date).toLowerCase().includes(q) || fmtCompact(r.date).includes(q) || String(r.amount).includes(q) || r.section.toLowerCase()===q);
+  }
+  if(rows.length===0){
+    listEl.innerHTML = '<p class="empty">No mattai found for this range.</p>';
+    document.getElementById("supplierGrandTotal").textContent = "0 Mattai";
+    return;
+  }
+  const byDate = {};
+  rows.forEach(r=>{ (byDate[r.date] = byDate[r.date]||[]).push(r); });
+  const dates = Object.keys(byDate).sort((a,b)=> a<b?1:-1); // newest first
+  let grand = 0;
+  listEl.innerHTML = dates.map(dateStr=>{
+    const items = byDate[dateStr];
+    const total = items.reduce((s,r)=>s+r.amount,0);
+    grand += total;
+    const rowsHtml = items.map((r,i)=>`
+      <div class="row" data-entry-row="${r.date}|${r.section}|${r.id}">
+        <span><span class="num">${i+1}.</span>${rupee(r.amount)} Mattai <span style="color:#B7B7B7;font-size:11.5px;">(${r.section})</span></span>
+        <button class="edit-btn" data-edit-entry="${r.date}|${r.section}|${r.id}" title="Edit">&#9998;</button>
+      </div>`).join("");
+    return `<div class="sup-date-card">
+      <div class="head"><span class="datelabel">&#128197; ${fmtCompact(dateStr)}</span><span class="sup-load-badge">Load ${items.length}</span></div>
+      ${rowsHtml}
+      <div class="sup-date-total">&#129689; Total: ${rupee(total)} Mattai</div>
+    </div>`;
+  }).join("");
+  document.getElementById("supplierGrandTotal").textContent = rupee(grand) + " Mattai";
+
+  listEl.querySelectorAll("[data-edit-entry]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const [dateStr, k, id] = btn.dataset.editEntry.split("|");
+      const rowDiv = listEl.querySelector(`[data-entry-row="${dateStr}|${k}|${id}"]`);
+      const current = supplierSummaryRaw.find(r=>r.date===dateStr && r.section===k && r.id===id);
+      if(!current || !rowDiv) return;
+      rowDiv.innerHTML = `<div class="sup-edit-inline">
+        <input type="number" inputmode="numeric" value="${current.amount}" id="supEditInput-${id}" />
+        <button class="save-btn" data-save-entry="${dateStr}|${k}|${id}">Save</button>
+        <button class="cancel-btn" data-cancel-entry="${dateStr}|${k}|${id}">Cancel</button>
+      </div>`;
+      rowDiv.querySelector("[data-save-entry]").addEventListener("click", ()=>supplierSaveEditedEntry(dateStr,k,id));
+      rowDiv.querySelector("[data-cancel-entry]").addEventListener("click", ()=>supplierRenderSummary());
+    });
+  });
+}
+
+// Editing only ever changes the amount on this one entry (and reconciles the
+// matching Active Suppliers record by the same delta) — it never touches any
+// other supplier's or the admin's data.
+function supplierSaveEditedEntry(dateStr, k, id){
+  const input = document.getElementById("supEditInput-"+id);
+  const newAmount = Number(input.value)||0;
+  if(newAmount<=0){ alert("Enter a valid mattai count."); return; }
+  const ref = db.collection("machineTeam").doc(dateStr);
+  db.runTransaction((tx)=>tx.get(ref).then((snap)=>{
+    if(!snap.exists) throw new Error("not-found");
+    const data = snap.data();
+    const sec = (data.sections && data.sections[k]) || {};
+    const entries = Array.isArray(sec.entries) ? sec.entries.slice() : [];
+    const idx = entries.findIndex(e=>e.id===id);
+    if(idx<0) throw new Error("not-found");
+    const oldAmount = Number(entries[idx].amount)||0;
+    const delta = newAmount - oldAmount;
+    entries[idx] = Object.assign({}, entries[idx], {amount:newAmount});
+    tx.update(ref, {["sections."+k+".entries"]: entries});
+    return delta;
+  })).then((delta)=>{
+    return supplierTopUpSupplierRecord(k, delta); // positive or negative delta, tops up or reduces
+  }).then(()=>{
+    const rec = supplierSummaryRaw.find(r=>r.date===dateStr && r.section===k && r.id===id);
+    if(rec) rec.amount = newAmount;
+    supplierRenderSummary();
+    supplierLoadActiveSummary();
+  }).catch(()=>{
+    alert("Couldn't save the edit. Check internet and try again.");
   });
 }
 
@@ -1767,8 +1968,8 @@ function supplierTopUpSupplierRecord(k, amount){
     const idx = list.findIndex(sp=>(sp.supplierName||"").toLowerCase()===supplierName.toLowerCase());
     if(idx>=0){
       const sp = Object.assign({}, list[idx]);
-      sp.originalOpeningQuantity = (Number(sp.originalOpeningQuantity)||0) + amount;
-      sp.remainingQuantity = (Number(sp.remainingQuantity)||0) + amount;
+      sp.originalOpeningQuantity = Math.max(0, (Number(sp.originalOpeningQuantity)||0) + amount);
+      sp.remainingQuantity = Math.max(0, (Number(sp.remainingQuantity)||0) + amount);
       sp.status = "active";
       list[idx] = sp;
     } else {
