@@ -592,6 +592,9 @@
       <h3 class="display" style="margin:0 0 14px;color:#1F3D24;font-size:19px;">Add Mattai (A &ndash; E)</h3>
       <div id="supplierLocationsList"></div>
       <div class="sup-note">You can only add mattai for these locations.<br/>You cannot edit or delete existing data.</div>
+
+      <h3 class="display" style="margin:22px 0 10px;color:#1F3D24;font-size:16px;">My Active Mattai (by Location)</h3>
+      <div id="supplierActiveSummaryList"></div>
     </div>
     <div id="supplierLocationView" style="display:none;">
       <div class="sup-datenav">
@@ -1627,6 +1630,30 @@ function supplierShowLocations(){
     card.addEventListener("click", ()=>supplierOpenLocation(k));
     list.appendChild(card);
   });
+  supplierLoadActiveSummary();
+}
+
+// A quick "where is my active mattai right now" view across every location,
+// so the supplier doesn't have to open each Location one by one to check.
+function supplierLoadActiveSummary(){
+  const box = document.getElementById("supplierActiveSummaryList");
+  box.innerHTML = '<p class="empty">Loading...</p>';
+  db.collection("machineTeamSuppliers").doc("current").get().then((doc)=>{
+    const data = doc.exists ? doc.data() : {};
+    const rows = [];
+    SECTION_KEYS.forEach(k=>{
+      const list = Array.isArray(data[k]) ? data[k] : [];
+      const sp = list.find(x=>(x.supplierName||"").toLowerCase()===supplierName.toLowerCase());
+      if(sp && Number(sp.remainingQuantity)>0) rows.push({k, remaining:Number(sp.remainingQuantity)});
+    });
+    if(rows.length===0){ box.innerHTML = '<p class="empty">No active mattai in any location right now.</p>'; return; }
+    box.innerHTML = rows.map(r=>{
+      const [dark, light] = SUP_LOC_COLORS[r.k];
+      return `<div class="sup-loc-card" style="background:${light};cursor:default;"><span class="circle" style="background:${dark};">${r.k}</span><span class="label">Location ${r.k}</span><b class="mono" style="color:#2E5233;">${rupee(r.remaining)}</b></div>`;
+    }).join("");
+  }).catch(()=>{
+    box.innerHTML = '<p class="empty">Couldn\'t load. Check internet.</p>';
+  });
 }
 
 let supplierSelectedDate = fmtDate(new Date());
@@ -2393,7 +2420,6 @@ let mtEditMode = false;
 // just computed, in memory, the instant it's calculated — no network
 // round-trip needed — so the very next day always carries it forward
 // correctly regardless of save timing.
-let mtLastKnownBalance = {date:null, balances:{}};
 // Supplier system: which sections have their "Active Suppliers" panel open,
 // which have the completed/history sub-view open, and the lazily-loaded
 // completed-supplier history per section (only fetched when the user asks).
@@ -2424,8 +2450,6 @@ function mtRecalc(k){
   const s = mtSectionsData[k];
   const added = s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0);
   s.balance = (Number(s.opening)||0) + added - (Number(s.cut)||0);
-  mtLastKnownBalance.date = mtSelectedDate;
-  mtLastKnownBalance.balances[k] = s.balance;
 }
 
 function mtRecalcWorkerLoan(w){
@@ -2479,19 +2503,6 @@ function mtLoadDay(dateStr){
       });
       prevOpenings[k] = running;
     });
-    // If we just computed "yesterday"'s balance in memory (e.g. you added
-    // matta and clicked next-day right away), trust that over the Firestore
-    // read for the immediately-following day — it's guaranteed accurate and
-    // has no read-after-write race, unlike a fresh query that might run
-    // before the save has fully landed.
-    if(mtLastKnownBalance.date){
-      const expectedNext = fmtDate(new Date(new Date(mtLastKnownBalance.date+"T00:00:00").getTime() + 86400000));
-      if(expectedNext === dateStr){
-        SECTION_KEYS.forEach(k=>{
-          if(typeof mtLastKnownBalance.balances[k] === "number") prevOpenings[k] = mtLastKnownBalance.balances[k];
-        });
-      }
-    }
     console.log("mtLoadDay", dateStr, "recomputed from", docsAsc.length, "earlier days; prevOpenings:", prevOpenings);
     // Active Suppliers are now a single ongoing list per section, completely
     // separate from any one date's doc — so adding/cutting/deleting a
@@ -3189,8 +3200,30 @@ function mtRender(){
       if(entry && entry.name && Array.isArray(mtGlobalSuppliers[k])){
         const supplier = mtGlobalSuppliers[k].find(sp=>sp.supplierName.toLowerCase()===entry.name.toLowerCase());
         if(supplier){
-          supplier.originalOpeningQuantity = Math.max(0, (Number(supplier.originalOpeningQuantity)||0) - (Number(entry.amount)||0));
-          supplier.remainingQuantity = Math.max(0, (Number(supplier.remainingQuantity)||0) - (Number(entry.amount)||0));
+          const removeAmt = Number(entry.amount)||0;
+          supplier.originalOpeningQuantity = Math.max(0, (Number(supplier.originalOpeningQuantity)||0) - removeAmt);
+          const newRemaining = (Number(supplier.remainingQuantity)||0) - removeAmt;
+          if(newRemaining < 0){
+            // Some of this matta had already been Cut before you deleted the
+            // entry — that cut is no longer real, so claw the matching
+            // amount back out of this section's Target Cutting (and its
+            // cutEntries log), instead of leaving Balance wrong forever.
+            let overflow = -newRemaining;
+            supplier.remainingQuantity = 0;
+            if(Array.isArray(s.cutEntries)){
+              for(let i=s.cutEntries.length-1; i>=0 && overflow>0; i--){
+                const ce = s.cutEntries[i];
+                if(ce.supplierId !== supplier.id) continue;
+                const reduceBy = Math.min(Number(ce.amount)||0, overflow);
+                ce.amount = (Number(ce.amount)||0) - reduceBy;
+                overflow -= reduceBy;
+                if(ce.amount<=0) s.cutEntries.splice(i,1);
+              }
+              s.cut = s.cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0);
+            }
+          } else {
+            supplier.remainingQuantity = newRemaining;
+          }
           if(supplier.originalOpeningQuantity<=0 || supplier.remainingQuantity<=0){
             mtGlobalSuppliers[k] = mtGlobalSuppliers[k].filter(sp=>sp.id!==supplier.id);
           }
