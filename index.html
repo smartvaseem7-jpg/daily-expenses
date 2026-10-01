@@ -1714,11 +1714,12 @@ document.getElementById("supplierSummaryBtn").addEventListener("click", ()=>{
   document.getElementById("supplierSummaryView").style.display = "block";
   document.getElementById("supplierBackBtn").style.display = "none";
   document.getElementById("supplierHeaderTitle").textContent = "Supplier Panel";
-  if(!supplierSummaryRange){
-    // Default to just today — older dates stay a deliberate choice via the
-    // date-range picker, instead of always loading a month of history.
-    const today = fmtDate(new Date());
-    supplierSummaryRange = {from: today, to: today};
+  // Always start fresh, anchored to today: the last 30 days ending today,
+  // recomputed every time you open Summary (never a stale leftover range).
+  {
+    const to = fmtDate(new Date());
+    const fromD = new Date(); fromD.setDate(fromD.getDate()-29);
+    supplierSummaryRange = {from: fmtDate(fromD), to};
   }
   supplierUpdateRangeLabel();
   supplierLoadSummary();
@@ -1791,16 +1792,18 @@ function supplierRenderSummary(){
   const byDate = {};
   rows.forEach(r=>{ (byDate[r.date] = byDate[r.date]||[]).push(r); });
   const dates = Object.keys(byDate).sort((a,b)=> a<b?1:-1); // newest first
-  let grand = 0;
+  let grand = 0, runningNo = 0;
   listEl.innerHTML = dates.map(dateStr=>{
     const items = byDate[dateStr];
     const total = items.reduce((s,r)=>s+r.amount,0);
     grand += total;
-    const rowsHtml = items.map((r,i)=>`
-      <div class="row" data-entry-row="${r.date}|${r.section}|${r.id}">
-        <span><span class="num">${i+1}.</span>${rupee(r.amount)} Mattai <span style="color:#B7B7B7;font-size:11.5px;">(${r.section})</span></span>
+    const rowsHtml = items.map((r)=>{
+      runningNo += 1;
+      return `<div class="row" data-entry-row="${r.date}|${r.section}|${r.id}">
+        <span><span class="num">${runningNo}.</span>${rupee(r.amount)} Mattai <span style="color:#B7B7B7;font-size:11.5px;">(${r.section})</span></span>
         <button class="edit-btn" data-edit-entry="${r.date}|${r.section}|${r.id}" title="Edit">&#9998;</button>
-      </div>`).join("");
+      </div>`;
+    }).join("");
     return `<div class="sup-date-card">
       <div class="head"><span class="datelabel">&#128197; ${fmtCompact(dateStr)}</span><span class="sup-load-badge">Load ${items.length}</span></div>
       ${rowsHtml}
@@ -3532,7 +3535,7 @@ function mtRenderModals(){
       const status = Number(sp.remainingQuantity)>0 ? "active" : "completed";
       const history = Array.isArray(sp.history) ? sp.history.slice().reverse() : [];
       const historyRows = history.length ? history.map(h=>`
-        <div class="mt-history-row">
+        <div class="mt-history-row" data-history-row="${h.id||''}">
           <span>&#128197;</span>
           <div style="flex:1;">
             <div>${fmtNice(h.date)}</div>
@@ -3542,6 +3545,7 @@ function mtRenderModals(){
             <div class="${h.remainingAfter<=0 ? '' : 'mono'}" style="${h.remainingAfter<=0?'color:#B33A3A;font-weight:700;':''}">Remaining: ${rupee(h.remainingAfter)}</div>
             ${h.remainingAfter<=0 ? `<span class="mt-status-badge completed">Completed</span>` : ""}
           </div>
+          ${h.id ? `<button class="mt-icon-btn no-print" data-edit-cut="${h.id}" data-edit-date="${h.date}" title="Edit this cut" style="margin-left:6px;">&#9998;</button>` : ""}
         </div>`).join("") : `<p class="empty" style="margin:8px 0;">No cutting history yet.</p>`;
       inner = `
         <div class="mt-modal-head">
@@ -3628,6 +3632,28 @@ function mtRenderModals(){
     });
   });
 
+  // Edit a past cut: since the amount wasn't editable after submitting, a
+  // wrong cut used to be permanent. This fixes the supplier's remaining
+  // quantity, the whole Cutting History chain below it, AND the cutEntries
+  // log on whatever date that cut actually happened on (not necessarily
+  // today), so Target Cutting stays correct for that date too.
+  root.querySelectorAll("[data-edit-cut]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const cutId = btn.dataset.editCut, cutDate = btn.dataset.editDate;
+      const rowDiv = root.querySelector(`[data-history-row="${cutId}"]`);
+      const sp = mtSupplierById(k, top.supplierId);
+      const h = sp && (sp.history||[]).find(x=>x.id===cutId);
+      if(!rowDiv || !h) return;
+      rowDiv.innerHTML = `<div class="sup-edit-inline" style="flex:1;">
+        <input type="number" inputmode="numeric" value="${h.cut}" id="mtCutEditInput-${cutId}" />
+        <button class="save-btn" data-save-cut="${cutId}" data-save-date="${cutDate}">Save</button>
+        <button class="cancel-btn" data-cancel-cut="${cutId}">Cancel</button>
+      </div>`;
+      rowDiv.querySelector("[data-save-cut]").addEventListener("click", ()=>mtSaveEditedCut(k, top.supplierId, cutId, cutDate));
+      rowDiv.querySelector("[data-cancel-cut]").addEventListener("click", mtRenderModals);
+    });
+  });
+
   const historyBtn = root.querySelector("[data-open-full-history]");
   if(historyBtn){
     historyBtn.addEventListener("click", ()=>{
@@ -3658,11 +3684,12 @@ function mtRenderModals(){
       if(!supplier) return;
       amount = Math.min(amount, Number(supplier.remainingQuantity)||0); // can never cut more than what's left
       supplier.remainingQuantity = Math.max(0, (Number(supplier.remainingQuantity)||0) - amount);
+      const cutId = Date.now().toString(36); // shared id links this history row to its cutEntries row, so editing one finds the other
       if(!Array.isArray(supplier.history)) supplier.history = [];
-      supplier.history.push({date: mtSelectedDate, cut: amount, remainingAfter: supplier.remainingQuantity});
+      supplier.history.push({id:cutId, date: mtSelectedDate, cut: amount, remainingAfter: supplier.remainingQuantity});
       if(!Array.isArray(sec.cutEntries)) sec.cutEntries = [];
       const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
-      sec.cutEntries.push({id:Date.now().toString(36), supplierId, supplierName:supplier.supplierName, amount, time:timeLabel});
+      sec.cutEntries.push({id:cutId, supplierId, supplierName:supplier.supplierName, amount, time:timeLabel});
       sec.cut = sec.cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0);
       if(supplier.remainingQuantity<=0){
         // Fully cut: archive as history (never deleted, full cutting history
@@ -3687,6 +3714,54 @@ function mtRenderModals(){
       mtRender();
     });
   }
+}
+
+function mtSaveEditedCut(k, supplierId, cutId, cutDate){
+  const sp = mtSupplierById(k, supplierId);
+  if(!sp) return;
+  const input = document.getElementById("mtCutEditInput-"+cutId);
+  const newAmount = Math.max(0, Number(input.value)||0);
+  const history = Array.isArray(sp.history) ? sp.history : [];
+  const idx = history.findIndex(h=>h.id===cutId);
+  if(idx<0) return;
+  const oldAmount = Number(history[idx].cut)||0;
+  history[idx].cut = newAmount;
+  // Recompute the whole chain's "remaining after" in order, so every entry
+  // after the edited one stays consistent too, not just this one row.
+  let running = Number(sp.originalOpeningQuantity)||0;
+  history.forEach(h=>{ running = Math.max(0, running - (Number(h.cut)||0)); h.remainingAfter = running; });
+  sp.remainingQuantity = running;
+  sp.status = running>0 ? "active" : "completed";
+  mtPersistSuppliers(k);
+
+  // The matching cutEntries row lives on whichever date that cut actually
+  // happened — update it there (today's in-memory data if it's today,
+  // otherwise a direct Firestore transaction on that date's doc).
+  const applyToSection = (sec)=>{
+    const ce = (sec.cutEntries||[]).find(c=>c.id===cutId);
+    if(ce) ce.amount = newAmount;
+    sec.cut = (sec.cutEntries||[]).reduce((sum,c)=>sum+(Number(c.amount)||0),0);
+  };
+  if(cutDate===mtSelectedDate && mtSectionsData[k]){
+    applyToSection(mtSectionsData[k]);
+    mtRecalc(k);
+    mtPersistSection(k);
+  } else {
+    const ref = db.collection("machineTeam").doc(cutDate);
+    db.runTransaction((tx)=>tx.get(ref).then((snap)=>{
+      if(!snap.exists) return;
+      const data = snap.data();
+      const sec = (data.sections && data.sections[k]) || {};
+      const cutEntries = Array.isArray(sec.cutEntries) ? sec.cutEntries.slice() : [];
+      const i = cutEntries.findIndex(c=>c.id===cutId);
+      if(i>=0) cutEntries[i] = Object.assign({}, cutEntries[i], {amount:newAmount});
+      const newCut = cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0);
+      tx.update(ref, {["sections."+k+".cutEntries"]: cutEntries, ["sections."+k+".cut"]: newCut});
+    })).catch(()=>{
+      alert("Couldn't update that date's cut record. Check internet and try again.");
+    });
+  }
+  mtRenderModals();
 }
 
 function mtLoadSupplierHistory(k){
