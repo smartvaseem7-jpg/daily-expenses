@@ -2841,6 +2841,18 @@ function mtStartLiveSync(dateStr){
 }
 
 let mtPersistPromise = Promise.resolve();
+function mtDeleteActiveSupplier(k, supplierId){
+  const supplier = mtSupplierById(k, supplierId);
+  if(!supplier) return;
+  if(!confirm("Intha active supplier-ai delete pannalama?")) return;
+
+  mtGlobalSuppliers[k] = (mtGlobalSuppliers[k] || []).filter(sp=>sp.id !== supplierId);
+  if(mtSectionsData[k]) mtSectionsData[k].suppliers = mtGlobalSuppliers[k];
+  mtPersistSuppliers(k);
+  mtModalStack = [{type:"suppliers", section:k}];
+  mtRenderModals();
+}
+
 function mtPersistSuppliers(k){
   // Active Suppliers live in one ongoing global collection now (not tied to
   // any single date's doc), so any add/cut/delete of a supplier must be
@@ -3555,6 +3567,7 @@ function mtRenderModals(){
           <div class="mt-supplier-avatar">${i+1}</div>
           <div class="mt-s-name">${escapeHtml(sp.supplierName.toUpperCase())}</div>
           <div class="mt-s-amt">${rupee(sp.remainingQuantity)}</div>
+          <button type="button" class="mt-icon-btn no-print" data-delete-active-supplier="${sp.id}" title="Delete active supplier" style="color:#B33A3A;font-size:18px;padding:4px 6px;">&#128465;</button>
         </div>`).join("") : `<p class="empty" style="margin:10px 0;">No active suppliers.</p>`}
       <button class="btn-export no-print" style="width:100%;margin-top:16px;" data-modal-close>Close</button>`;
   }
@@ -3669,6 +3682,13 @@ function mtRenderModals(){
   root.querySelectorAll("[data-modal-close]").forEach(el=>el.addEventListener("click", ()=>{ mtModalStack=[]; mtRenderModals(); }));
   root.querySelector("[data-modal-overlay]").addEventListener("click", (ev)=>{ if(ev.target===ev.currentTarget){ mtModalStack=[]; mtRenderModals(); } });
   root.querySelectorAll("[data-modal-back]").forEach(el=>el.addEventListener("click", ()=>{ mtModalStack.pop(); mtRenderModals(); }));
+
+  root.querySelectorAll("[data-delete-active-supplier]").forEach(btn=>{
+    btn.addEventListener("click", (ev)=>{
+      ev.stopPropagation();
+      mtDeleteActiveSupplier(k, btn.dataset.deleteActiveSupplier);
+    });
+  });
 
   root.querySelectorAll("[data-open-detail]").forEach(el=>{
     el.addEventListener("click", ()=>{
