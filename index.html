@@ -2681,15 +2681,47 @@ function mtTotals(){
 
 function mtLoadDay(dateStr){
   document.getElementById("mtSaveNote").textContent = "Loading...";
+
+  const selectedDate = new Date(dateStr + "T00:00:00");
+  const isFriday = selectedDate.getDay() === 5;
+
+  // Friday starts a new cycle at 0. From Saturday onward,
+  // the previous active day's final balance becomes today's Opening.
+  const previousOpeningsPromise = isFriday
+    ? Promise.resolve(SECTION_KEYS.reduce((o,k)=>{ o[k]=0; return o; },{}))
+    : db.collection("machineTeam").get().then(allDocs=>{
+        const previous = [];
+        allDocs.forEach(doc=>{
+          const id = doc.id;
+          if(/^\d{4}-\d{2}-\d{2}$/.test(id) && id < dateStr) previous.push(doc);
+        });
+        previous.sort((a,b)=>a.id.localeCompare(b.id));
+        const prevDoc = previous.length ? previous[previous.length-1] : null;
+        const openings = {};
+        SECTION_KEYS.forEach(k=>{ openings[k]=0; });
+
+        if(prevDoc){
+          const prevData = prevDoc.data() || {};
+          SECTION_KEYS.forEach(k=>{
+            const s = (prevData.sections && prevData.sections[k]) || {};
+            const added = Array.isArray(s.entries)
+              ? s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
+              : 0;
+            const opening = Number(s.opening)||0;
+            const cut = Array.isArray(s.cutEntries)
+              ? s.cutEntries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
+              : (Number(s.cut)||0);
+            openings[k] = Math.max(0, opening + added - cut);
+          });
+        }
+        return openings;
+      });
+
   Promise.all([
     db.collection("machineTeam").doc(dateStr).get(),
-    db.collection("machineTeamSuppliers").doc("current").get()
-  ]).then(([doc, suppliersDoc])=>{
-    // Fresh start: from Friday 02 onward, do NOT carry any old balance.
-    // Every new date starts with Opening = 0. Old dates are not used here.
-    const freshOpenings = {};
-    SECTION_KEYS.forEach(k=>{ freshOpenings[k]=0; });
-
+    db.collection("machineTeamSuppliers").doc("current").get(),
+    previousOpeningsPromise
+  ]).then(([doc, suppliersDoc, previousOpenings])=>{
     const suppliersData = suppliersDoc.exists ? suppliersDoc.data() : {};
     mtGlobalSuppliers = {};
     SECTION_KEYS.forEach(k=>{
@@ -2699,13 +2731,14 @@ function mtLoadDay(dateStr){
     if(doc.exists){
       const data = doc.data();
       mtWorkers = Array.isArray(data.workers) ? data.workers : [];
-      mtSectionsData = mtEmptySections();
+      mtSectionsData = mtEmptySections(previousOpenings, mtGlobalSuppliers);
+
       SECTION_KEYS.forEach(k=>{
         const s = (data.sections && data.sections[k]) || {};
         const entries = Array.isArray(s.entries) ? s.entries : [];
         const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
         mtSectionsData[k] = {
-          opening: 0,
+          opening: Number(previousOpenings[k])||0,
           entries: entries.map(e=>({
             id:e.id||Date.now().toString(36),
             amount:Number(e.amount)||0,
@@ -2725,7 +2758,7 @@ function mtLoadDay(dateStr){
       });
     } else {
       mtWorkers = [];
-      mtSectionsData = mtEmptySections(freshOpenings, mtGlobalSuppliers);
+      mtSectionsData = mtEmptySections(previousOpenings, mtGlobalSuppliers);
     }
 
     document.getElementById("mtSaveNote").textContent = "";
@@ -2742,12 +2775,6 @@ function mtLoadDay(dateStr){
     mtRender();
   });
 }
-
-// Live sync: a supplier can add matta from their own phone while this screen
-// is open. Without this, our next save would overwrite the day with older
-// data and silently wipe the supplier's entry. So: pull any new supplier
-// entries (and supplier-list changes) into memory the moment they happen.
-let mtDayUnsub = null, mtSuppliersUnsub = null;
 function mtStable(v){
   if(Array.isArray(v)) return "["+v.map(mtStable).join(",")+"]";
   if(v && typeof v==="object") return "{"+Object.keys(v).sort().map(x=>JSON.stringify(x)+":"+mtStable(v[x])).join(",")+"}";
