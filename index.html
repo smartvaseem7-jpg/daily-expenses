@@ -3615,7 +3615,20 @@ function mtRenderModals(){
       <div class="dt-field-label">Cut Amount</div>
       <input type="number" inputmode="decimal" placeholder="0" id="mtCutModalAmount" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
       <div class="save-note no-print" id="mtCutModalNote"></div>
-      <button class="btn-export no-print" id="mtCutModalSubmit" style="width:100%;margin-top:12px;">&#9986; Cut</button>`;
+      <button class="btn-export no-print" id="mtCutModalSubmit" style="width:100%;margin-top:12px;">&#9986; Cut</button>
+      <div style="margin-top:18px;border-top:1px solid #D8CCAF;padding-top:12px;">
+        <div class="dt-field-label" style="margin:0 0 8px;">Cutting Remove</div>
+        <div id="mtCutEntriesList">
+          ${(Array.isArray(mtSectionsData[k] && mtSectionsData[k].cutEntries) ? mtSectionsData[k].cutEntries : []).slice().reverse().map(ce=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 4px;border-bottom:1px solid #eee7d5;">
+              <div>
+                <div style="font-weight:700;">${escapeHtml(ce.supplierName||"Supplier")}</div>
+                <div class="mono" style="font-size:12px;">Cut ${rupee(ce.amount)}${ce.time ? " · "+escapeHtml(ce.time) : ""}</div>
+              </div>
+              <button type="button" class="mt-icon-btn no-print" data-delete-cut="${ce.id}" data-delete-date="${mtSelectedDate}" data-delete-supplier="${ce.supplierId}" title="Remove this cut" style="color:#B33A3A;font-size:18px;">&#128465;</button>
+            </div>`).join("") || `<div class="empty" style="padding:6px 0;">No cutting yet.</div>`}
+        </div>
+      </div>`;
   }
 
   root.innerHTML = `<div class="mt-modal-overlay" data-modal-overlay><div class="mt-modal-sheet">${inner}</div></div>`;
@@ -3650,6 +3663,13 @@ function mtRenderModals(){
       </div>`;
       rowDiv.querySelector("[data-save-cut]").addEventListener("click", ()=>mtSaveEditedCut(k, top.supplierId, cutId, cutDate));
       rowDiv.querySelector("[data-cancel-cut]").addEventListener("click", mtRenderModals);
+    });
+  });
+
+  root.querySelectorAll("[data-delete-cut]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const cutId=btn.dataset.deleteCut, cutDate=btn.dataset.deleteDate;
+      mtDeleteCut(k, btn.dataset.deleteSupplier || "", cutId, cutDate);
     });
   });
 
@@ -3713,6 +3733,99 @@ function mtRenderModals(){
       mtRender();
     });
   }
+}
+
+function mtDeleteCut(k, supplierId, cutId, cutDate){
+  const note=document.getElementById("mtCutModalNote")||document.getElementById("mtSaveNote");
+  if(!confirm("Intha cutting entry remove pannalama? Amount supplier Active balance-ku thirumba add aagum.")) return;
+  if(note) note.textContent="Removing cut...";
+
+  const dayRef=db.collection("machineTeam").doc(cutDate);
+  dayRef.get().then(daySnap=>{
+    if(!daySnap.exists) throw new Error("cut date not found");
+    const day=daySnap.data()||{};
+    const sec=(day.sections&&day.sections[k])||{};
+    const cuts=Array.isArray(sec.cutEntries)?sec.cutEntries.slice():[];
+    const cutEntry=cuts.find(x=>x.id===cutId);
+    if(!cutEntry) throw new Error("cut entry not found");
+
+    const updatedCuts=cuts.filter(x=>x.id!==cutId);
+    const newCut=updatedCuts.reduce((sum,x)=>sum+(Number(x.amount)||0),0);
+
+    return db.collection("machineTeamSuppliers").doc("current").get().then(supSnap=>{
+      const data=supSnap.exists?supSnap.data():{};
+      let list=Array.isArray(data[k])?data[k].slice():[];
+      const supplierName=String(cutEntry.supplierName||"").toLowerCase();
+      let sp=list.find(x=>x.id===supplierId || String(x.supplierName||"").toLowerCase()===supplierName);
+
+      const finish=(nextList, archiveRef)=>{
+        return Promise.all([
+          db.collection("machineTeam").doc(cutDate).set({
+            sections:{[k]:Object.assign({},sec,{cutEntries:updatedCuts,cut:newCut})}
+          },{merge:true}),
+          db.collection("machineTeamSuppliers").doc("current").set({[k]:nextList},{merge:true})
+        ]).then(()=>archiveRef?archiveRef.delete():null);
+      };
+
+      if(sp){
+        const hist=Array.isArray(sp.history)?sp.history.slice():[];
+        const hi=hist.findIndex(h=>h.id===cutId);
+        if(hi>=0) hist.splice(hi,1);
+        sp.history=hist;
+        if(hi<0){
+          sp.remainingQuantity=Math.min(Number(sp.originalOpeningQuantity)||0,(Number(sp.remainingQuantity)||0)+(Number(cutEntry.amount)||0));
+        }else{
+          let running=Number(sp.originalOpeningQuantity)||0;
+          hist.forEach(h=>{
+            running=Math.max(0,running-(Number(h.cut)||0));
+            h.remainingAfter=running;
+          });
+          sp.remainingQuantity=running;
+        }
+        sp.status="active";
+        list=list.filter(x=>x.id!==sp.id);
+        list.push(sp);
+        return finish(list,null);
+      }
+
+      return db.collection("machineTeamSupplierHistory").where("section","==",k).get().then(snap=>{
+        let found=null;
+        snap.forEach(doc=>{
+          const d=doc.data()||{};
+          const hist=Array.isArray(d.history)?d.history:[];
+          if(!found && String(d.supplierName||"").toLowerCase()===supplierName && hist.some(h=>h.id===cutId)){
+            found={doc,d};
+          }
+        });
+        if(!found) throw new Error("supplier history not found");
+
+        const hist=found.d.history.slice().filter(h=>h.id!==cutId);
+        let running=Number(found.d.originalOpeningQuantity)||0;
+        hist.forEach(h=>{
+          running=Math.max(0,running-(Number(h.cut)||0));
+          h.remainingAfter=running;
+        });
+        const restored={
+          id:supplierId || (Date.now().toString(36)+"s"),
+          supplierName:found.d.supplierName,
+          originalOpeningQuantity:Number(found.d.originalOpeningQuantity)||0,
+          remainingQuantity:running,
+          status:"active",
+          history:hist
+        };
+        list=list.filter(x=>String(x.supplierName||"").toLowerCase()!==supplierName);
+        list.push(restored);
+        return finish(list,found.doc.ref);
+      });
+    });
+  }).then(()=>{
+    if(note) note.textContent="Removed — supplier balance restored.";
+    mtModalStack=[];
+    mtLoadDay(mtSelectedDate);
+  }).catch(err=>{
+    console.error("mtDeleteCut",err);
+    if(note) note.textContent="Remove failed. Please try again.";
+  });
 }
 
 function mtSaveEditedCut(k, supplierId, cutId, cutDate){
