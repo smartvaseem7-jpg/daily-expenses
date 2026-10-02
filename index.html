@@ -2594,28 +2594,19 @@ window.addEventListener("afterprint", ()=>{
   document.body.classList.remove("print-dt-salary");
 });
 document.getElementById("mtClearBtn").addEventListener("click", ()=>{
-  if(!confirm("Indha date-oda calculations (matta, cut, opening) clear pannalama? Ithu thirumba edukka mudiyaadhu.")) return;
+  if(!confirm("Indha date-oda calculations (matta, cut, workers) clear pannalama? Previous day Opening automatic-aa continue aagum.")) return;
   mtWorkers = [];
   SECTION_KEYS.forEach(k=>{
-    mtSectionsData[k].entries = [];
-    mtSectionsData[k].cut = 0;
-    mtSectionsData[k].cutEntries = [];
-    mtSectionsData[k].opening = 0;
-    // Marks this date as a deliberate reset point: later days' Opening will
-    // correctly stop carrying forward from before this date, and this date
-    // itself will keep showing 0 (not silently pick the old balance back up)
-    // the next time you open it.
-    // IMPORTANT: Active Suppliers is now a separate, ongoing ledger across
-    // ALL dates (not something tied to "today") — Clear must NEVER touch it,
-    // or clearing one date would wipe every supplier's running total
-    // everywhere. (This used to be a real bug here — fixed.)
-    mtSectionsData[k].resetMarker = true;
+    const s = mtSectionsData[k];
+    s.entries = [];
+    s.cut = 0;
+    s.cutEntries = [];
+    s.resetMarker = false;
     mtRecalc(k);
   });
   mtPersist();
   mtRender();
 });
-
 // ---------- MACHINE TEAM STATE ----------
 let mtSelectedDate = fmtDate(new Date());
 let mtLoadedAt = 0; // Date.now() when the current mtSectionsData was loaded — used to tell a genuinely-missed supplier entry (created after this) apart from one you deliberately deleted (existed before this).
@@ -2709,7 +2700,7 @@ function mtLoadDay(dateStr){
         const d = docSnap.data();
         const s = d.sections && d.sections[k];
         if(!s) return;
-        if(s.resetMarker) running = 0;
+        // resetMarker is intentionally ignored: Opening always carries forward from earlier dates.
         const added = Array.isArray(s.entries) ? s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0) : 0;
         const cut = Number(s.cut)||0;
         running += added - cut;
@@ -2737,12 +2728,12 @@ function mtLoadDay(dateStr){
           // A day you explicitly Cleared keeps its own opening (0) pinned —
           // it must NOT be recomputed from the day before, or the clear
           // would silently undo itself the next time this day is opened.
-          opening: s.resetMarker ? (Number(s.opening)||0) : prevOpenings[k],
+          opening: prevOpenings[k],
           entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||"", time:e.time||"", source:e.source||"", addedBy:e.addedBy||""})),
           cut: cutEntries.length ? cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0) : (Number(s.cut)||0),
           cutEntries,
           suppliers: mtGlobalSuppliers[k],
-          resetMarker: !!s.resetMarker,
+          resetMarker: false,
           balance: 0
         };
       });
@@ -3385,7 +3376,7 @@ function mtRender(){
         </span>
         <span class="sec-balance">Balance ${rupee(s.balance)}</span>
       </div>
-      <div class="mt-opening">Opening: ${rupee(s.opening)}${s.resetMarker ? ` <button class="mt-restore-link no-print" data-sec="${k}" title="This date was Cleared, so Opening doesn't carry from before. Tap to undo that.">&#8635; restore</button>` : ""}</div>
+      <div class="mt-opening">Opening: ${rupee(s.opening)}</div>
       <div class="mt-line-link no-print" data-open-suppliers="${k}">
         <span>&#128101; ${activeSuppliers.length} Active Suppliers</span>
         <span class="arrow">&rsaquo;</span>
@@ -3459,7 +3450,7 @@ function mtRender(){
       if(amount<=0) return;
       const timeLabel = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
       const s = mtSectionsData[k];
-      s.entries.push({id:Date.now().toString(36), amount, name, time:timeLabel});
+      s.entries.push({id:Date.now().toString(36), amount, name, time:timeLabel, source:"admin"});
       // This matta also becomes (or tops up) that name's Active Supplier
       // record, so "Opening" and the Active Suppliers list both reflect it —
       // one Add flow instead of a separate "Add Supplier" step. Mutate the
@@ -3483,15 +3474,6 @@ function mtRender(){
       mtRecalc(k);
       mtPersist();
       mtRender();
-    });
-  });
-
-  list.querySelectorAll(".mt-restore-link").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const k = btn.dataset.sec;
-      mtSectionsData[k].resetMarker = false;
-      mtPersist();
-      mtLoadDay(mtSelectedDate); // reload so Opening recomputes fresh from before
     });
   });
 
