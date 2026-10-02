@@ -2616,6 +2616,8 @@ try{
 }catch(e){}
 let mtLoadedAt = 0; // Date.now() when the current mtSectionsData was loaded — used to tell a genuinely-missed supplier entry (created after this) apart from one you deliberately deleted (existed before this).
 let mtCarryForwardCache = {}; // date -> latest in-memory final balance per section, used when moving to the next day before Firestore finishes saving.
+let mtDayUnsub = null;
+let mtSuppliersUnsub = null;
 let mtWorkers = [];
 let mtSectionsData = {};
 // Active Suppliers: one ongoing list per section (A-E), completely separate
