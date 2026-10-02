@@ -2844,13 +2844,75 @@ let mtPersistPromise = Promise.resolve();
 function mtDeleteActiveSupplier(k, supplierId){
   const supplier = mtSupplierById(k, supplierId);
   if(!supplier) return;
-  if(!confirm("Intha active supplier-ai delete pannalama?")) return;
+  if(!confirm("Intha active supplier-ai delete pannina, indha supplier add panna ella matta entries-um (old dates including Opening carry-forward) delete aagum. Continue?")) return;
 
-  mtGlobalSuppliers[k] = (mtGlobalSuppliers[k] || []).filter(sp=>sp.id !== supplierId);
-  if(mtSectionsData[k]) mtSectionsData[k].suppliers = mtGlobalSuppliers[k];
-  mtPersistSuppliers(k);
-  mtModalStack = [{type:"suppliers", section:k}];
-  mtRenderModals();
+  const supplierName = String(supplier.supplierName || "").trim().toLowerCase();
+  if(!supplierName) return;
+
+  // Remove the supplier's original Add entries from every date. Because the
+  // next day's Opening is calculated from the previous day's final balance,
+  // deleting the original Friday entry automatically removes that amount
+  // from Saturday/Sunday/etc. carry-forward too.
+  db.collection("machineTeam").get().then((snap)=>{
+    const writes = [];
+    snap.forEach(doc=>{
+      const data = doc.data() || {};
+      const sections = data.sections || {};
+      let changed = false;
+
+      if(sections[k]){
+        const sec = {...sections[k]};
+        const entries = Array.isArray(sec.entries) ? sec.entries : [];
+        const removedIds = new Set(
+          entries
+            .filter(e => String(e.name||"").trim().toLowerCase() === supplierName)
+            .map(e => e.id)
+        );
+
+        if(removedIds.size){
+          sec.entries = entries.filter(e => !removedIds.has(e.id));
+          changed = true;
+        }
+
+        // If any Target Cutting rows belong to this supplier, remove those
+        // rows too so the deleted supplier cannot leave stale cutting totals.
+        if(Array.isArray(sec.cutEntries)){
+          const nextCuts = sec.cutEntries.filter(ce => ce.supplierId !== supplierId);
+          if(nextCuts.length !== sec.cutEntries.length){
+            sec.cutEntries = nextCuts;
+            sec.cut = nextCuts.reduce((sum,ce)=>sum+(Number(ce.amount)||0),0);
+            changed = true;
+          }
+        }
+
+        if(changed) sections[k] = sec;
+      }
+
+      if(changed){
+        writes.push(db.collection("machineTeam").doc(doc.id).update({sections}));
+      }
+    });
+
+    return Promise.all(writes);
+  }).then(()=>{
+    mtGlobalSuppliers[k] = (mtGlobalSuppliers[k] || []).filter(sp=>sp.id !== supplierId);
+    if(mtSectionsData[k]){
+      mtSectionsData[k].suppliers = mtGlobalSuppliers[k];
+      const s = mtSectionsData[k];
+      s.entries = s.entries.filter(e => String(e.name||"").trim().toLowerCase() !== supplierName);
+      if(Array.isArray(s.cutEntries)){
+        s.cutEntries = s.cutEntries.filter(ce => ce.supplierId !== supplierId);
+        s.cut = s.cutEntries.reduce((sum,ce)=>sum+(Number(ce.amount)||0),0);
+      }
+      mtRecalc(k);
+    }
+    mtPersistSuppliers(k);
+    mtModalStack = [{type:"suppliers", section:k}];
+    mtRenderModals();
+    mtLoadDay(mtSelectedDate);
+  }).catch((e)=>{
+    alert("Supplier delete panna mudiyala: " + (e && e.message ? e.message : e));
+  });
 }
 
 function mtPersistSuppliers(k){
