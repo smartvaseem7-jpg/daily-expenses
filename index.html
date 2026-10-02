@@ -2609,6 +2609,11 @@ document.getElementById("mtClearBtn").addEventListener("click", ()=>{
 });
 // ---------- MACHINE TEAM STATE ----------
 let mtSelectedDate = fmtDate(new Date());
+// Full browser refresh always starts Machine Team on today's date.
+try{
+  const nav = performance.getEntriesByType("navigation")[0];
+  if(nav && nav.type === "reload") mtSelectedDate = fmtDate(new Date());
+}catch(e){}
 let mtLoadedAt = 0; // Date.now() when the current mtSectionsData was loaded — used to tell a genuinely-missed supplier entry (created after this) apart from one you deliberately deleted (existed before this).
 let mtWorkers = [];
 let mtSectionsData = {};
@@ -2683,38 +2688,45 @@ function mtLoadDay(dateStr){
   ]).then(([doc, snap, suppliersDoc])=>{
     const prevOpenings = {};
     SECTION_KEYS.forEach(k=>{ prevOpenings[k]=0; });
-    // Rebuild each section's running balance FRESH from raw entries/cut on
-    // every earlier day, oldest to newest, instead of trusting any single
-    // earlier day's cached "balance" field. This matters because a day you
-    // don't revisit keeps whatever balance it had the last time IT was
-    // saved — so if you go back and edit an OLDER day while skipping the
-    // days in between, those skipped days' stored balances go stale, and
-    // "today" would otherwise inherit that stale number. Recomputing the
-    // whole chain here means it's always correct no matter which days you
-    // jump between. A resetMarker day (explicit Clear) zeroes the running
-    // total and starts counting fresh from there.
-    const docsAsc = snap.docs.slice().reverse(); // oldest first
+
+    // Opening comes ONLY from the most recent previous day that has
+    // actual matta activity. It is not the sum of all older days.
+    // So: Thu 01 = 1000, Fri 02 cleared -> Sat opening is still 1000.
+    const docsDesc = snap.docs.slice();
     SECTION_KEYS.forEach(k=>{
-      let running = 0;
-      docsAsc.forEach(docSnap=>{
-        const d = docSnap.data();
+      const previous = docsDesc.find(docSnap=>{
+        const d = docSnap.data() || {};
         const s = d.sections && d.sections[k];
-        if(!s) return;
-        // resetMarker is intentionally ignored: Opening always carries forward from earlier dates.
-        const added = Array.isArray(s.entries) ? s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0) : 0;
-        const cut = Number(s.cut)||0;
-        running += added - cut;
+        if(!s) return false;
+        const entries = Array.isArray(s.entries) ? s.entries : [];
+        const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
+        const added = entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0);
+        const cut = cutEntries.length
+          ? cutEntries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
+          : (Number(s.cut)||0);
+        return added !== 0 || cut !== 0;
       });
-      prevOpenings[k] = running;
+
+      if(previous){
+        const d = previous.data() || {};
+        const s = (d.sections && d.sections[k]) || {};
+        const entries = Array.isArray(s.entries) ? s.entries : [];
+        const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
+        const added = entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0);
+        const cut = cutEntries.length
+          ? cutEntries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
+          : (Number(s.cut)||0);
+        prevOpenings[k] = (Number(s.opening)||0) + added - cut;
+      }
     });
-    console.log("mtLoadDay", dateStr, "recomputed from", docsAsc.length, "earlier days; prevOpenings:", prevOpenings);
-    // Active Suppliers are now a single ongoing list per section, completely
-    // separate from any one date's doc — so adding/cutting/deleting a
-    // supplier is the same action no matter which date you're looking at,
-    // and never gets "stuck" tied to the date it happened to be entered on.
+
+    console.log("mtLoadDay", dateStr, "opening from latest previous active day:", prevOpenings);
+
     const suppliersData = suppliersDoc.exists ? suppliersDoc.data() : {};
     mtGlobalSuppliers = {};
-    SECTION_KEYS.forEach(k=>{ mtGlobalSuppliers[k] = Array.isArray(suppliersData[k]) ? suppliersData[k] : []; });
+    SECTION_KEYS.forEach(k=>{
+      mtGlobalSuppliers[k] = Array.isArray(suppliersData[k]) ? suppliersData[k] : [];
+    });
 
     if(doc.exists){
       const data = doc.data();
@@ -2725,12 +2737,18 @@ function mtLoadDay(dateStr){
         const entries = Array.isArray(s.entries) ? s.entries : [];
         const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
         mtSectionsData[k] = {
-          // A day you explicitly Cleared keeps its own opening (0) pinned —
-          // it must NOT be recomputed from the day before, or the clear
-          // would silently undo itself the next time this day is opened.
           opening: prevOpenings[k],
-          entries: entries.map(e=>({id:e.id||Date.now().toString(36), amount:Number(e.amount)||0, name:e.name||"", time:e.time||"", source:e.source||"", addedBy:e.addedBy||""})),
-          cut: cutEntries.length ? cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0) : (Number(s.cut)||0),
+          entries: entries.map(e=>({
+            id:e.id||Date.now().toString(36),
+            amount:Number(e.amount)||0,
+            name:e.name||"",
+            time:e.time||"",
+            source:e.source||"",
+            addedBy:e.addedBy||""
+          })),
+          cut: cutEntries.length
+            ? cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0)
+            : (Number(s.cut)||0),
           cutEntries,
           suppliers: mtGlobalSuppliers[k],
           resetMarker: false,
@@ -2741,24 +2759,21 @@ function mtLoadDay(dateStr){
       mtWorkers = [];
       mtSectionsData = mtEmptySections(prevOpenings, mtGlobalSuppliers);
     }
+
     document.getElementById("mtSaveNote").textContent = "";
     mtRender();
     mtLoadSupplierAccounts();
     mtLoadedAt = Date.now();
     mtStartLiveSync(dateStr);
   }).catch((e)=>{
-    // Loud on purpose: a silent "0 balance" here looks exactly like a real
-    // empty day, so if the Opening carry-forward ever looks wrong again,
-    // check for this alert first — it tells us the actual Firestore error
-    // instead of guessing.
     console.error("mtLoadDay failed:", e);
     alert("Machine Team data load pannumbodhu error vandhuchu: " + (e && e.message ? e.message : e) + "\n\nIntha screen-oda screenshot anuppunga.");
-    mtWorkers = []; mtSectionsData = mtEmptySections(null, mtGlobalSuppliers);
+    mtWorkers = [];
+    mtSectionsData = mtEmptySections(null, mtGlobalSuppliers);
     document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
     mtRender();
   });
 }
-
 
 // Live sync: a supplier can add matta from their own phone while this screen
 // is open. Without this, our next save would overwrite the day with older
