@@ -2683,44 +2683,12 @@ function mtLoadDay(dateStr){
   document.getElementById("mtSaveNote").textContent = "Loading...";
   Promise.all([
     db.collection("machineTeam").doc(dateStr).get(),
-    db.collection("machineTeam").where("date","<",dateStr).orderBy("date","desc").limit(90).get(),
     db.collection("machineTeamSuppliers").doc("current").get()
-  ]).then(([doc, snap, suppliersDoc])=>{
-    const prevOpenings = {};
-    SECTION_KEYS.forEach(k=>{ prevOpenings[k]=0; });
-
-    // Opening comes ONLY from the most recent previous day that has
-    // actual matta activity. It is not the sum of all older days.
-    // So: Thu 01 = 1000, Fri 02 cleared -> Sat opening is still 1000.
-    const docsDesc = snap.docs.slice();
-    SECTION_KEYS.forEach(k=>{
-      const previous = docsDesc.find(docSnap=>{
-        const d = docSnap.data() || {};
-        const s = d.sections && d.sections[k];
-        if(!s) return false;
-        const entries = Array.isArray(s.entries) ? s.entries : [];
-        const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
-        const added = entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0);
-        const cut = cutEntries.length
-          ? cutEntries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
-          : (Number(s.cut)||0);
-        return added !== 0 || cut !== 0;
-      });
-
-      if(previous){
-        const d = previous.data() || {};
-        const s = (d.sections && d.sections[k]) || {};
-        const entries = Array.isArray(s.entries) ? s.entries : [];
-        const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
-        const added = entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0);
-        const cut = cutEntries.length
-          ? cutEntries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
-          : (Number(s.cut)||0);
-        prevOpenings[k] = (Number(s.opening)||0) + added - cut;
-      }
-    });
-
-    console.log("mtLoadDay", dateStr, "opening from latest previous active day:", prevOpenings);
+  ]).then(([doc, suppliersDoc])=>{
+    // Fresh start: from Friday 02 onward, do NOT carry any old balance.
+    // Every new date starts with Opening = 0. Old dates are not used here.
+    const freshOpenings = {};
+    SECTION_KEYS.forEach(k=>{ freshOpenings[k]=0; });
 
     const suppliersData = suppliersDoc.exists ? suppliersDoc.data() : {};
     mtGlobalSuppliers = {};
@@ -2737,7 +2705,7 @@ function mtLoadDay(dateStr){
         const entries = Array.isArray(s.entries) ? s.entries : [];
         const cutEntries = Array.isArray(s.cutEntries) ? s.cutEntries : [];
         mtSectionsData[k] = {
-          opening: prevOpenings[k],
+          opening: 0,
           entries: entries.map(e=>({
             id:e.id||Date.now().toString(36),
             amount:Number(e.amount)||0,
@@ -2757,7 +2725,7 @@ function mtLoadDay(dateStr){
       });
     } else {
       mtWorkers = [];
-      mtSectionsData = mtEmptySections(prevOpenings, mtGlobalSuppliers);
+      mtSectionsData = mtEmptySections(freshOpenings, mtGlobalSuppliers);
     }
 
     document.getElementById("mtSaveNote").textContent = "";
@@ -2767,7 +2735,7 @@ function mtLoadDay(dateStr){
     mtStartLiveSync(dateStr);
   }).catch((e)=>{
     console.error("mtLoadDay failed:", e);
-    alert("Machine Team data load pannumbodhu error vandhuchu: " + (e && e.message ? e.message : e) + "\n\nIntha screen-oda screenshot anuppunga.");
+    alert("Machine Team data load pannumbodhu error vandhuchu: " + (e && e.message ? e.message : e));
     mtWorkers = [];
     mtSectionsData = mtEmptySections(null, mtGlobalSuppliers);
     document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
