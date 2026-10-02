@@ -339,6 +339,7 @@
   .mt-opening { font-size:14px; color:#4A3B28; font-weight:600; margin-bottom:6px; }
   .mt-line-link { font-size:14px; color:#4A3B28; font-weight:600; margin-bottom:6px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
   .mt-line-link .arrow { color:#8A7A5E; }
+  .mt-restore-link { border:none; background:none; color:#8A7A5E; font-size:11px; text-decoration:underline; cursor:pointer; padding:0; margin-left:4px; }
   .mt-modal-overlay { position:fixed; inset:0; background:rgba(20,30,15,0.45); display:flex; align-items:flex-end; justify-content:center; z-index:9999; }
   .mt-modal-sheet { background:#FBF6E9; width:100%; max-width:520px; border-radius:20px 20px 0 0; padding:20px 18px calc(20px + env(safe-area-inset-bottom, 0px)); max-height:85vh; overflow-y:auto; }
   .mt-modal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; }
@@ -1111,6 +1112,12 @@
               <button class="fadd" id="mtAddSupplierAccountBtn">+ Add</button>
             </div>
             <div class="save-note no-print" id="mtSupplierAccountNote"></div>
+
+            <div class="section-divider"></div>
+            <h3 class="sub-title display">Repair Active Suppliers</h3>
+            <p class="empty" style="margin-top:0;">If Active Suppliers ever shows wrong/empty data (e.g. after a "Clear" that touched it), this rebuilds it fresh from every day's saved matta + cut history — nothing here is ever deleted, so this is safe to run.</p>
+            <button class="btn-clear no-print" id="mtRebuildSuppliersBtn" style="width:100%;">&#128295; Rebuild Active Suppliers from History</button>
+            <div class="save-note no-print" id="mtRebuildNote"></div>
           </div>
 
           <div class="mt-swipe-page" id="mtSwipePage2">
@@ -2587,7 +2594,7 @@ window.addEventListener("afterprint", ()=>{
   document.body.classList.remove("print-dt-salary");
 });
 document.getElementById("mtClearBtn").addEventListener("click", ()=>{
-  if(!confirm("Ella Section A-E calculations um, ella supplier names um clear pannalama? Ithu thirumba edukka mudiyaadhu.")) return;
+  if(!confirm("Indha date-oda calculations (matta, cut, opening) clear pannalama? Ithu thirumba edukka mudiyaadhu.")) return;
   mtWorkers = [];
   SECTION_KEYS.forEach(k=>{
     mtSectionsData[k].entries = [];
@@ -2598,11 +2605,12 @@ document.getElementById("mtClearBtn").addEventListener("click", ()=>{
     // correctly stop carrying forward from before this date, and this date
     // itself will keep showing 0 (not silently pick the old balance back up)
     // the next time you open it.
+    // IMPORTANT: Active Suppliers is now a separate, ongoing ledger across
+    // ALL dates (not something tied to "today") — Clear must NEVER touch it,
+    // or clearing one date would wipe every supplier's running total
+    // everywhere. (This used to be a real bug here — fixed.)
     mtSectionsData[k].resetMarker = true;
-    mtGlobalSuppliers[k] = [];
-    mtSectionsData[k].suppliers = mtGlobalSuppliers[k];
     mtRecalc(k);
-    mtPersistSuppliers(k);
   });
   mtPersist();
   mtRender();
@@ -3377,7 +3385,7 @@ function mtRender(){
         </span>
         <span class="sec-balance">Balance ${rupee(s.balance)}</span>
       </div>
-      <div class="mt-opening">Opening: ${rupee(s.opening)}</div>
+      <div class="mt-opening">Opening: ${rupee(s.opening)}${s.resetMarker ? ` <button class="mt-restore-link no-print" data-sec="${k}" title="This date was Cleared, so Opening doesn't carry from before. Tap to undo that.">&#8635; restore</button>` : ""}</div>
       <div class="mt-line-link no-print" data-open-suppliers="${k}">
         <span>&#128101; ${activeSuppliers.length} Active Suppliers</span>
         <span class="arrow">&rsaquo;</span>
@@ -3475,6 +3483,15 @@ function mtRender(){
       mtRecalc(k);
       mtPersist();
       mtRender();
+    });
+  });
+
+  list.querySelectorAll(".mt-restore-link").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = btn.dataset.sec;
+      mtSectionsData[k].resetMarker = false;
+      mtPersist();
+      mtLoadDay(mtSelectedDate); // reload so Opening recomputes fresh from before
     });
   });
 
@@ -3797,6 +3814,65 @@ document.getElementById("mtRateSaveBtn").addEventListener("click", ()=>{
 });
 
 // ---------- Supplier account management (Workers page) ----------
+// Rebuilds Active Suppliers from scratch by replaying every day's saved
+// matta entries (who added how much) and cuts (who got cut how much), in
+// date order. This never deletes or reads from machineTeamSuppliers first —
+// it only recomputes a fresh answer and overwrites it, so it's safe to run
+// any time Active Suppliers looks wrong, including after the Clear-button
+// bug that used to wipe it.
+function mtRebuildActiveSuppliers(){
+  const note = document.getElementById("mtRebuildNote");
+  if(!confirm("Active Suppliers-a ella matta/cut history-layum irundhu fresh-ah rebuild pannalama? Ithu konjam time edukkum.")) return;
+  note.textContent = "Reading all days...";
+  db.collection("machineTeam").orderBy("date","asc").get().then((snap)=>{
+    const totals = {}, cuts = {}, histories = {};
+    SECTION_KEYS.forEach(k=>{ totals[k]={}; cuts[k]={}; histories[k]={}; });
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const dateStr = d.date || doc.id;
+      SECTION_KEYS.forEach(k=>{
+        const sec = d.sections && d.sections[k];
+        if(!sec) return;
+        (Array.isArray(sec.entries)?sec.entries:[]).forEach(e=>{
+          const name = (e.name||"").trim();
+          if(!name) return;
+          totals[k][name] = (totals[k][name]||0) + (Number(e.amount)||0);
+        });
+        (Array.isArray(sec.cutEntries)?sec.cutEntries:[]).forEach(c=>{
+          const name = (c.supplierName||"").trim();
+          if(!name) return;
+          cuts[k][name] = (cuts[k][name]||0) + (Number(c.amount)||0);
+          if(!histories[k][name]) histories[k][name] = [];
+          histories[k][name].push({date:dateStr, cut:Number(c.amount)||0});
+        });
+      });
+    });
+    note.textContent = "Rebuilding...";
+    const rebuilt = {};
+    SECTION_KEYS.forEach(k=>{
+      rebuilt[k] = [];
+      Object.keys(totals[k]).forEach(name=>{
+        const original = totals[k][name];
+        const cutSoFar = cuts[k][name]||0;
+        const remaining = Math.max(0, original - cutSoFar);
+        if(remaining<=0) return; // fully cut already — belongs in history, not Active Suppliers
+        let running = original;
+        const history = (histories[k][name]||[]).map(h=>{ running = Math.max(0, running-h.cut); return {id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), date:h.date, cut:h.cut, remainingAfter:running}; });
+        rebuilt[k].push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), supplierName:name, originalOpeningQuantity:original, remainingQuantity:remaining, status:"active", history});
+      });
+    });
+    return db.collection("machineTeamSuppliers").doc("current").set(rebuilt);
+  }).then(()=>{
+    note.textContent = "Done! Reloading...";
+    mtGlobalSuppliers = {};
+    mtLoadDay(mtSelectedDate);
+    setTimeout(()=>{ note.textContent=""; }, 2000);
+  }).catch((e)=>{
+    note.textContent = "Couldn't rebuild: " + (e&&e.message?e.message:e);
+  });
+}
+document.getElementById("mtRebuildSuppliersBtn").addEventListener("click", mtRebuildActiveSuppliers);
+
 function mtLoadSupplierAccounts(){
   const list = document.getElementById("mtSupplierAccountsList");
   if(!list) return;
