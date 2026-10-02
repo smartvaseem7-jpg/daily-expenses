@@ -2594,7 +2594,7 @@ window.addEventListener("afterprint", ()=>{
   document.body.classList.remove("print-dt-salary");
 });
 document.getElementById("mtClearBtn").addEventListener("click", ()=>{
-  if(!confirm("Indha date-oda calculations (matta, cut, workers) clear pannalama? Previous day Opening automatic-aa continue aagum.")) return;
+  if(!confirm("Indha date-oda calculations (matta, cut, workers) clear pannalama?")) return;
   mtWorkers = [];
   SECTION_KEYS.forEach(k=>{
     const s = mtSectionsData[k];
@@ -2615,6 +2615,7 @@ try{
   if(nav && nav.type === "reload") mtSelectedDate = fmtDate(new Date());
 }catch(e){}
 let mtLoadedAt = 0; // Date.now() when the current mtSectionsData was loaded — used to tell a genuinely-missed supplier entry (created after this) apart from one you deliberately deleted (existed before this).
+let mtCarryForwardCache = {}; // date -> latest in-memory final balance per section, used when moving to the next day before Firestore finishes saving.
 let mtWorkers = [];
 let mtSectionsData = {};
 // Active Suppliers: one ongoing list per section (A-E), completely separate
@@ -2659,6 +2660,14 @@ function mtRecalc(k){
   const s = mtSectionsData[k];
   const added = s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0);
   s.balance = (Number(s.opening)||0) + added - (Number(s.cut)||0);
+
+  // Keep the current day's final balance in memory immediately.
+  // This makes Friday -> Saturday work even if the user changes date
+  // before the Firestore write has finished.
+  if(typeof mtSelectedDate === "string" && mtSelectedDate){
+    if(!mtCarryForwardCache[mtSelectedDate]) mtCarryForwardCache[mtSelectedDate] = {};
+    mtCarryForwardCache[mtSelectedDate][k] = Math.max(0, Number(s.balance)||0);
+  }
 }
 
 function mtRecalcWorkerLoan(w){
@@ -2685,37 +2694,46 @@ function mtLoadDay(dateStr){
   const selectedDate = new Date(dateStr + "T00:00:00");
   const isFriday = selectedDate.getDay() === 5;
 
-  // Friday starts a new cycle at 0. From Saturday onward,
-  // the previous active day's final balance becomes today's Opening.
+  // Friday is always a fresh start. Every other day carries ONLY the
+  // immediately previous calendar day's final balance.
+  // Never skip backwards over a missing day: that would incorrectly
+  // carry Thursday into Saturday when Friday had no saved record.
   const previousOpeningsPromise = isFriday
     ? Promise.resolve(SECTION_KEYS.reduce((o,k)=>{ o[k]=0; return o; },{}))
     : (async()=>{
-        // Find the most recent earlier day without reading the whole collection.
-        // This avoids permission/index problems and keeps Friday -> Saturday reliable.
         const openings = {};
         SECTION_KEYS.forEach(k=>{ openings[k]=0; });
 
         const d = new Date(dateStr + "T00:00:00");
-        for(let i=0;i<7;i++){
-          d.setDate(d.getDate()-1);
-          const prevDate = fmtDate(d);
-          const snap = await db.collection("machineTeam").doc(prevDate).get();
-          if(!snap.exists) continue;
+        d.setDate(d.getDate()-1);
+        const prevDate = fmtDate(d);
 
-          const prevData = snap.data() || {};
-          SECTION_KEYS.forEach(k=>{
-            const s = (prevData.sections && prevData.sections[k]) || {};
-            const added = Array.isArray(s.entries)
-              ? s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
-              : 0;
-            const opening = Number(s.opening)||0;
-            const cut = Array.isArray(s.cutEntries)
-              ? s.cutEntries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
-              : (Number(s.cut)||0);
-            openings[k] = Math.max(0, opening + added - cut);
-          });
-          break;
+        // First use the in-memory final balance. This is important when
+        // Friday was just edited and the user immediately opens Saturday.
+        const cached = mtCarryForwardCache[prevDate];
+        if(cached){
+          SECTION_KEYS.forEach(k=>{ openings[k] = Math.max(0, Number(cached[k])||0); });
+          return openings;
         }
+
+        const snap = await db.collection("machineTeam").doc(prevDate).get();
+        if(!snap.exists) return openings;
+
+        const prevData = snap.data() || {};
+        SECTION_KEYS.forEach(k=>{
+          const s = (prevData.sections && prevData.sections[k]) || {};
+          const added = Array.isArray(s.entries)
+            ? s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
+            : 0;
+          const opening = Number(s.opening)||0;
+          const cut = Array.isArray(s.cutEntries)
+            ? s.cutEntries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
+            : (Number(s.cut)||0);
+          const balance = Math.max(0, opening + added - cut);
+          openings[k] = balance;
+          if(!mtCarryForwardCache[prevDate]) mtCarryForwardCache[prevDate] = {};
+          mtCarryForwardCache[prevDate][k] = balance;
+        });
         return openings;
       })();
 
@@ -2763,6 +2781,7 @@ function mtLoadDay(dateStr){
       mtSectionsData = mtEmptySections(previousOpenings, mtGlobalSuppliers);
     }
 
+    SECTION_KEYS.forEach(k=>mtRecalc(k));
     document.getElementById("mtSaveNote").textContent = "";
     mtRender();
     mtLoadSupplierAccounts();
