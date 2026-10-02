@@ -2696,46 +2696,61 @@ function mtLoadDay(dateStr){
   const selectedDate = new Date(dateStr + "T00:00:00");
   const isFriday = selectedDate.getDay() === 5;
 
-  // Friday is always a fresh start. Every other day carries ONLY the
-  // immediately previous calendar day's final balance.
-  // Never skip backwards over a missing day: that would incorrectly
-  // carry Thursday into Saturday when Friday had no saved record.
+  // Friday always starts from 0.
+  // On every other day, find the most recent saved Machine Team day
+  // after the latest Friday and carry that day's final balance forward.
+  // This means a balance such as 500 stays visible on all following
+  // dates even if some dates have no separate document yet.
   const previousOpeningsPromise = isFriday
     ? Promise.resolve(SECTION_KEYS.reduce((o,k)=>{ o[k]=0; return o; },{}))
     : (async()=>{
         const openings = {};
         SECTION_KEYS.forEach(k=>{ openings[k]=0; });
 
-        const d = new Date(dateStr + "T00:00:00");
-        d.setDate(d.getDate()-1);
-        const prevDate = fmtDate(d);
+        const target = new Date(dateStr + "T00:00:00");
+        const dayOfWeek = target.getDay(); // 0 Sun ... 5 Fri
+        const daysSinceFriday = (dayOfWeek - 5 + 7) % 7;
 
-        // First use the in-memory final balance. This is important when
-        // Friday was just edited and the user immediately opens Saturday.
-        const cached = mtCarryForwardCache[prevDate];
-        if(cached){
-          SECTION_KEYS.forEach(k=>{ openings[k] = Math.max(0, Number(cached[k])||0); });
+        // Search backward only within the current Friday -> Thursday cycle.
+        // Never cross an earlier Thursday into the next Friday.
+        for(let offset=1; offset<=daysSinceFriday; offset++){
+          const d = new Date(target);
+          d.setDate(d.getDate()-offset);
+          const prevDate = fmtDate(d);
+
+          // Use the live in-memory balance first.
+          const cached = mtCarryForwardCache[prevDate];
+          if(cached){
+            SECTION_KEYS.forEach(k=>{
+              openings[k] = Math.max(0, Number(cached[k])||0);
+            });
+            return openings;
+          }
+
+          const snap = await db.collection("machineTeam").doc(prevDate).get();
+          if(!snap.exists) continue;
+
+          const prevData = snap.data() || {};
+          SECTION_KEYS.forEach(k=>{
+            const s = (prevData.sections && prevData.sections[k]) || {};
+            const added = Array.isArray(s.entries)
+              ? s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
+              : 0;
+            const opening = Number(s.opening)||0;
+            const cut = Array.isArray(s.cutEntries)
+              ? s.cutEntries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
+              : (Number(s.cut)||0);
+            const balance = Math.max(0, opening + added - cut);
+            openings[k] = balance;
+            if(!mtCarryForwardCache[prevDate]) mtCarryForwardCache[prevDate] = {};
+            mtCarryForwardCache[prevDate][k] = balance;
+          });
+
+          // This is the latest saved day, so its final balance is the
+          // correct opening for the selected date.
           return openings;
         }
 
-        const snap = await db.collection("machineTeam").doc(prevDate).get();
-        if(!snap.exists) return openings;
-
-        const prevData = snap.data() || {};
-        SECTION_KEYS.forEach(k=>{
-          const s = (prevData.sections && prevData.sections[k]) || {};
-          const added = Array.isArray(s.entries)
-            ? s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
-            : 0;
-          const opening = Number(s.opening)||0;
-          const cut = Array.isArray(s.cutEntries)
-            ? s.cutEntries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
-            : (Number(s.cut)||0);
-          const balance = Math.max(0, opening + added - cut);
-          openings[k] = balance;
-          if(!mtCarryForwardCache[prevDate]) mtCarryForwardCache[prevDate] = {};
-          mtCarryForwardCache[prevDate][k] = balance;
-        });
         return openings;
       })();
 
@@ -2794,10 +2809,11 @@ function mtLoadDay(dateStr){
     alert("Machine Team data load pannumbodhu error vandhuchu: " + (e && e.message ? e.message : e));
     mtWorkers = [];
     mtSectionsData = mtEmptySections(null, mtGlobalSuppliers);
-    document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet and try again.";
+    document.getElementById("mtSaveNote").textContent = "Couldn't load. Check internet.";
     mtRender();
   });
 }
+
 function mtStable(v){
   if(Array.isArray(v)) return "["+v.map(mtStable).join(",")+"]";
   if(v && typeof v==="object") return "{"+Object.keys(v).sort().map(x=>JSON.stringify(x)+":"+mtStable(v[x])).join(",")+"}";
