@@ -12,6 +12,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap');
   * { box-sizing: border-box; }
@@ -1495,6 +1497,57 @@ const WORKER_NAMES = ["Vathanana","Saro","Jeso","Priya","Sumangala"];
 // ======================
 
 firebase.initializeApp(firebaseConfig);
+
+const MT_FCM_VAPID_STORAGE = "sham-fcm-vapid-public-key";
+let mtFCMMessaging = null;
+try { mtFCMMessaging = firebase.messaging(); } catch (_) { mtFCMMessaging = null; }
+
+async function mtEnableFCMNotifications(){
+  try{
+    if(!("Notification" in window) || !("serviceWorker" in navigator) || !mtFCMMessaging) return false;
+    if(Notification.permission === "denied") return false;
+    if(Notification.permission !== "granted"){
+      const permission = await Notification.requestPermission();
+      if(permission !== "granted") return false;
+    }
+    let vapidKey = "";
+    try { vapidKey = (localStorage.getItem(MT_FCM_VAPID_STORAGE) || "").trim(); } catch (_) {}
+    if(!vapidKey){
+      vapidKey = (prompt("Firebase Web Push public key (VAPID) paste pannunga:") || "").trim();
+      if(!vapidKey) return false;
+      try { localStorage.setItem(MT_FCM_VAPID_STORAGE, vapidKey); } catch (_) {}
+    }
+    const registration = await navigator.serviceWorker.ready;
+    const token = await mtFCMMessaging.getToken({vapidKey, serviceWorkerRegistration:registration});
+    if(!token) return false;
+    if(firebase.functions){
+      await firebase.functions().httpsCallable("registerAdminNotificationToken")({token});
+    }
+    return true;
+  }catch(err){
+    console.warn("FCM notification setup failed:", err);
+    return false;
+  }
+}
+
+try{
+  if(mtFCMMessaging){
+    mtFCMMessaging.onMessage((payload)=>{
+      try{
+        const n=payload.notification||{};
+        const title=n.title||"🔔 New Matta Added";
+        const body=n.body||"New supplier mattai entry added.";
+        const id=(payload.data&&payload.data.entryId)||("fcm-"+Date.now());
+        mtNotifications.unshift({id,title,body,time:new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})});
+        mtNotifications=mtNotifications.slice(0,20);
+        mtNotificationIds.add(String(id));
+        mtSaveNotificationHistory();
+        mtRenderNotifications();
+      }catch(_){}
+    });
+  }
+}catch(_){}
+
 const db = firebase.firestore();
 const auth = firebase.auth();
 
@@ -2862,6 +2915,7 @@ async function mtEnableBrowserNotifications(){
     } else {
       mtBrowserNotificationReady = (Notification.permission === "granted");
     }
+    if(mtBrowserNotificationReady) await mtEnableFCMNotifications();
     return mtBrowserNotificationReady;
   }catch(e){
     mtBrowserNotificationReady = false;
