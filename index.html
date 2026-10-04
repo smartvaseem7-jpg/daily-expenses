@@ -2872,14 +2872,18 @@ let mtBrowserNotificationReady = false;
 
 async function mtEnableBrowserNotifications(){
   try{
-    if(!("Notification" in window)) return;
+    if(!("Notification" in window)) return false;
     if(Notification.permission === "default"){
       const p = await Notification.requestPermission();
       mtBrowserNotificationReady = (p === "granted");
     } else {
       mtBrowserNotificationReady = (Notification.permission === "granted");
     }
-  }catch(e){}
+    return mtBrowserNotificationReady;
+  }catch(e){
+    mtBrowserNotificationReady = false;
+    return false;
+  }
 }
 
 function mtRenderNotifications(){
@@ -2917,9 +2921,25 @@ function mtShowSupplierNotification(k,e){
     clearTimeout(mtNotificationToastTimer);
     try{
       if("Notification" in window && Notification.permission === "granted"){
-        new Notification("New Matta Added", {body:"Supplier: " + (e.name || "Unknown") + " | Place: " + k + " | " + (Number(e.amount)||0) + " Mattai", icon:"logo.png"});
+        const title = "🔔 New Matta Added";
+        const body = "Supplier: " + (e.name || "Unknown") + " | Place: " + k + " | " + (Number(e.amount)||0) + " Mattai";
+        if("serviceWorker" in navigator){
+          const reg = await navigator.serviceWorker.ready;
+          await reg.showNotification(title, {
+            body,
+            icon: "logo.png",
+            badge: "logo.png",
+            tag: "supplier-matta-" + id,
+            renotify: true,
+            requireInteraction: false,
+            vibrate: [200, 100, 200],
+            data: {url: window.location.href}
+          });
+        }else{
+          new Notification(title, {body, icon:"logo.png"});
+        }
       }
-    }catch(err){}
+    }catch(err){ console.warn("Browser notification failed:", err); }
     mtNotificationToastTimer = setTimeout(()=>toast.classList.remove("show"), 3500);
   }
 }
