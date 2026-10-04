@@ -2896,6 +2896,7 @@ async function mtShowSupplierNotification(k,e){
   mtSeenSupplierEntryIds.add(id);
   mtNotifications.unshift({id,section:k,name:e.name||"",amount:Number(e.amount)||0,time:e.time||""});
   mtNotifications = mtNotifications.slice(0,20);
+  mtSaveNotificationHistory();
   mtRenderNotifications();
   const toast = document.getElementById("mtNotifyToast");
   if(toast){
@@ -5909,6 +5910,7 @@ document.getElementById("mtNotifyBell")?.addEventListener("click", ()=>{
 document.getElementById("mtNotifyClear")?.addEventListener("click", ()=>{
   mtNotifications = [];
   mtNotificationIds.clear();
+  mtSaveNotificationHistory();
   mtRenderNotifications();
 });
 document.addEventListener("click",(ev)=>{
@@ -5921,8 +5923,66 @@ document.addEventListener("click",(ev)=>{
 
 mtRenderNotifications();
 
+function mtSaveNotificationHistory(){
+  try{
+    localStorage.setItem("sham-mt-notifications", JSON.stringify(mtNotifications.slice(0,20)));
+  }catch(e){}
+}
+
+function mtLoadNotificationHistory(){
+  try{
+    const raw = localStorage.getItem("sham-mt-notifications");
+    const arr = raw ? JSON.parse(raw) : [];
+    if(Array.isArray(arr)){
+      mtNotifications = arr.filter(n=>n && n.id).slice(0,20);
+      mtNotifications.forEach(n=>mtNotificationIds.add(String(n.id)));
+      mtRenderNotifications();
+    }
+  }catch(e){}
+}
+
+let mtGlobalNotifyUnsub = null;
+let mtGlobalNotifyDate = "";
+
+function mtStartGlobalSupplierNotificationSync(){
+  if(mtGlobalNotifyUnsub){ mtGlobalNotifyUnsub(); mtGlobalNotifyUnsub = null; }
+  const today = fmtDate(new Date());
+  mtGlobalNotifyDate = today;
+
+  mtGlobalNotifyUnsub = db.collection("machineTeam").doc(today).onSnapshot((snap)=>{
+    if(!snap.exists) return;
+    const data = snap.data() || {};
+    const secs = data.sections || {};
+    SECTION_KEYS.forEach(k=>{
+      const entries = secs[k] && Array.isArray(secs[k].entries) ? secs[k].entries : [];
+      entries.forEach(e=>{
+        if(!e || e.source !== "supplier" || !e.id) return;
+        const id = String(e.id);
+
+        // Existing records are only marked as known; genuinely new supplier
+        // records are the ones that trigger the notification.
+        if(!mtNotificationIds.has(id) && !mtSeenSupplierEntryIds.has(id)){
+          mtShowSupplierNotification(k,e);
+        }
+      });
+    });
+  }, ()=>{});
+
+  // If the page stays open across midnight, switch the listener to the new day.
+  clearInterval(window.__mtNotifyDateTimer);
+  window.__mtNotifyDateTimer = setInterval(()=>{
+    const nowDate = fmtDate(new Date());
+    if(nowDate !== mtGlobalNotifyDate){
+      mtStartGlobalSupplierNotificationSync();
+    }
+  }, 60000);
+}
+
+mtLoadNotificationHistory();
+
 if("serviceWorker" in navigator){
   navigator.serviceWorker.register("sw-1-1.js").catch(()=>{});
+  mtStartGlobalSupplierNotificationSync();
 }
 </script>
 </body>
