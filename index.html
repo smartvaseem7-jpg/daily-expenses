@@ -2840,6 +2840,12 @@ function mtLoadDay(dateStr){
     document.getElementById("mtSaveNote").textContent = "";
     mtRender();
     mtLoadSupplierAccounts();
+    mtSeenSupplierEntryIds = new Set();
+    SECTION_KEYS.forEach(k=>{
+      (mtSectionsData[k]?.entries || []).forEach(e=>{
+        if(e && e.source === "supplier" && e.id) mtSeenSupplierEntryIds.add(String(e.id));
+      });
+    });
     mtLoadedAt = Date.now();
     mtStartLiveSync(dateStr);
   }).catch((e)=>{
@@ -2860,7 +2866,21 @@ function mtStable(v){
 }
 let mtNotifications = [];
 let mtNotificationIds = new Set();
+let mtSeenSupplierEntryIds = new Set();
 let mtNotificationToastTimer = null;
+let mtBrowserNotificationReady = false;
+
+async function mtEnableBrowserNotifications(){
+  try{
+    if(!("Notification" in window)) return;
+    if(Notification.permission === "default"){
+      const p = await Notification.requestPermission();
+      mtBrowserNotificationReady = (p === "granted");
+    } else {
+      mtBrowserNotificationReady = (Notification.permission === "granted");
+    }
+  }catch(e){}
+}
 
 function mtRenderNotifications(){
   const list = document.getElementById("mtNotifyList");
@@ -2886,6 +2906,7 @@ function mtShowSupplierNotification(k,e){
   const id = String(e.id || "");
   if(!id || mtNotificationIds.has(id)) return;
   mtNotificationIds.add(id);
+  mtSeenSupplierEntryIds.add(id);
   mtNotifications.unshift({id,section:k,name:e.name||"",amount:Number(e.amount)||0,time:e.time||""});
   mtNotifications = mtNotifications.slice(0,20);
   mtRenderNotifications();
@@ -2894,6 +2915,11 @@ function mtShowSupplierNotification(k,e){
     toast.innerHTML = "&#128276; New Matta: <b>" + escapeHtml(e.name || "Supplier") + "</b> &middot; " + escapeHtml(k) + " &middot; " + rupee(Number(e.amount)||0) + " Mattai";
     toast.classList.add("show");
     clearTimeout(mtNotificationToastTimer);
+    try{
+      if("Notification" in window && Notification.permission === "granted"){
+        new Notification("New Matta Added", {body:"Supplier: " + (e.name || "Unknown") + " | Place: " + k + " | " + (Number(e.amount)||0) + " Mattai", icon:"logo.png"});
+      }
+    }catch(err){}
     mtNotificationToastTimer = setTimeout(()=>toast.classList.remove("show"), 3500);
   }
 }
@@ -2909,7 +2935,7 @@ function mtStartLiveSync(dateStr){
       const srv = secs[k] && Array.isArray(secs[k].entries) ? secs[k].entries : [];
       if(!mem) return;
       srv.forEach(e=>{
-        if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id) && parseInt(e.id,36) > mtLoadedAt){
+        if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id) && !mtSeenSupplierEntryIds.has(String(e.id))){
           mem.entries.push({id:e.id, amount:Number(e.amount)||0, name:e.name||"", time:e.time||"", source:"supplier", addedBy:e.addedBy||""});
           mtShowSupplierNotification(k,e);
           changed = true;
@@ -5816,6 +5842,7 @@ function loadDashboard(){
 document.getElementById("dashExportBtn").addEventListener("click", ()=>window.print());
 
 document.getElementById("mtNotifyBell")?.addEventListener("click", ()=>{
+  mtEnableBrowserNotifications();
   document.getElementById("mtNotifyPanel")?.classList.toggle("show");
 });
 document.getElementById("mtNotifyClear")?.addEventListener("click", ()=>{
