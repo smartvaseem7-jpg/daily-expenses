@@ -2645,6 +2645,7 @@ let mtHistoryCache = {};
 let mtDailyRate = 0;
 let editingWorkerId = null;
 let mtExpandedWorkers = new Set();
+let mtLoadToken = 0; // prevents stale async loads from changing the displayed balance
 
 function mtEmptySections(prevOpenings, prevSuppliers){
   const obj = {};
@@ -2691,6 +2692,7 @@ function mtTotals(){
 }
 
 function mtLoadDay(dateStr){
+  const loadToken = ++mtLoadToken;
   document.getElementById("mtSaveNote").textContent = "Loading...";
 
   // Machine Team balance is continuous. There is NO weekly/Friday reset.
@@ -2702,24 +2704,6 @@ function mtLoadDay(dateStr){
     SECTION_KEYS.forEach(k=>{ openings[k]=0; });
 
     const target = new Date(dateStr + "T00:00:00");
-
-    // First use the live in-memory cache when the user has just moved
-    // between dates without saving every intermediate day.
-    const cachedDates = Object.keys(mtCarryForwardCache)
-      .filter(d=>d < dateStr)
-      .sort()
-      .reverse();
-
-    for(const prevDate of cachedDates){
-      const cached = mtCarryForwardCache[prevDate];
-      if(!cached) continue;
-      SECTION_KEYS.forEach(k=>{
-        if(Object.prototype.hasOwnProperty.call(cached,k)){
-          openings[k] = Math.max(0, Number(cached[k])||0);
-        }
-      });
-      return openings;
-    }
 
     // Look through all saved Machine Team days and find the latest
     // previous balance. This deliberately crosses Friday boundaries.
@@ -2771,6 +2755,7 @@ function mtLoadDay(dateStr){
     db.collection("machineTeamSuppliers").doc("current").get(),
     previousOpeningsPromise
   ]).then(([doc, suppliersDoc, previousOpenings])=>{
+    if(loadToken!==mtLoadToken || dateStr!==mtSelectedDate) return;
     const suppliersData = suppliersDoc.exists ? suppliersDoc.data() : {};
     mtGlobalSuppliers = {};
     SECTION_KEYS.forEach(k=>{
@@ -2817,6 +2802,7 @@ function mtLoadDay(dateStr){
     mtLoadedAt = Date.now();
     mtStartLiveSync(dateStr);
   }).catch((e)=>{
+    if(loadToken!==mtLoadToken || dateStr!==mtSelectedDate) return;
     console.error("mtLoadDay failed:", e);
     alert("Machine Team data load pannumbodhu error vandhuchu: " + (e && e.message ? e.message : e));
     mtWorkers = [];
