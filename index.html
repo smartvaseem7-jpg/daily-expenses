@@ -2762,32 +2762,11 @@ function mtLoadDay(dateStr){
       }
     });
 
-    // No historical fallback before the Friday baseline. If the previous
-    // day's section is empty, that section starts at 0 rather than pulling
-    // Thursday/older data into Friday or a later date.
-    if(unresolved.length && carryDate && carryDate >= baselineDate){
-      const snap = await db.collection("machineTeam").get();
-      const docs = [];
-      snap.forEach(doc=>{
-        const id = doc.id;
-        if(/^\d{4}-\d{2}-\d{2}$/.test(id) && id >= baselineDate && id < carryDate){
-          docs.push({id, data:doc.data()||{}});
-        }
-      });
-      docs.sort((a,b)=>b.id.localeCompare(a.id));
-
-      unresolved.forEach(k=>{
-        for(const item of docs){
-          const balance = usableBalance((item.data.sections||{})[k]);
-          if(balance===null) continue;
-          openings[k] = balance;
-          if(!mtCarryForwardCache[item.id]) mtCarryForwardCache[item.id] = {};
-          mtCarryForwardCache[item.id][k] = balance;
-          break;
-        }
-      });
-    }
-
+    // STRICT DATE RULE: never search older dates.
+    // Friday (02-10-2026) starts from zero. From Saturday onward,
+    // ONLY the immediately previous date can become Opening.
+    // This prevents Thursday (01-10-2026) or any older date from
+    // appearing again on a later date.
     return openings;
   })();
 
