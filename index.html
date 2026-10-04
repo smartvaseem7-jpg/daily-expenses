@@ -2178,8 +2178,12 @@ document.getElementById("goMachine").addEventListener("click", ()=>{
       document.getElementById("mtRateDisplay").textContent = "Daily rate: " + rupee(mtDailyRate) + " per worker";
       document.getElementById("mtRateDisplay").style.display = "block";
     }).catch(()=>{});
-    mtLoadDay(mtSelectedDate);
+    mtAutoFixOldActiveSuppliers().then(()=>{
+      mtLoadDay(mtSelectedDate);
+    });
     loadMachineTeamSalary();
+    // Android/browser notification permission must be requested from a user gesture.
+    mtEnableBrowserNotifications();
   }
 });
 document.getElementById("goDryer").addEventListener("click", ()=>{
@@ -4151,6 +4155,64 @@ document.getElementById("mtRateSaveBtn").addEventListener("click", ()=>{
 // it only recomputes a fresh answer and overwrites it, so it's safe to run
 // any time Active Suppliers looks wrong, including after the Clear-button
 // bug that used to wipe it.
+async function mtAutoFixOldActiveSuppliers(){
+  // One-time cleanup: Active Suppliers must follow the same 02-10-2026
+  // baseline as Machine Team Opening. Anything before that date is old
+  // history and must never appear as an active/current supplier balance.
+  const baselineDate = "2026-10-02";
+  try{
+    const flagRef = db.collection("settings").doc("machineSupplierBaselineFix");
+    const flag = await flagRef.get();
+    if(flag.exists && flag.data().done === true) return;
+
+    const snap = await db.collection("machineTeam").get();
+    const totals = {}, cuts = {}, histories = {};
+    SECTION_KEYS.forEach(k=>{ totals[k]={}; cuts[k]={}; histories[k]={}; });
+
+    snap.forEach(doc=>{
+      const d = doc.data() || {};
+      const dateStr = d.date || doc.id;
+      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(dateStr) || dateStr < baselineDate) return;
+      SECTION_KEYS.forEach(k=>{
+        const sec = d.sections && d.sections[k];
+        if(!sec) return;
+        (Array.isArray(sec.entries)?sec.entries:[]).forEach(e=>{
+          const name=(e.name||"").trim();
+          if(name) totals[k][name]=(totals[k][name]||0)+(Number(e.amount)||0);
+        });
+        (Array.isArray(sec.cutEntries)?sec.cutEntries:[]).forEach(x=>{
+          const name=(x.supplierName||"").trim();
+          if(!name) return;
+          cuts[k][name]=(cuts[k][name]||0)+(Number(x.amount)||0);
+          if(!histories[k][name]) histories[k][name]=[];
+          histories[k][name].push({date:dateStr,cut:Number(x.amount)||0});
+        });
+      });
+    });
+
+    const rebuilt={};
+    SECTION_KEYS.forEach(k=>{
+      rebuilt[k]=[];
+      Object.keys(totals[k]).forEach(name=>{
+        const original=totals[k][name];
+        const remaining=Math.max(0,original-(cuts[k][name]||0));
+        if(remaining<=0) return;
+        let running=original;
+        const history=(histories[k][name]||[]).map(h=>{
+          running=Math.max(0,running-h.cut);
+          return {id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:h.date,cut:h.cut,remainingAfter:running};
+        });
+        rebuilt[k].push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),supplierName:name,originalOpeningQuantity:original,remainingQuantity:remaining,status:"active",history});
+      });
+    });
+
+    await db.collection("machineTeamSuppliers").doc("current").set(rebuilt);
+    await flagRef.set({done:true,baselineDate,completedAt:new Date().toISOString()});
+  }catch(e){
+    console.warn("Active supplier baseline cleanup failed:",e);
+  }
+}
+
 function mtRebuildActiveSuppliers(){
   const note = document.getElementById("mtRebuildNote");
   if(!confirm("Active Suppliers-a ella matta/cut history-layum irundhu fresh-ah rebuild pannalama? Ithu konjam time edukkum.")) return;
