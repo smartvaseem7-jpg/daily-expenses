@@ -2705,47 +2705,65 @@ function mtLoadDay(dateStr){
 
     const target = new Date(dateStr + "T00:00:00");
 
-    // Look through all saved Machine Team days and find the latest
-    // previous balance. This deliberately crosses Friday boundaries.
-    // A Friday is NOT a reset day anymore.
-    const snap = await db.collection("machineTeam").get();
-    const docs = [];
-    snap.forEach(doc=>{
-      const id = doc.id;
-      if(/^\\d{4}-\\d{2}-\\d{2}$/.test(id) && id < dateStr){
-        docs.push({id, data:doc.data()||{}});
-      }
-    });
-    docs.sort((a,b)=>b.id.localeCompare(a.id));
+    // IMPORTANT: when opening Sunday, first read Saturday directly.
+    // This makes normal day-to-day carry-forward deterministic.
+    // If Saturday has no usable data for a section, fall back to the
+    // latest earlier saved day.
+    const previousDate = fmtDate(new Date(new Date(dateStr+"T00:00:00").getTime() - 86400000));
+    const directSnap = await db.collection("machineTeam").doc(previousDate).get();
 
-    // Find the latest saved day that has usable data for each section.
+    const usableBalance = (s)=>{
+      if(!s) return null;
+      const hasEntries = Array.isArray(s.entries) && s.entries.length>0;
+      const hasCuts = Array.isArray(s.cutEntries) && s.cutEntries.length>0;
+      const hasOpening = Number(s.opening)||0;
+      const hasLegacyCut = Number(s.cut)||0;
+      if(!hasEntries && !hasCuts && !hasOpening && !hasLegacyCut) return null;
+
+      const added = hasEntries
+        ? s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
+        : 0;
+      const opening = Number(s.opening)||0;
+      const cut = hasCuts
+        ? s.cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0)
+        : (Number(s.cut)||0);
+      return Math.max(0, opening + added - cut);
+    };
+
+    const directData = directSnap.exists ? (directSnap.data()||{}) : {};
+    const unresolved = [];
     SECTION_KEYS.forEach(k=>{
-      for(const item of docs){
-        const s = (item.data.sections && item.data.sections[k]) || null;
-        if(!s) continue;
-
-        const hasEntries = Array.isArray(s.entries) && s.entries.length>0;
-        const hasCuts = Array.isArray(s.cutEntries) && s.cutEntries.length>0;
-        const hasOpening = Number(s.opening)||0;
-        const hasLegacyCut = Number(s.cut)||0;
-
-        if(!hasEntries && !hasCuts && !hasOpening && !hasLegacyCut) continue;
-
-        const added = hasEntries
-          ? s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
-          : 0;
-        const opening = Number(s.opening)||0;
-        const cut = hasCuts
-          ? s.cutEntries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
-          : (Number(s.cut)||0);
-        const balance = Math.max(0, opening + added - cut);
-
+      const balance = usableBalance((directData.sections||{})[k]);
+      if(balance===null) unresolved.push(k);
+      else {
         openings[k] = balance;
-        if(!mtCarryForwardCache[item.id]) mtCarryForwardCache[item.id] = {};
-        mtCarryForwardCache[item.id][k] = balance;
-        break;
+        if(!mtCarryForwardCache[previousDate]) mtCarryForwardCache[previousDate] = {};
+        mtCarryForwardCache[previousDate][k] = balance;
       }
     });
+
+    if(unresolved.length){
+      const snap = await db.collection("machineTeam").get();
+      const docs = [];
+      snap.forEach(doc=>{
+        const id = doc.id;
+        if(/^\\d{4}-\\d{2}-\\d{2}$/.test(id) && id < dateStr && id !== previousDate){
+          docs.push({id, data:doc.data()||{}});
+        }
+      });
+      docs.sort((a,b)=>b.id.localeCompare(a.id));
+
+      unresolved.forEach(k=>{
+        for(const item of docs){
+          const balance = usableBalance((item.data.sections||{})[k]);
+          if(balance===null) continue;
+          openings[k] = balance;
+          if(!mtCarryForwardCache[item.id]) mtCarryForwardCache[item.id] = {};
+          mtCarryForwardCache[item.id][k] = balance;
+          break;
+        }
+      });
+    }
 
     return openings;
   })();
