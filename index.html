@@ -2709,8 +2709,13 @@ function mtLoadDay(dateStr){
     // This makes normal day-to-day carry-forward deterministic.
     // If Saturday has no usable data for a section, fall back to the
     // latest earlier saved day.
+    // New Machine Team baseline: keep Friday 02-10-2026 as the
+    // only historical starting point. Older dates (including Thu 01-10-2026)
+    // must never be carried into later days.
+    const baselineDate = "2026-10-02";
     const previousDate = fmtDate(new Date(new Date(dateStr+"T00:00:00").getTime() - 86400000));
-    const directSnap = await db.collection("machineTeam").doc(previousDate).get();
+    const carryDate = dateStr > baselineDate ? (previousDate >= baselineDate ? previousDate : baselineDate) : previousDate;
+    const directSnap = await db.collection("machineTeam").doc(carryDate).get();
 
     const usableBalance = (s)=>{
       if(!s) return null;
@@ -2737,8 +2742,8 @@ function mtLoadDay(dateStr){
       if(balance===null) unresolved.push(k);
       else {
         openings[k] = balance;
-        if(!mtCarryForwardCache[previousDate]) mtCarryForwardCache[previousDate] = {};
-        mtCarryForwardCache[previousDate][k] = balance;
+        if(!mtCarryForwardCache[carryDate]) mtCarryForwardCache[carryDate] = {};
+        mtCarryForwardCache[carryDate][k] = balance;
       }
     });
 
