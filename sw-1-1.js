@@ -1,3 +1,17 @@
+importScripts("https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js");
+
+firebase.initializeApp({
+  apiKey: "AIzaSyA4Kh806eyIy3yjuRmmF6HSKM93xwtQ00A",
+  authDomain: "wm-point-e9196.firebaseapp.com",
+  projectId: "wm-point-e9196",
+  storageBucket: "wm-point-e9196.firebasestorage.app",
+  messagingSenderId: "708620946182",
+  appId: "1:708620946182:web:620dabf9c46418d92dec87"
+});
+
+const fcmMessaging = firebase.messaging();
+
 const CACHE_NAME = "sham-expenses-v2";
 const FILES_TO_CACHE = ["./", "./index.html", "./logo.png", "./manifest.json"];
 
