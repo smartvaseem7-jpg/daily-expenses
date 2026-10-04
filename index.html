@@ -225,6 +225,14 @@
   .actions button { display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 0; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; }
   .btn-export { flex:1; border:1px solid #4A3B28; background:transparent; color:#4A3B28; border-radius:999px; }
   .btn-clear { border:1px solid #C9BC9C; background:transparent; color:#6B5B45; padding:10px 12px; border-radius:999px; }
+  .mt-notify-panel{position:fixed;right:12px;top:70px;width:min(330px,calc(100vw - 24px));z-index:500;background:#fff;border:1px solid #D8C89A;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.18);padding:12px;display:none;}
+  .mt-notify-panel.show{display:block;}
+  .mt-notify-head{display:flex;align-items:center;justify-content:space-between;font-family:'Fraunces',serif;font-weight:800;color:#1F3D24;margin-bottom:8px;}
+  .mt-notify-clear{border:none;background:none;color:#8A7A5E;font-size:11px;cursor:pointer;}
+  .mt-notify-item{padding:9px 4px;border-top:1px solid #EFE9D8;font-size:12px;color:#4A3B28;line-height:1.35;}
+  .mt-notify-item b{color:#1F3D24;}
+  .mt-notify-toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%) translateY(18px);z-index:600;background:#1F3D24;color:#F3ECD9;border-radius:12px;padding:11px 14px;box-shadow:0 8px 22px rgba(0,0,0,.22);font-size:12.5px;font-weight:700;opacity:0;pointer-events:none;transition:.22s ease;max-width:calc(100vw - 28px);text-align:center;}
+  .mt-notify-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .empty { font-size:13px; color:#9A8B6E; text-align:center; margin:0 0 10px; }
   .sub-label { font-size:11px; font-weight:700; color:#8A7A5E; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
   .section-divider { border-top:2px solid #C9BC9C; margin:14px 0 12px; }
@@ -1007,7 +1015,13 @@
     </div>
 
     <!-- ===== MACHINE TEAM ===== -->
-    <div id="machineSection" style="display:none;">
+    <div id="mtNotifyPanel" class="mt-notify-panel no-print">
+  <div class="mt-notify-head"><span>&#128276; Supplier Notifications</span><button id="mtNotifyClear" class="mt-notify-clear">Clear</button></div>
+  <div id="mtNotifyList"><div style="font-size:12px;color:#9A8B6E;text-align:center;padding:8px;">No new notifications.</div></div>
+</div>
+<div id="mtNotifyToast" class="mt-notify-toast"></div>
+
+  <div id="machineSection" style="display:none;">
       <!-- Single shared tab bar, kept OUTSIDE .mt-swipe-track on purpose: the
            track slides via CSS transform during swipe, and this bar must
            stay put while only the page underneath it changes. -->
@@ -1024,6 +1038,7 @@
               <button class="back-btn no-print" data-home>&#8592; Home</button>
               <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
               <h2 class="section-title">MACHINE TEAM</h2>
+              <button id="mtNotifyBell" class="no-print" title="Supplier notifications" style="margin-left:auto;position:relative;border:1px solid #D8C89A;background:#FBF6E9;color:#1F3D24;border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:17px;">&#128276;<span id="mtNotifyBadge" style="display:none;position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#B33A3A;color:#fff;font-size:10px;font-weight:800;line-height:17px;">0</span></button>
             </div>
 
             <div class="datenav">
@@ -2843,6 +2858,46 @@ function mtStable(v){
   if(v && typeof v==="object") return "{"+Object.keys(v).sort().map(x=>JSON.stringify(x)+":"+mtStable(v[x])).join(",")+"}";
   return JSON.stringify(v);
 }
+let mtNotifications = [];
+let mtNotificationIds = new Set();
+let mtNotificationToastTimer = null;
+
+function mtRenderNotifications(){
+  const list = document.getElementById("mtNotifyList");
+  const badge = document.getElementById("mtNotifyBadge");
+  if(!list || !badge) return;
+  badge.textContent = String(mtNotifications.length);
+  badge.style.display = mtNotifications.length ? "block" : "none";
+  if(!mtNotifications.length){
+    list.innerHTML = '<div style="font-size:12px;color:#9A8B6E;text-align:center;padding:8px;">No new notifications.</div>';
+    return;
+  }
+  list.innerHTML = mtNotifications.slice(0,20).map(n =>
+    '<div class="mt-notify-item"><b>New Matta Added</b><br>' +
+    'Supplier: ' + escapeHtml(n.name || "Unknown") +
+    ' &nbsp;|&nbsp; Place: ' + escapeHtml(n.section) +
+    ' &nbsp;|&nbsp; ' + rupee(n.amount) + ' Mattai' +
+    (n.time ? '<br><span style="color:#9A8B6E;">' + escapeHtml(n.time) + '</span>' : '') +
+    '</div>'
+  ).join("");
+}
+
+function mtShowSupplierNotification(k,e){
+  const id = String(e.id || "");
+  if(!id || mtNotificationIds.has(id)) return;
+  mtNotificationIds.add(id);
+  mtNotifications.unshift({id,section:k,name:e.name||"",amount:Number(e.amount)||0,time:e.time||""});
+  mtNotifications = mtNotifications.slice(0,20);
+  mtRenderNotifications();
+  const toast = document.getElementById("mtNotifyToast");
+  if(toast){
+    toast.innerHTML = "&#128276; New Matta: <b>" + escapeHtml(e.name || "Supplier") + "</b> &middot; " + escapeHtml(k) + " &middot; " + rupee(Number(e.amount)||0) + " Mattai";
+    toast.classList.add("show");
+    clearTimeout(mtNotificationToastTimer);
+    mtNotificationToastTimer = setTimeout(()=>toast.classList.remove("show"), 3500);
+  }
+}
+
 function mtStartLiveSync(dateStr){
   if(mtDayUnsub){ mtDayUnsub(); mtDayUnsub = null; }
   mtDayUnsub = db.collection("machineTeam").doc(dateStr).onSnapshot((snap)=>{
@@ -2856,6 +2911,7 @@ function mtStartLiveSync(dateStr){
       srv.forEach(e=>{
         if(e && e.source==="supplier" && !mem.entries.some(x=>x.id===e.id) && parseInt(e.id,36) > mtLoadedAt){
           mem.entries.push({id:e.id, amount:Number(e.amount)||0, name:e.name||"", time:e.time||"", source:"supplier", addedBy:e.addedBy||""});
+          mtShowSupplierNotification(k,e);
           changed = true;
         }
       });
@@ -5758,6 +5814,24 @@ function loadDashboard(){
   });
 }
 document.getElementById("dashExportBtn").addEventListener("click", ()=>window.print());
+
+document.getElementById("mtNotifyBell")?.addEventListener("click", ()=>{
+  document.getElementById("mtNotifyPanel")?.classList.toggle("show");
+});
+document.getElementById("mtNotifyClear")?.addEventListener("click", ()=>{
+  mtNotifications = [];
+  mtNotificationIds.clear();
+  mtRenderNotifications();
+});
+document.addEventListener("click",(ev)=>{
+  const panel=document.getElementById("mtNotifyPanel");
+  const bell=document.getElementById("mtNotifyBell");
+  if(panel && panel.classList.contains("show") && !panel.contains(ev.target) && !bell?.contains(ev.target)){
+    panel.classList.remove("show");
+  }
+});
+
+mtRenderNotifications();
 
 if("serviceWorker" in navigator){
   navigator.serviceWorker.register("sw-1-1.js").catch(()=>{});
