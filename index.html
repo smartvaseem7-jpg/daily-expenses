@@ -2906,7 +2906,7 @@ function mtRenderNotifications(){
   ).join("");
 }
 
-function mtShowSupplierNotification(k,e){
+async function mtShowSupplierNotification(k,e){
   const id = String(e.id || "");
   if(!id || mtNotificationIds.has(id)) return;
   mtNotificationIds.add(id);
