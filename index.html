@@ -5949,6 +5949,7 @@ function mtStartGlobalSupplierNotificationSync(){
   const today = fmtDate(new Date());
   mtGlobalNotifyDate = today;
 
+  let firstSnapshot = true;
   mtGlobalNotifyUnsub = db.collection("machineTeam").doc(today).onSnapshot((snap)=>{
     if(!snap.exists) return;
     const data = snap.data() || {};
@@ -5959,13 +5960,18 @@ function mtStartGlobalSupplierNotificationSync(){
         if(!e || e.source !== "supplier" || !e.id) return;
         const id = String(e.id);
 
-        // Existing records are only marked as known; genuinely new supplier
-        // records are the ones that trigger the notification.
+        // The first snapshot is the current state, not a new event.
+        // Only entries arriving after that baseline should notify.
+        if(firstSnapshot){
+          mtSeenSupplierEntryIds.add(id);
+          return;
+        }
         if(!mtNotificationIds.has(id) && !mtSeenSupplierEntryIds.has(id)){
           mtShowSupplierNotification(k,e);
         }
       });
     });
+    firstSnapshot = false;
   }, ()=>{});
 
   // If the page stays open across midnight, switch the listener to the new day.
