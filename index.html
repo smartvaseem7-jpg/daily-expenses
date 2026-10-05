@@ -2233,7 +2233,7 @@ document.getElementById("goMachine").addEventListener("click", ()=>{
       document.getElementById("mtRateDisplay").textContent = "Daily rate: " + rupee(mtDailyRate) + " per worker";
       document.getElementById("mtRateDisplay").style.display = "block";
     }).catch(()=>{});
-    mtAutoFixOldActiveSuppliers().then(()=>{
+    mtAutoFixOldActiveSuppliers().then(()=>mtAutoFixStaleOpenings()).then(()=>{
       mtLoadDay(mtSelectedDate);
     });
     loadMachineTeamSalary();
@@ -3186,6 +3186,84 @@ function mtStartLiveSync(dateStr){
 }
 
 let mtPersistPromise = Promise.resolve();
+async function mtRebuildFutureOpeningsFrom(startDate){
+  // When a past matta entry is deleted, every later day's Opening must be
+  // recalculated from the corrected previous-day balance. Otherwise an old
+  // Opening stored on Monday can keep 1000 alive on Tuesday/Wednesday even
+  // though Sunday's 1000 was deleted.
+  try{
+    const snap = await db.collection("machineTeam").get();
+    const docs = snap.docs
+      .map(doc=>({doc, data:doc.data()||{}, date:(doc.data()||{}).date || doc.id}))
+      .filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.date) && x.date >= startDate)
+      .sort((a,b)=>xDateCompare(a.date,b.date));
+
+    if(!docs.length) return;
+
+    const previousBalances = {};
+    SECTION_KEYS.forEach(k=>previousBalances[k]=0);
+
+    // Seed from the day immediately before startDate, if it exists.
+    const prevDate = fmtDate(new Date(new Date(startDate+"T00:00:00").getTime()-86400000));
+    const prev = snap.docs.find(doc=>{
+      const d=doc.data()||{};
+      return (d.date||doc.id)===prevDate;
+    });
+    if(prev && startDate > "2026-10-02"){
+      const ps=prev.data().sections||{};
+      SECTION_KEYS.forEach(k=>{
+        const s=ps[k]||{};
+        const entries=Array.isArray(s.entries)?s.entries:[];
+        const cuts=Array.isArray(s.cutEntries)?s.cutEntries:[];
+        previousBalances[k]=Math.max(0,
+          (Number(s.opening)||0) +
+          entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0) -
+          cuts.reduce((sum,x)=>sum+(Number(x.amount)||0),0)
+        );
+      });
+    }
+
+    const writes=[];
+    for(const item of docs){
+      const sections=item.data.sections||{};
+      const nextSections={...sections};
+      SECTION_KEYS.forEach(k=>{
+        const s={...(sections[k]||{})};
+        const entries=Array.isArray(s.entries)?s.entries:[];
+        const cuts=Array.isArray(s.cutEntries)?s.cutEntries:[];
+        const balance=Math.max(0,
+          previousBalances[k] +
+          entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0) -
+          cuts.reduce((sum,x)=>sum+(Number(x.amount)||0),0)
+        );
+        s.opening=previousBalances[k];
+        s.balance=balance;
+        nextSections[k]=s;
+        previousBalances[k]=balance;
+      });
+      writes.push(
+        db.collection("machineTeam").doc(item.doc.id).set(
+          {date:item.date, month:monthKey(item.date), sections:nextSections},
+          {merge:true}
+        )
+      );
+    }
+    await Promise.all(writes);
+
+    // Keep the session cache aligned with the corrected chain.
+    mtCarryForwardCache = {};
+    const last=itemLastDate(docs);
+    if(last){
+      mtCarryForwardCache[last]={};
+      SECTION_KEYS.forEach(k=>{ mtCarryForwardCache[last][k]=previousBalances[k]; });
+    }
+  }catch(e){
+    console.warn("Future opening rebuild failed:",e);
+  }
+}
+function xDateCompare(a,b){ return String(a).localeCompare(String(b)); }
+function itemLastDate(docs){ return docs.length ? docs[docs.length-1].date : ""; }
+
 function mtDeleteActiveSupplier(k, supplierId){
   const supplier = mtSupplierById(k, supplierId);
   if(!supplier) return;
@@ -3198,9 +3276,9 @@ function mtDeleteActiveSupplier(k, supplierId){
   // next day's Opening is calculated from the previous day's final balance,
   // deleting the original Friday entry automatically removes that amount
   // from Saturday/Sunday/etc. carry-forward too.
+  let earliestAffectedDate = "";
   db.collection("machineTeam").get().then((snap)=>{
     const writes = [];
-    let earliestAffectedDate = "";
     snap.forEach(doc=>{
       const data = doc.data() || {};
       const sections = data.sections || {};
@@ -3853,83 +3931,6 @@ function mtRender(){
     list.appendChild(card);
   });
 
-async function mtRebuildFutureOpeningsFrom(startDate){
-  // When a past matta entry is deleted, every later day's Opening must be
-  // recalculated from the corrected previous-day balance. Otherwise an old
-  // Opening stored on Monday can keep 1000 alive on Tuesday/Wednesday even
-  // though Sunday's 1000 was deleted.
-  try{
-    const snap = await db.collection("machineTeam").get();
-    const docs = snap.docs
-      .map(doc=>({doc, data:doc.data()||{}, date:(doc.data()||{}).date || doc.id}))
-      .filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.date) && x.date >= startDate)
-      .sort((a,b)=>xDateCompare(a.date,b.date));
-
-    if(!docs.length) return;
-
-    const previousBalances = {};
-    SECTION_KEYS.forEach(k=>previousBalances[k]=0);
-
-    // Seed from the day immediately before startDate, if it exists.
-    const prevDate = fmtDate(new Date(new Date(startDate+"T00:00:00").getTime()-86400000));
-    const prev = snap.docs.find(doc=>{
-      const d=doc.data()||{};
-      return (d.date||doc.id)===prevDate;
-    });
-    if(prev){
-      const ps=prev.data().sections||{};
-      SECTION_KEYS.forEach(k=>{
-        const s=ps[k]||{};
-        const entries=Array.isArray(s.entries)?s.entries:[];
-        const cuts=Array.isArray(s.cutEntries)?s.cutEntries:[];
-        previousBalances[k]=Math.max(0,
-          (Number(s.opening)||0) +
-          entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0) -
-          cuts.reduce((sum,x)=>sum+(Number(x.amount)||0),0)
-        );
-      });
-    }
-
-    const writes=[];
-    for(const item of docs){
-      const sections=item.data.sections||{};
-      const nextSections={...sections};
-      SECTION_KEYS.forEach(k=>{
-        const s={...(sections[k]||{})};
-        const entries=Array.isArray(s.entries)?s.entries:[];
-        const cuts=Array.isArray(s.cutEntries)?s.cutEntries:[];
-        const balance=Math.max(0,
-          previousBalances[k] +
-          entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0) -
-          cuts.reduce((sum,x)=>sum+(Number(x.amount)||0),0)
-        );
-        s.opening=previousBalances[k];
-        s.balance=balance;
-        nextSections[k]=s;
-        previousBalances[k]=balance;
-      });
-      writes.push(
-        db.collection("machineTeam").doc(item.doc.id).set(
-          {date:item.date, month:monthKey(item.date), sections:nextSections},
-          {merge:true}
-        )
-      );
-    }
-    await Promise.all(writes);
-
-    // Keep the session cache aligned with the corrected chain.
-    mtCarryForwardCache = {};
-    const last=itemLastDate(docs);
-    if(last){
-      mtCarryForwardCache[last]={};
-      SECTION_KEYS.forEach(k=>{ mtCarryForwardCache[last][k]=previousBalances[k]; });
-    }
-  }catch(e){
-    console.warn("Future opening rebuild failed:",e);
-  }
-}
-function xDateCompare(a,b){ return String(a).localeCompare(String(b)); }
-function itemLastDate(docs){ return docs.length ? docs[docs.length-1].date : ""; }
 
   list.querySelectorAll(".idel").forEach(btn=>{
     btn.addEventListener("click", ()=>{
@@ -4468,6 +4469,20 @@ document.getElementById("mtRateSaveBtn").addEventListener("click", ()=>{
 // it only recomputes a fresh answer and overwrites it, so it's safe to run
 // any time Active Suppliers looks wrong, including after the Clear-button
 // bug that used to wipe it.
+// One-time fix: earlier supplier deletes left stale Opening values on later
+// days. Recalculates the whole chain from the 02-10-2026 baseline once.
+async function mtAutoFixStaleOpenings(){
+  try{
+    const flagRef = db.collection("settings").doc("machineOpeningsFix");
+    const flag = await flagRef.get();
+    if(flag.exists && flag.data().done === true) return;
+    await mtRebuildFutureOpeningsFrom("2026-10-02");
+    await flagRef.set({done:true, completedAt:new Date().toISOString()});
+  }catch(e){
+    console.warn("Stale openings fix failed:", e);
+  }
+}
+
 async function mtAutoFixOldActiveSuppliers(){
   // One-time cleanup: Active Suppliers must follow the same 02-10-2026
   // baseline as Machine Team Opening. Anything before that date is old
