@@ -2859,11 +2859,11 @@ function mtLoadDay(dateStr){
             supplierTotals[key] = (supplierTotals[key] || 0) + amount;
           }
         });
-        const list = Array.isArray(mtGlobalSuppliers[k]) ? mtGlobalSuppliers[k].slice() : [];
+        const list = Array.isArray(mtGlobalSuppliers[k]) ? mtGlobalSuppliers[k].map(sp=>({...sp})) : [];
         let changed = false;
         Object.keys(supplierTotals).forEach(key=>{
-          const exists = list.some(sp=>String(sp.supplierName || "").trim().toLowerCase() === key);
-          if(!exists){
+          const idx = list.findIndex(sp=>String(sp.supplierName || "").trim().toLowerCase() === key);
+          if(idx < 0){
             const displayName = entries.find(e=>e && e.source==="supplier" && String(e.name||"").trim().toLowerCase()===key)?.name || key;
             const amount = supplierTotals[key];
             list.push({
@@ -2875,10 +2875,23 @@ function mtLoadDay(dateStr){
               history: []
             });
             changed = true;
+          } else {
+            const sp = list[idx];
+            const knownOriginal = Number(sp.originalOpeningQuantity) || 0;
+            const knownRemaining = Number(sp.remainingQuantity) || 0;
+            if(knownOriginal < supplierTotals[key]){
+              const diff = supplierTotals[key] - knownOriginal;
+              sp.originalOpeningQuantity = knownOriginal + diff;
+              sp.remainingQuantity = knownRemaining + diff;
+              sp.status = "active";
+              list[idx] = sp;
+              changed = true;
+            }
           }
         });
         if(changed){
           mtGlobalSuppliers[k] = list;
+          if(mtSectionsData[k]) mtSectionsData[k].suppliers = list;
           repairWrites.push(db.collection("machineTeamSuppliers").doc("current").set({[k]:list},{merge:true}).catch(()=>{}));
         }
       });
