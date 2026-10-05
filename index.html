@@ -3853,7 +3853,7 @@ function mtRender(){
     list.appendChild(card);
   });
 
-async async function mtRebuildFutureOpeningsFrom(startDate){
+async function mtRebuildFutureOpeningsFrom(startDate){
   // When a past matta entry is deleted, every later day's Opening must be
   // recalculated from the corrected previous-day balance. Otherwise an old
   // Opening stored on Monday can keep 1000 alive on Tuesday/Wednesday even
