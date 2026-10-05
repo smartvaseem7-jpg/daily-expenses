@@ -2808,7 +2808,16 @@ function mtLoadDay(dateStr){
     const directData = directSnap && directSnap.exists ? (directSnap.data()||{}) : {};
     const unresolved = [];
     SECTION_KEYS.forEach(k=>{
-      const balance = usableBalance((directData.sections||{})[k]);
+      let balance = usableBalance((directData.sections||{})[k]);
+
+      // If the previous day's document is temporarily missing/incomplete,
+      // use the exact balance already calculated for that previous day in this
+      // session. This prevents a date jump from turning a real balance into 0.
+      if(balance===null && carryDate && mtCarryForwardCache[carryDate]){
+        const cached = Number(mtCarryForwardCache[carryDate][k]);
+        if(Number.isFinite(cached)) balance = Math.max(0, cached);
+      }
+
       if(balance===null) unresolved.push(k);
       else {
         openings[k] = balance;
