@@ -2846,13 +2846,15 @@ function mtLoadDay(dateStr){
     allMachineSnap.forEach(dayDoc=>{
       const d = dayDoc.data() || {};
       const dayDate = d.date || dayDoc.id;
-      if(dayDate < baselineDate) return;
+      // Only use data up to the date currently being viewed. Future dates must
+      // never reduce a next-day Active Supplier balance.
+      if(dayDate < baselineDate || dayDate > dateStr) return;
       SECTION_KEYS.forEach(k=>{
         const sec = (d.sections && d.sections[k]) || {};
         (Array.isArray(sec.entries) ? sec.entries : []).forEach(e=>{
           const name = String(e && e.name || "").trim();
           const amount = Number(e && e.amount) || 0;
-          if(!name || amount<=0) return;
+          if(!name || amount<=0 || e.source !== "supplier") return;
           const key = name.toLowerCase();
           totals[k][key] = (totals[k][key] || 0) + amount;
           names[k][key] = name;
