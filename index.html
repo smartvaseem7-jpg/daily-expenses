@@ -2876,44 +2876,48 @@ function mtLoadDay(dateStr){
       });
     });
 
+    // Rebuild the Active Supplier ledger from the real supplier entries
+    // between Friday 02-10-2026 and the selected date. This is the single
+    // source of truth for Active Supplier balance and cutting history.
     mtGlobalSuppliers = {};
-    const rebuiltWrites = [];
+    const rebuiltData = {};
     SECTION_KEYS.forEach(k=>{
       const list = [];
       Object.keys(totals[k]).forEach(key=>{
         const original = totals[k][key];
-        const remaining = Math.max(0, original - (cuts[k][key] || 0));
-        if(remaining<=0) return;
-
-        let running = original;
         const history = (histories[k][key] || [])
           .slice()
-          .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
-          .map(h=>{
-            running = Math.max(0, running - h.cut);
-            return {
-              id: h.id,
-              date: h.date,
-              cut: h.cut,
-              remainingAfter: running
-            };
-          });
+          .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+
+        let running = original;
+        const rebuiltHistory = history.map(h=>{
+          running = Math.max(0, running - h.cut);
+          return {
+            id: h.id,
+            date: h.date,
+            cut: h.cut,
+            remainingAfter: running
+          };
+        });
+
+        if(running <= 0) return;
 
         list.push({
           id: key,
           supplierName: names[k][key] || key,
           originalOpeningQuantity: original,
-          remainingQuantity: remaining,
+          remainingQuantity: running,
           status: "active",
-          history
+          history: rebuiltHistory
         });
       });
       mtGlobalSuppliers[k] = list;
-      rebuiltWrites.push(
-        db.collection("machineTeamSuppliers").doc("current").set({[k]:list},{merge:true}).catch(()=>{})
-      );
+      rebuiltData[k] = list;
     });
-    Promise.all(rebuiltWrites);
+
+    // Write all A-E lists together and WAIT for the write before rendering.
+    // This prevents the next-day load from briefly seeing an empty/old list.
+    await db.collection("machineTeamSuppliers").doc("current").set(rebuiltData,{merge:true});
 
     if(doc.exists){
       const data = doc.data();
