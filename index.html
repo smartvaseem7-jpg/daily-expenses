@@ -2911,8 +2911,34 @@ function mtLoadDay(dateStr){
           history: rebuiltHistory
         });
       });
-      mtGlobalSuppliers[k] = list;
-      rebuiltData[k] = list;
+
+      // Keep a single supplier synchronized with the section's real balance.
+      // This includes carried Opening + today's Add - today's Cutting.
+      const selectedSec = (doc.exists && doc.data().sections && doc.data().sections[k]) || {};
+      const todayAdds = Array.isArray(selectedSec.entries)
+        ? selectedSec.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0) : 0;
+      const todayCuts = Array.isArray(selectedSec.cutEntries)
+        ? selectedSec.cutEntries.reduce((sum,x)=>sum+(Number(x.amount)||0),0)
+        : (Number(selectedSec.cut)||0);
+      const sectionBalance = Math.max(0,
+        (Number(previousOpenings[k])||0) + todayAdds - todayCuts
+      );
+
+      if(list.length === 1){
+        const sp = list[0];
+        const oldRemaining = Number(sp.remainingQuantity)||0;
+        if(oldRemaining !== sectionBalance){
+          const delta = sectionBalance - oldRemaining;
+          sp.remainingQuantity = sectionBalance;
+          sp.originalOpeningQuantity = Math.max(0,
+            (Number(sp.originalOpeningQuantity)||0) + delta
+          );
+          sp.status = sectionBalance > 0 ? "active" : "completed";
+        }
+      }
+
+      mtGlobalSuppliers[k] = list.filter(sp=>Number(sp.remainingQuantity)>0);
+      rebuiltData[k] = mtGlobalSuppliers[k];
     });
 
     // Write all A-E lists together and WAIT for the write before rendering.
