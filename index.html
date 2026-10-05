@@ -2976,10 +2976,12 @@ function mtLoadDay(dateStr){
         const key = supplierCandidates[0];
         const sp = list.find(x=>String(x.supplierName||"").toLowerCase()===key);
         if(sp){
+          const oldRemaining = Number(sp.remainingQuantity)||0;
           sp.remainingQuantity = sectionBalance;
           sp.originalOpeningQuantity = Math.max(0,
             (Number(sp.originalOpeningQuantity)||0) + (sectionBalance - oldRemaining)
           );
+          sp.status = sectionBalance > 0 ? "active" : "completed";
         }
       }
 
