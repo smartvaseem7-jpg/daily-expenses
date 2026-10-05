@@ -2777,64 +2777,54 @@ function mtLoadDay(dateStr){
     const openings = {};
     SECTION_KEYS.forEach(k=>{ openings[k]=0; });
 
-    const target = new Date(dateStr + "T00:00:00");
-
-    // Machine Team reset/baseline: Friday 02-10-2026 is the new starting day.
-    // Friday MUST NOT inherit Thursday (or any older date).
-    // From Saturday onward, only the immediately previous day is carried forward.
+    // Baseline: Friday 02-10-2026 starts from zero. For any later date the
+    // Opening is REPLAYED from the real saved entries and cuts of every day
+    // from the baseline up to the day before (Opening + Add - Cut, never
+    // below 0). It never trusts an old stored "opening" number, so stale
+    // values left behind by earlier deletes can't come back, and a day with
+    // no saved doc can't break the chain.
     const baselineDate = "2026-10-02";
+    if(!(dateStr > baselineDate)) return openings;
+
     const previousDate = fmtDate(new Date(new Date(dateStr+"T00:00:00").getTime() - 86400000));
-    const carryDate = dateStr > baselineDate ? previousDate : null;
-    const directSnap = carryDate
-      ? await db.collection("machineTeam").doc(carryDate).get()
-      : null;
+    const allSnap = await db.collection("machineTeam").get();
+    const days = [];
+    allSnap.forEach(dayDoc=>{
+      const d = dayDoc.data() || {};
+      const dayDate = d.date || dayDoc.id;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(dayDate)) return;
+      if(dayDate < baselineDate || dayDate >= dateStr) return;
+      days.push({date:dayDate, sections:d.sections||{}});
+    });
+    days.sort((x,y)=>x.date.localeCompare(y.date));
 
-    const usableBalance = (s)=>{
-      if(!s) return null;
-      const hasEntries = Array.isArray(s.entries) && s.entries.length>0;
-      const hasCuts = Array.isArray(s.cutEntries) && s.cutEntries.length>0;
-      const hasOpening = Number(s.opening)||0;
-      const hasLegacyCut = Number(s.cut)||0;
-      if(!hasEntries && !hasCuts && !hasOpening && !hasLegacyCut) return null;
-
-      const added = hasEntries
-        ? s.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0)
-        : 0;
-      const opening = Number(s.opening)||0;
-      const cut = hasCuts
-        ? s.cutEntries.reduce((sum,c)=>sum+(Number(c.amount)||0),0)
-        : (Number(s.cut)||0);
-      return Math.max(0, opening + added - cut);
-    };
-
-    const directData = directSnap && directSnap.exists ? (directSnap.data()||{}) : {};
-    const unresolved = [];
-    SECTION_KEYS.forEach(k=>{
-      let balance = usableBalance((directData.sections||{})[k]);
-
-      // If the previous day's document is temporarily missing/incomplete,
-      // use the exact balance already calculated for that previous day in this
-      // session. This prevents a date jump from turning a real balance into 0.
-      if(balance===null && carryDate && mtCarryForwardCache[carryDate]){
-        const cached = Number(mtCarryForwardCache[carryDate][k]);
-        if(Number.isFinite(cached)) balance = Math.max(0, cached);
-      }
-
-      if(balance===null) unresolved.push(k);
-      else {
-        openings[k] = balance;
-        if(carryDate){
-          if(!mtCarryForwardCache[carryDate]) mtCarryForwardCache[carryDate] = {};
-          mtCarryForwardCache[carryDate][k] = balance;
-        }
-      }
+    const running = {};
+    SECTION_KEYS.forEach(k=>{ running[k]=0; });
+    days.forEach(day=>{
+      SECTION_KEYS.forEach(k=>{
+        const sec = day.sections[k] || {};
+        const added = (Array.isArray(sec.entries) ? sec.entries : [])
+          .reduce((sum,e)=>sum+(Number(e && e.amount)||0),0);
+        const cut = (Array.isArray(sec.cutEntries) && sec.cutEntries.length)
+          ? sec.cutEntries.reduce((sum,c)=>sum+(Number(c && c.amount)||0),0)
+          : (Number(sec.cut)||0);
+        running[k] = Math.max(0, running[k] + added - cut);
+      });
     });
 
-    // STRICT DATE RULE: never search older dates.
-    // Friday (02-10-2026) starts from zero. From Saturday onward,
-    // ONLY the immediately previous date can become Opening.
-    // This prevents Thursday (01-10-2026) or any older date from
-    // appearing again on a later date.
+    const prevDocSaved = days.some(x=>x.date===previousDate);
+    SECTION_KEYS.forEach(k=>{
+      let balance = running[k];
+      // Just-edited previous day whose save hasn't reached Firestore yet:
+      // use the balance already calculated in this session.
+      if(!prevDocSaved && mtCarryForwardCache[previousDate]){
+        const cached = Number(mtCarryForwardCache[previousDate][k]);
+        if(Number.isFinite(cached)) balance = Math.max(0, cached);
+      }
+      openings[k] = balance;
+      if(!mtCarryForwardCache[previousDate]) mtCarryForwardCache[previousDate] = {};
+      mtCarryForwardCache[previousDate][k] = balance;
+    });
     return openings;
   })();
 
@@ -2853,6 +2843,8 @@ function mtLoadDay(dateStr){
     const baselineDate = "2026-10-02";
     const totals = {}, cuts = {}, histories = {}, names = {};
     SECTION_KEYS.forEach(k=>{ totals[k]={}; cuts[k]={}; histories[k]={}; names[k]={}; });
+    const meta = {};
+    SECTION_KEYS.forEach(k=>{ meta[k]={first:{}, last:{}}; });
 
     allMachineSnap.forEach(dayDoc=>{
       const d = dayDoc.data() || {};
@@ -2862,13 +2854,16 @@ function mtLoadDay(dateStr){
       if(dayDate < baselineDate || dayDate > dateStr) return;
       SECTION_KEYS.forEach(k=>{
         const sec = (d.sections && d.sections[k]) || {};
-        (Array.isArray(sec.entries) ? sec.entries : []).forEach(e=>{
+        (Array.isArray(sec.entries) ? sec.entries : []).forEach((e,ei)=>{
           const name = String(e && e.name || "").trim();
           const amount = Number(e && e.amount) || 0;
-          if(!name || amount<=0 || e.source !== "supplier") return;
+          if(!name || amount<=0) return;
           const key = name.toLowerCase();
           totals[k][key] = (totals[k][key] || 0) + amount;
           names[k][key] = name;
+          if(!meta[k].first[key] || dayDate < meta[k].first[key]) meta[k].first[key] = dayDate;
+          const stamp = dayDate + "|" + String(ei).padStart(4,"0");
+          if(!meta[k].last[key] || stamp > meta[k].last[key]) meta[k].last[key] = stamp;
         });
         (Array.isArray(sec.cutEntries) ? sec.cutEntries : []).forEach(x=>{
           const name = String(x && x.supplierName || "").trim();
@@ -2923,11 +2918,14 @@ function mtLoadDay(dateStr){
         });
       });
 
-      // Keep Active Supplier synchronized with the section's real balance.
-      // If the supplier ledger is missing (for example, a supplier entry was
-      // saved yesterday but the old global list was 0), recover the supplier
-      // name from the saved entries in this section. This makes B/E and every
-      // later day follow the same Opening + Add - Cut balance.
+      // Active Suppliers must ALWAYS add up to the section's real balance
+      // (Opening + Add - Cut). The per-name ledger above can drift from that
+      // (cuts without a name, a cut bigger than one name's total, unnamed
+      // entries), so reconcile the two instead of guessing:
+      //  - ledger higher than balance -> take the excess off the OLDEST
+      //    suppliers first (same as cutting oldest matta first)
+      //  - ledger lower than balance  -> give the gap to the most recently
+      //    added named supplier of this section
       const selectedSec = (doc.exists && doc.data().sections && doc.data().sections[k]) || {};
       const todayAdds = Array.isArray(selectedSec.entries)
         ? selectedSec.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0) : 0;
@@ -2938,61 +2936,35 @@ function mtLoadDay(dateStr){
         (Number(previousOpenings[k])||0) + todayAdds - todayCuts
       );
 
-      // Candidate supplier names from the current section and its carried
-      // previous-day entries. Prefer an actual supplier-source entry.
-      const candidateMap = {};
-      const addCandidateEntries = (sec)=>{
-        (Array.isArray(sec && sec.entries) ? sec.entries : []).forEach(e=>{
-          const nm = String(e && e.name || "").trim();
-          if(!nm) return;
-          const key = nm.toLowerCase();
-          if(!candidateMap[key]) candidateMap[key] = {name:nm, supplierSource:false};
-          if(e.source === "supplier") candidateMap[key].supplierSource = true;
-        });
-      };
-      addCandidateEntries(selectedSec);
-      const prevDateForSupplier = fmtDate(new Date(new Date(dateStr+"T00:00:00").getTime() - 86400000));
-      const prevDoc = allMachineSnap.docs.find(x=>(x.data().date || x.id) === prevDateForSupplier);
-      if(prevDoc) addCandidateEntries((prevDoc.data().sections||{})[k]);
-
-      const candidateKeys = Object.keys(candidateMap);
-      const supplierCandidates = candidateKeys.filter(key=>candidateMap[key].supplierSource);
-
-      if(list.length === 0 && sectionBalance > 0 && candidateKeys.length === 1){
-        const key = candidateKeys[0];
-        const nm = candidateMap[key].name;
-        list.push({
-          id:key,
-          supplierName:nm,
-          originalOpeningQuantity:sectionBalance,
-          remainingQuantity:sectionBalance,
-          status:"active",
-          history:[]
-        });
-      } else if(list.length === 1){
-        const sp = list[0];
-        const oldRemaining = Number(sp.remainingQuantity)||0;
-        if(oldRemaining !== sectionBalance){
-          const delta = sectionBalance - oldRemaining;
-          sp.remainingQuantity = sectionBalance;
-          sp.originalOpeningQuantity = Math.max(0,
-            (Number(sp.originalOpeningQuantity)||0) + delta
-          );
-          sp.status = sectionBalance > 0 ? "active" : "completed";
-        }
-      } else if(list.length > 1 && supplierCandidates.length === 1){
-        // If several stale records exist but only one real supplier-source
-        // name is present for this section, keep that supplier as the owner
-        // of the current section balance.
-        const key = supplierCandidates[0];
-        const sp = list.find(x=>String(x.supplierName||"").toLowerCase()===key);
-        if(sp){
-          const oldRemaining = Number(sp.remainingQuantity)||0;
-          sp.remainingQuantity = sectionBalance;
-          sp.originalOpeningQuantity = Math.max(0,
-            (Number(sp.originalOpeningQuantity)||0) + (sectionBalance - oldRemaining)
-          );
-          sp.status = sectionBalance > 0 ? "active" : "completed";
+      let ledgerSum = list.reduce((sum,sp)=>sum+(Number(sp.remainingQuantity)||0),0);
+      if(ledgerSum > sectionBalance){
+        let excess = ledgerSum - sectionBalance;
+        list.slice()
+          .sort((x,y)=>String(meta[k].first[x.id]||"").localeCompare(String(meta[k].first[y.id]||"")))
+          .forEach(sp=>{
+            if(excess<=0) return;
+            const take = Math.min(Number(sp.remainingQuantity)||0, excess);
+            sp.remainingQuantity = (Number(sp.remainingQuantity)||0) - take;
+            excess -= take;
+          });
+      } else if(ledgerSum < sectionBalance){
+        const gap = sectionBalance - ledgerSum;
+        const lastKey = Object.keys(meta[k].last)
+          .sort((x,y)=>String(meta[k].last[x]).localeCompare(String(meta[k].last[y])))
+          .pop();
+        const existing = lastKey ? list.find(sp=>sp.id===lastKey) : null;
+        if(existing){
+          existing.remainingQuantity = (Number(existing.remainingQuantity)||0) + gap;
+          existing.originalOpeningQuantity = (Number(existing.originalOpeningQuantity)||0) + gap;
+        } else {
+          list.push({
+            id: lastKey || "previous-balance",
+            supplierName: lastKey ? (names[k][lastKey] || lastKey) : "Previous balance",
+            originalOpeningQuantity: gap,
+            remainingQuantity: gap,
+            status: "active",
+            history: []
+          });
         }
       }
 
