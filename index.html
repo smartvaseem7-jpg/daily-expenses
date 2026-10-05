@@ -2098,7 +2098,9 @@ document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
   }
   if(localStorage.getItem("sham-unlocked") === "true"){ showApp(); return; }
   if(savedSupplier){ enterSupplierPortal(savedSupplier, localStorage.getItem("supplierName")); return; }
-  showLoginPanel("chooser");
+  // Admin opens directly to the PIN screen.
+  // Supplier links still use the separate supplier login above.
+  showLoginPanel("admin");
 })();
 
 // ---------- SCREEN NAVIGATION ----------
