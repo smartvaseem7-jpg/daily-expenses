@@ -3858,7 +3858,7 @@ async function mtRebuildFutureOpeningsFrom(startDate){
     SECTION_KEYS.forEach(k=>previousBalances[k]=0);
 
     // Seed from the day immediately before startDate, if it exists.
-    const prevDate = fmtDate(new Date(startDate+"T00:00:00").getTime()-86400000);
+    const prevDate = fmtDate(new Date(new Date(startDate+"T00:00:00").getTime()-86400000));
     const prev = snap.docs.find(doc=>{
       const d=doc.data()||{};
       return (d.date||doc.id)===prevDate;
