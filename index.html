@@ -586,7 +586,7 @@
     <p style="font-size:12.5px;letter-spacing:0.06em;text-transform:uppercase;color:#9FBB90 !important;margin:0 0 18px;font-weight:600;">Factory Management System</p>
 
     <!-- Step 1: who is logging in? -->
-    <div class="pin-panel" id="loginChooser">
+    <div class="pin-panel" id="loginChooser" style="display:none;">
       <p style="font-size:18px;margin:0 0 14px;color:#1F3D24 !important;font-weight:800;">Login</p>
       <button class="choose-btn admin" id="chooseAdminBtn"><span>&#128100; Admin Login</span><small>Full Access (All Pages)</small></button>
       <button class="choose-btn supplier" id="chooseSupplierBtn"><span>&#128101; Supplier Login</span><small>Limited Access (A &ndash; E Only)</small></button>
@@ -594,7 +594,7 @@
     </div>
 
     <!-- Step 2a: Admin — the existing PIN -->
-    <div class="pin-panel" id="adminPinPanel" style="display:none;">
+    <div class="pin-panel" id="adminPinPanel" style="display:flex;">
       <p style="font-size:12.5px;margin:0 0 10px;color:#4A3B28 !important;font-weight:600;">Enter PIN to view</p>
       <input type="password" inputmode="numeric" maxlength="6" id="pinInput" placeholder="&bull;&bull;&bull;&bull;" />
       <div class="lock-error" id="lockError"></div>
