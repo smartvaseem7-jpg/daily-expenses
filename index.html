@@ -2831,7 +2831,7 @@ function mtLoadDay(dateStr){
     db.collection("machineTeam").doc(dateStr).get(),
     db.collection("machineTeam").get(),
     previousOpeningsPromise
-  ]).then(([doc, allMachineSnap, previousOpenings])=>{
+  ]).then(async ([doc, allMachineSnap, previousOpenings])=>{
     if(loadToken!==mtLoadToken || dateStr!==mtSelectedDate) return;
 
     // Active Suppliers must match the same continuous balance shown by the
