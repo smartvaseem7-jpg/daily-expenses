@@ -4269,7 +4269,7 @@ document.getElementById("mtRateSaveBtn").addEventListener("click", ()=>{
 // it only recomputes a fresh answer and overwrites it, so it's safe to run
 // any time Active Suppliers looks wrong, including after the Clear-button
 // bug that used to wipe it.
-async 
+async function mtAutoFixOldActiveSuppliers(){
   // One-time cleanup: Active Suppliers must follow the same 02-10-2026
   // baseline as Machine Team Opening. Anything before that date is old
   // history and must never appear as an active/current supplier balance.
