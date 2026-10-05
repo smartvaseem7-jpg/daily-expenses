@@ -3234,7 +3234,7 @@ function mtDeleteActiveSupplier(k, supplierId){
 
       if(changed){
         const affectedDate = data.date || doc.id;
-        if(/^\\d{4}-\\d{2}-\\d{2}$/.test(affectedDate) && (!earliestAffectedDate || affectedDate < earliestAffectedDate)){
+        if(/^\d{4}-\d{2}-\d{2}$/.test(affectedDate) && (!earliestAffectedDate || affectedDate < earliestAffectedDate)){
           earliestAffectedDate = affectedDate;
         }
         writes.push(db.collection("machineTeam").doc(doc.id).update({sections}));
@@ -3264,8 +3264,6 @@ function mtDeleteActiveSupplier(k, supplierId){
       mtRenderModals();
       mtLoadDay(mtSelectedDate);
     });
-    mtRenderModals();
-    mtLoadDay(mtSelectedDate);
   }).catch((e)=>{
     alert("Supplier delete panna mudiyala: " + (e && e.message ? e.message : e));
   });
@@ -3862,7 +3860,7 @@ async async function mtRebuildFutureOpeningsFrom(startDate){
     const snap = await db.collection("machineTeam").get();
     const docs = snap.docs
       .map(doc=>({doc, data:doc.data()||{}, date:(doc.data()||{}).date || doc.id}))
-      .filter(x=>/^\\d{4}-\\d{2}-\\d{2}$/.test(x.date) && x.date >= startDate)
+      .filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.date) && x.date >= startDate)
       .sort((a,b)=>xDateCompare(a.date,b.date));
 
     if(!docs.length) return;
@@ -4485,7 +4483,7 @@ async function mtAutoFixOldActiveSuppliers(){
     snap.forEach(doc=>{
       const d = doc.data() || {};
       const dateStr = d.date || doc.id;
-      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(dateStr) || dateStr < baselineDate) return;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || dateStr < baselineDate) return;
       SECTION_KEYS.forEach(k=>{
         const sec = d.sections && d.sections[k];
         if(!sec) return;
