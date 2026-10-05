@@ -2829,74 +2829,89 @@ function mtLoadDay(dateStr){
 
   Promise.all([
     db.collection("machineTeam").doc(dateStr).get(),
-    db.collection("machineTeamSuppliers").doc("current").get(),
+    db.collection("machineTeam").get(),
     previousOpeningsPromise
-  ]).then(([doc, suppliersDoc, previousOpenings])=>{
+  ]).then(([doc, allMachineSnap, previousOpenings])=>{
     if(loadToken!==mtLoadToken || dateStr!==mtSelectedDate) return;
-    const suppliersData = suppliersDoc.exists ? suppliersDoc.data() : {};
-    mtGlobalSuppliers = {};
-    SECTION_KEYS.forEach(k=>{
-      mtGlobalSuppliers[k] = Array.isArray(suppliersData[k]) ? suppliersData[k] : [];
+
+    // Active Suppliers must match the same continuous balance shown by the
+    // daily Opening/Balance. Rebuild them from saved entries + cutting history
+    // from the 02-10-2026 baseline onward. This fixes the case where today's
+    // new supplier amount appears in Active Suppliers but yesterday's
+    // uncut supplier balance is missing there.
+    const baselineDate = "2026-10-02";
+    const totals = {}, cuts = {}, histories = {}, names = {};
+    SECTION_KEYS.forEach(k=>{ totals[k]={}; cuts[k]={}; histories[k]={}; names[k]={}; });
+
+    allMachineSnap.forEach(dayDoc=>{
+      const d = dayDoc.data() || {};
+      const dayDate = d.date || dayDoc.id;
+      if(dayDate < baselineDate) return;
+      SECTION_KEYS.forEach(k=>{
+        const sec = (d.sections && d.sections[k]) || {};
+        (Array.isArray(sec.entries) ? sec.entries : []).forEach(e=>{
+          const name = String(e && e.name || "").trim();
+          const amount = Number(e && e.amount) || 0;
+          if(!name || amount<=0) return;
+          const key = name.toLowerCase();
+          totals[k][key] = (totals[k][key] || 0) + amount;
+          names[k][key] = name;
+        });
+        (Array.isArray(sec.cutEntries) ? sec.cutEntries : []).forEach(x=>{
+          const name = String(x && x.supplierName || "").trim();
+          const amount = Number(x && x.amount) || 0;
+          if(!name || amount<=0) return;
+          const key = name.toLowerCase();
+          cuts[k][key] = (cuts[k][key] || 0) + amount;
+          if(!histories[k][key]) histories[k][key] = [];
+          histories[k][key].push({
+            id: x.id || (Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
+            date: dayDate,
+            cut: amount
+          });
+          if(!names[k][key]) names[k][key] = name;
+        });
+      });
     });
 
-    // Safety sync: if a supplier entry exists in today's machineTeam document
-    // but the global Active Supplier record is missing, restore that supplier
-    // immediately. This only adds missing supplier records; it never changes
-    // existing balances, opening balances, cuts, or date calculations.
-    if(doc.exists){
-      const todayData = doc.data() || {};
-      const repairWrites = [];
-      SECTION_KEYS.forEach(k=>{
-        const entries = todayData.sections && todayData.sections[k] && Array.isArray(todayData.sections[k].entries)
-          ? todayData.sections[k].entries : [];
-        const supplierTotals = {};
-        entries.forEach(e=>{
-          if(!e || e.source !== "supplier") return;
-          const name = String(e.name || "").trim();
-          const amount = Number(e.amount) || 0;
-          if(name && amount > 0){
-            const key = name.toLowerCase();
-            supplierTotals[key] = (supplierTotals[key] || 0) + amount;
-          }
+    mtGlobalSuppliers = {};
+    const rebuiltWrites = [];
+    SECTION_KEYS.forEach(k=>{
+      const list = [];
+      Object.keys(totals[k]).forEach(key=>{
+        const original = totals[k][key];
+        const remaining = Math.max(0, original - (cuts[k][key] || 0));
+        if(remaining<=0) return;
+
+        let running = original;
+        const history = (histories[k][key] || [])
+          .slice()
+          .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+          .map(h=>{
+            running = Math.max(0, running - h.cut);
+            return {
+              id: h.id,
+              date: h.date,
+              cut: h.cut,
+              remainingAfter: running
+            };
+          });
+
+        list.push({
+          id: key,
+          supplierName: names[k][key] || key,
+          originalOpeningQuantity: original,
+          remainingQuantity: remaining,
+          status: "active",
+          history
         });
-        const list = Array.isArray(mtGlobalSuppliers[k]) ? mtGlobalSuppliers[k].map(sp=>({...sp})) : [];
-        let changed = false;
-        Object.keys(supplierTotals).forEach(key=>{
-          const idx = list.findIndex(sp=>String(sp.supplierName || "").trim().toLowerCase() === key);
-          if(idx < 0){
-            const displayName = entries.find(e=>e && e.source==="supplier" && String(e.name||"").trim().toLowerCase()===key)?.name || key;
-            const amount = supplierTotals[key];
-            list.push({
-              id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-              supplierName: displayName,
-              originalOpeningQuantity: amount,
-              remainingQuantity: amount,
-              status: "active",
-              history: []
-            });
-            changed = true;
-          } else {
-            const sp = list[idx];
-            const knownOriginal = Number(sp.originalOpeningQuantity) || 0;
-            const knownRemaining = Number(sp.remainingQuantity) || 0;
-            if(knownOriginal < supplierTotals[key]){
-              const diff = supplierTotals[key] - knownOriginal;
-              sp.originalOpeningQuantity = knownOriginal + diff;
-              sp.remainingQuantity = knownRemaining + diff;
-              sp.status = "active";
-              list[idx] = sp;
-              changed = true;
-            }
-          }
-        });
-        if(changed){
-          mtGlobalSuppliers[k] = list;
-          if(mtSectionsData[k]) mtSectionsData[k].suppliers = list;
-          repairWrites.push(db.collection("machineTeamSuppliers").doc("current").set({[k]:list},{merge:true}).catch(()=>{}));
-        }
       });
-      if(repairWrites.length) Promise.all(repairWrites);
-    }
+      mtGlobalSuppliers[k] = list;
+      rebuiltWrites.push(
+        db.collection("machineTeamSuppliers").doc("current").set({[k]:list},{merge:true}).catch(()=>{})
+      );
+    });
+    Promise.all(rebuiltWrites);
 
     if(doc.exists){
       const data = doc.data();
