@@ -2912,8 +2912,11 @@ function mtLoadDay(dateStr){
         });
       });
 
-      // Keep a single supplier synchronized with the section's real balance.
-      // This includes carried Opening + today's Add - today's Cutting.
+      // Keep Active Supplier synchronized with the section's real balance.
+      // If the supplier ledger is missing (for example, a supplier entry was
+      // saved yesterday but the old global list was 0), recover the supplier
+      // name from the saved entries in this section. This makes B/E and every
+      // later day follow the same Opening + Add - Cut balance.
       const selectedSec = (doc.exists && doc.data().sections && doc.data().sections[k]) || {};
       const todayAdds = Array.isArray(selectedSec.entries)
         ? selectedSec.entries.reduce((sum,e)=>sum+(Number(e.amount)||0),0) : 0;
@@ -2924,7 +2927,38 @@ function mtLoadDay(dateStr){
         (Number(previousOpenings[k])||0) + todayAdds - todayCuts
       );
 
-      if(list.length === 1){
+      // Candidate supplier names from the current section and its carried
+      // previous-day entries. Prefer an actual supplier-source entry.
+      const candidateMap = {};
+      const addCandidateEntries = (sec)=>{
+        (Array.isArray(sec && sec.entries) ? sec.entries : []).forEach(e=>{
+          const nm = String(e && e.name || "").trim();
+          if(!nm) return;
+          const key = nm.toLowerCase();
+          if(!candidateMap[key]) candidateMap[key] = {name:nm, supplierSource:false};
+          if(e.source === "supplier") candidateMap[key].supplierSource = true;
+        });
+      };
+      addCandidateEntries(selectedSec);
+      const prevDateForSupplier = fmtDate(new Date(new Date(dateStr+"T00:00:00").getTime() - 86400000));
+      const prevDoc = allMachineSnap.docs.find(x=>(x.data().date || x.id) === prevDateForSupplier);
+      if(prevDoc) addCandidateEntries((prevDoc.data().sections||{})[k]);
+
+      const candidateKeys = Object.keys(candidateMap);
+      const supplierCandidates = candidateKeys.filter(key=>candidateMap[key].supplierSource);
+
+      if(list.length === 0 && sectionBalance > 0 && candidateKeys.length === 1){
+        const key = candidateKeys[0];
+        const nm = candidateMap[key].name;
+        list.push({
+          id:key,
+          supplierName:nm,
+          originalOpeningQuantity:sectionBalance,
+          remainingQuantity:sectionBalance,
+          status:"active",
+          history:[]
+        });
+      } else if(list.length === 1){
         const sp = list[0];
         const oldRemaining = Number(sp.remainingQuantity)||0;
         if(oldRemaining !== sectionBalance){
@@ -2934,6 +2968,18 @@ function mtLoadDay(dateStr){
             (Number(sp.originalOpeningQuantity)||0) + delta
           );
           sp.status = sectionBalance > 0 ? "active" : "completed";
+        }
+      } else if(list.length > 1 && supplierCandidates.length === 1){
+        // If several stale records exist but only one real supplier-source
+        // name is present for this section, keep that supplier as the owner
+        // of the current section balance.
+        const key = supplierCandidates[0];
+        const sp = list.find(x=>String(x.supplierName||"").toLowerCase()===key);
+        if(sp){
+          sp.remainingQuantity = sectionBalance;
+          sp.originalOpeningQuantity = Math.max(0,
+            (Number(sp.originalOpeningQuantity)||0) + (sectionBalance - oldRemaining)
+          );
         }
       }
 
