@@ -3198,6 +3198,7 @@ function mtDeleteActiveSupplier(k, supplierId){
   // from Saturday/Sunday/etc. carry-forward too.
   db.collection("machineTeam").get().then((snap)=>{
     const writes = [];
+    let earliestAffectedDate = "";
     snap.forEach(doc=>{
       const data = doc.data() || {};
       const sections = data.sections || {};
@@ -3232,6 +3233,10 @@ function mtDeleteActiveSupplier(k, supplierId){
       }
 
       if(changed){
+        const affectedDate = data.date || doc.id;
+        if(/^\\d{4}-\\d{2}-\\d{2}$/.test(affectedDate) && (!earliestAffectedDate || affectedDate < earliestAffectedDate)){
+          earliestAffectedDate = affectedDate;
+        }
         writes.push(db.collection("machineTeam").doc(doc.id).update({sections}));
       }
     });
@@ -3250,6 +3255,16 @@ function mtDeleteActiveSupplier(k, supplierId){
       mtRecalc(k);
     }
     mtPersistSuppliers(k);
+    // Rebuild from the earliest date where this supplier actually had an
+    // entry/cut, not from the delete date. This removes the deleted amount
+    // from every later Opening/balance as well.
+    const rebuildFrom = earliestAffectedDate || mtSelectedDate;
+    mtRebuildFutureOpeningsFrom(rebuildFrom).then(()=>{
+      mtModalStack = [{type:"suppliers", section:k}];
+      mtRenderModals();
+      mtLoadDay(mtSelectedDate);
+    });
+    return;
     mtModalStack = [{type:"suppliers", section:k}];
     mtRenderModals();
     mtLoadDay(mtSelectedDate);
@@ -3840,7 +3855,7 @@ function mtRender(){
     list.appendChild(card);
   });
 
-async function mtRebuildFutureOpeningsFrom(startDate){
+async async function mtRebuildFutureOpeningsFrom(startDate){
   // When a past matta entry is deleted, every later day's Opening must be
   // recalculated from the corrected previous-day balance. Otherwise an old
   // Opening stored on Monday can keep 1000 alive on Tuesday/Wednesday even
