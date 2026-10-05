@@ -2839,6 +2839,52 @@ function mtLoadDay(dateStr){
       mtGlobalSuppliers[k] = Array.isArray(suppliersData[k]) ? suppliersData[k] : [];
     });
 
+    // Safety sync: if a supplier entry exists in today's machineTeam document
+    // but the global Active Supplier record is missing, restore that supplier
+    // immediately. This only adds missing supplier records; it never changes
+    // existing balances, opening balances, cuts, or date calculations.
+    if(doc.exists){
+      const todayData = doc.data() || {};
+      const repairWrites = [];
+      SECTION_KEYS.forEach(k=>{
+        const entries = todayData.sections && todayData.sections[k] && Array.isArray(todayData.sections[k].entries)
+          ? todayData.sections[k].entries : [];
+        const supplierTotals = {};
+        entries.forEach(e=>{
+          if(!e || e.source !== "supplier") return;
+          const name = String(e.name || "").trim();
+          const amount = Number(e.amount) || 0;
+          if(name && amount > 0){
+            const key = name.toLowerCase();
+            supplierTotals[key] = (supplierTotals[key] || 0) + amount;
+          }
+        });
+        const list = Array.isArray(mtGlobalSuppliers[k]) ? mtGlobalSuppliers[k].slice() : [];
+        let changed = false;
+        Object.keys(supplierTotals).forEach(key=>{
+          const exists = list.some(sp=>String(sp.supplierName || "").trim().toLowerCase() === key);
+          if(!exists){
+            const displayName = entries.find(e=>e && e.source==="supplier" && String(e.name||"").trim().toLowerCase()===key)?.name || key;
+            const amount = supplierTotals[key];
+            list.push({
+              id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+              supplierName: displayName,
+              originalOpeningQuantity: amount,
+              remainingQuantity: amount,
+              status: "active",
+              history: []
+            });
+            changed = true;
+          }
+        });
+        if(changed){
+          mtGlobalSuppliers[k] = list;
+          repairWrites.push(db.collection("machineTeamSuppliers").doc("current").set({[k]:list},{merge:true}).catch(()=>{}));
+        }
+      });
+      if(repairWrites.length) Promise.all(repairWrites);
+    }
+
     if(doc.exists){
       const data = doc.data();
       mtWorkers = Array.isArray(data.workers) ? data.workers : [];
