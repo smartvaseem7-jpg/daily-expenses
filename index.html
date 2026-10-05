@@ -2232,6 +2232,8 @@ document.getElementById("goMachine").addEventListener("click", ()=>{
       document.getElementById("mtRateDisplay").style.display = "block";
     }).catch(()=>{});
     mtAutoFixOldActiveSuppliers().then(()=>{
+      return mtRepairMissingActiveSuppliers();
+    }).then(()=>{
       mtLoadDay(mtSelectedDate);
     });
     loadMachineTeamSalary();
@@ -4269,7 +4271,106 @@ document.getElementById("mtRateSaveBtn").addEventListener("click", ()=>{
 // it only recomputes a fresh answer and overwrites it, so it's safe to run
 // any time Active Suppliers looks wrong, including after the Clear-button
 // bug that used to wipe it.
-async function mtAutoFixOldActiveSuppliers(){
+async async function mtRepairMissingActiveSuppliers(){
+  // Reconcile the global Active Supplier list from supplier-added entries
+  // starting at the 02-10-2026 baseline. This restores older active suppliers
+  // if the global current document was accidentally left with only a newer add.
+  const baselineDate = "2026-10-02";
+  try{
+    const [currentSnap, daysSnap] = await Promise.all([
+      db.collection("machineTeamSuppliers").doc("current").get(),
+      db.collection("machineTeam").get()
+    ]);
+    const current = currentSnap.exists ? currentSnap.data() : {};
+    const adds = {}, cuts = {}, cutHistory = {};
+    SECTION_KEYS.forEach(k=>{ adds[k]={}; cuts[k]={}; cutHistory[k]={}; });
+
+    daysSnap.forEach(doc=>{
+      const d = doc.data() || {};
+      const dateStr = d.date || doc.id;
+      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(dateStr) || dateStr < baselineDate) return;
+      SECTION_KEYS.forEach(k=>{
+        const sec = d.sections && d.sections[k];
+        if(!sec) return;
+        (Array.isArray(sec.entries)?sec.entries:[]).forEach(e=>{
+          if(e && e.source==="supplier"){
+            const name=String(e.name||"").trim();
+            const amount=Number(e.amount)||0;
+            if(name && amount>0){
+              const key=name.toLowerCase();
+              adds[k][key]=(adds[k][key]||0)+amount;
+            }
+          }
+        });
+        (Array.isArray(sec.cutEntries)?sec.cutEntries:[]).forEach(x=>{
+          const name=String(x.supplierName||"").trim();
+          const amount=Number(x.amount)||0;
+          if(name && amount>0){
+            const key=name.toLowerCase();
+            cuts[k][key]=(cuts[k][key]||0)+amount;
+            if(!cutHistory[k][key]) cutHistory[k][key]=[];
+            cutHistory[k][key].push({id:x.id||Date.now().toString(36),date:dateStr,cut:amount,remainingAfter:0});
+          }
+        });
+      });
+    });
+
+    const repairWrites=[];
+    SECTION_KEYS.forEach(k=>{
+      const list=Array.isArray(current[k]) ? current[k].map(sp=>({...sp})) : [];
+      let changed=false;
+
+      Object.keys(adds[k]).forEach(key=>{
+        const totalAdded=adds[k][key]||0;
+        const totalCut=cuts[k][key]||0;
+        const idx=list.findIndex(sp=>String(sp.supplierName||"").trim().toLowerCase()===key);
+
+        if(idx<0){
+          const remaining=Math.max(0,totalAdded-totalCut);
+          if(remaining<=0) return;
+          const displayName=key;
+          let running=totalAdded;
+          const history=(cutHistory[k][key]||[]).map(h=>{
+            running=Math.max(0,running-h.cut);
+            return {...h,remainingAfter:running};
+          });
+          list.push({
+            id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+            supplierName:displayName,
+            originalOpeningQuantity:totalAdded,
+            remainingQuantity:remaining,
+            status:"active",
+            history
+          });
+          changed=true;
+        }else{
+          const sp=list[idx];
+          const knownOriginal=Number(sp.originalOpeningQuantity)||0;
+          if(totalAdded>knownOriginal){
+            const diff=totalAdded-knownOriginal;
+            sp.originalOpeningQuantity=knownOriginal+diff;
+            sp.remainingQuantity=Math.max(0,(Number(sp.remainingQuantity)||0)+diff);
+            sp.status="active";
+            list[idx]=sp;
+            changed=true;
+          }
+        }
+      });
+
+      if(changed){
+        current[k]=list;
+        mtGlobalSuppliers[k]=list;
+        if(mtSectionsData[k]) mtSectionsData[k].suppliers=list;
+        repairWrites.push(db.collection("machineTeamSuppliers").doc("current").set({[k]:list},{merge:true}).catch(()=>{}));
+      }
+    });
+    if(repairWrites.length) await Promise.all(repairWrites);
+  }catch(e){
+    console.warn("Missing active supplier repair failed:",e);
+  }
+}
+
+function mtAutoFixOldActiveSuppliers(){
   // One-time cleanup: Active Suppliers must follow the same 02-10-2026
   // baseline as Machine Team Opening. Anything before that date is old
   // history and must never appear as an active/current supplier balance.
