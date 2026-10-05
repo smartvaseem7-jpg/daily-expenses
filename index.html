@@ -3264,8 +3264,6 @@ function mtDeleteActiveSupplier(k, supplierId){
       mtRenderModals();
       mtLoadDay(mtSelectedDate);
     });
-    return;
-    mtModalStack = [{type:"suppliers", section:k}];
     mtRenderModals();
     mtLoadDay(mtSelectedDate);
   }).catch((e)=>{
