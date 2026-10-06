@@ -512,6 +512,16 @@
   .dw-subtotal-line { text-align:center; color:#C9BC9C; font-family:'IBM Plex Mono',monospace; letter-spacing:2px; margin:6px 0 4px; }
   .dw-subtotal-row { display:flex; justify-content:space-between; align-items:baseline; padding-top:2px; }
   .dw-subtotal-row .label { font-family:'Fraunces',serif; font-size:14px; color:#4A3B28; }
+  .dw-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+  .dw-tab { border:1px solid #C9BC9C; background:#F3ECD9; color:#4A3B28; border-radius:999px; padding:8px 14px; font-family:'Fraunces',serif; font-weight:800; font-size:14px; cursor:pointer; }
+  .dw-tab .kg { font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12px; opacity:.85; margin-left:6px; }
+  .dw-tab.active { background:#3B6B35; border-color:#3B6B35; color:#fff; }
+  .dw-tab.add { border-style:dashed; background:transparent; color:#3B6B35; }
+  .dw-team-actions { display:flex; gap:8px; margin-bottom:10px; }
+  .dw-team-actions button { flex:1; border:1px solid #C9BC9C; background:#fff; color:#4A3B28; border-radius:10px; padding:8px 0; font-weight:700; font-size:13px; cursor:pointer; }
+  .dw-team-actions button.danger { color:#B3402F; }
+  .dw-team-title { display:none; font-family:'Fraunces',serif; font-weight:800; font-size:18px; color:#1F3D24; margin:6px 0 8px; }
+  @media print { .dw-team-panel { display:block !important; } .dw-team-title { display:block; } }
   .dw-subtotal-val { font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:800; color:#3B6B35; }
   .dt-worker-row:last-child { border-bottom:none; }
   .dt-worker-row .amt { font-family:'IBM Plex Mono',monospace; font-weight:700; color:#3B6B35; }
@@ -1310,6 +1320,8 @@
         <button id="dwNextDay" class="no-print">&#8594;</button>
       </div>
 
+      <div id="dwTeamTabs" class="dw-tabs no-print"></div>
+      <div id="dwTeamActions" class="dw-team-actions no-print"></div>
       <div id="dwBlocksContainer"></div>
 
       <div class="totals" style="margin-bottom:14px;">
@@ -5439,14 +5451,35 @@ let dwLoadedOnce = false;
 let dwSelectedDate = fmtDate(new Date());
 let dwPersistPromise = Promise.resolve();
 
+let dwTeamNames = [];
+let dwActiveTeam = 0;
+
+function dwEsc(t){
+  return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// A day's record may be old-style ({values:[...]}) or new-style ({teams:[{name,values}]}).
+function dwTeamsFromData(data){
+  let teams = [];
+  if(data && Array.isArray(data.teams) && data.teams.length){
+    teams = data.teams.map((t,i)=>({
+      name: String((t && t.name) || ("Team "+(i+1))),
+      values: Array.isArray(t && t.values) ? t.values : []
+    }));
+  } else {
+    teams = [{name:"Team 1", values: (data && Array.isArray(data.values)) ? data.values : []}];
+  }
+  while(teams.length<2) teams.push({name:"Team "+(teams.length+1), values:[]});
+  return teams;
+}
+
 function dwLoadDay(dateStr){
   document.getElementById("dwNiceDate").textContent = fmtNice(dateStr);
   document.getElementById("dwBlocksContainer").innerHTML = "";
   db.collection("dryerWeight").doc(dateStr).get().then((doc)=>{
-    const values = (doc.exists && Array.isArray(doc.data().values)) ? doc.data().values : [];
-    dwRenderInitial(values);
+    dwRenderInitial(dwTeamsFromData(doc.exists ? doc.data() : null));
   }).catch(()=>{
-    dwRenderInitial([]);
+    dwRenderInitial(dwTeamsFromData(null));
   });
 }
 
@@ -5468,21 +5501,30 @@ function dwBlockHtml(blockIndex, values){
   return html;
 }
 
-function dwRenderInitial(values){
-  const container = document.getElementById("dwBlocksContainer");
-  const n = values.length;
-  const slotCount = dwSlotCountFor(n);
-  const totalBlocks = slotCount/10;
-  let html = "";
+function dwPanelHtml(teamIdx, name, values){
+  const totalBlocks = dwSlotCountFor(values.length)/10;
+  let html = `<div class="dw-team-panel" data-team="${teamIdx}" style="display:${teamIdx===dwActiveTeam?"block":"none"};">`;
+  html += `<div class="dw-team-title">${dwEsc(name)}</div>`;
   for(let b=0;b<totalBlocks;b++) html += dwBlockHtml(b, values);
-  container.innerHTML = html;
-  for(let b=0;b<totalBlocks;b++) dwUpdateBlockSubtotal(b);
-  dwUpdateDayTotal();
+  html += `</div>`;
+  return html;
 }
 
-function dwUpdateBlockSubtotal(blockIndex){
+function dwPanelSum(panel){
+  let sum = 0;
+  panel.querySelectorAll(".dw-input").forEach(inp=>{ sum += Number(inp.value)||0; });
+  return sum;
+}
+
+function dwRenderInitial(teams){
+  dwTeamNames = teams.map(t=>t.name);
+  dwActiveTeam = 0;
   const container = document.getElementById("dwBlocksContainer");
-  const blockEl = container.querySelector(`.dw-block[data-block="${blockIndex}"]`);
+  container.innerHTML = teams.map((t,i)=>dwPanelHtml(i, t.name, t.values)).join("");
+  dwUpdateAllSubtotals();
+}
+
+function dwUpdateBlockSubtotal(blockEl){
   if(!blockEl) return;
   let sum = 0;
   blockEl.querySelectorAll(".dw-input").forEach(inp=>{ sum += Number(inp.value)||0; });
@@ -5490,62 +5532,144 @@ function dwUpdateBlockSubtotal(blockIndex){
   if(totalEl) totalEl.textContent = sum.toFixed(2);
 }
 
-function dwUpdateDayTotal(){
-  const container = document.getElementById("dwBlocksContainer");
-  let sum = 0;
-  container.querySelectorAll(".dw-input").forEach(inp=>{ sum += Number(inp.value)||0; });
-  document.getElementById("dwDayTotal").textContent = sum.toFixed(2) + " kg";
+function dwUpdateAllSubtotals(){
+  document.querySelectorAll("#dwBlocksContainer .dw-block").forEach(dwUpdateBlockSubtotal);
+  dwUpdateDayTotal();
 }
 
-function dwMaybeAddBlock(blockIndex){
-  const container = document.getElementById("dwBlocksContainer");
-  const blocks = container.querySelectorAll(".dw-block");
+function dwUpdateDayTotal(){
+  let sum = 0;
+  document.querySelectorAll("#dwBlocksContainer .dw-team-panel").forEach(p=>{ sum += dwPanelSum(p); });
+  document.getElementById("dwDayTotal").textContent = sum.toFixed(2) + " kg";
+  dwRenderTabs();
+}
+
+function dwRenderTabs(){
+  const tabs = document.getElementById("dwTeamTabs");
+  const actions = document.getElementById("dwTeamActions");
+  if(!tabs || !actions) return;
+  const panels = document.querySelectorAll("#dwBlocksContainer .dw-team-panel");
+  let html = "";
+  dwTeamNames.forEach((nm,i)=>{
+    const p = panels[i];
+    const kg = p ? dwPanelSum(p) : 0;
+    html += `<button type="button" class="dw-tab${i===dwActiveTeam?" active":""}" data-team="${i}">${dwEsc(nm)}<span class="kg">${kg.toFixed(2)}</span></button>`;
+  });
+  html += `<button type="button" class="dw-tab add" data-addteam="1">+ Team</button>`;
+  tabs.innerHTML = html;
+  actions.innerHTML = `<button type="button" data-renameteam="1">&#9998; Name maathu</button>` +
+    (dwTeamNames.length>1 ? `<button type="button" class="danger" data-removeteam="1">&#128465; Team remove</button>` : "");
+}
+
+function dwShowTeam(i){
+  dwActiveTeam = i;
+  document.querySelectorAll("#dwBlocksContainer .dw-team-panel").forEach((p,idx)=>{
+    p.style.display = (idx===i) ? "block" : "none";
+  });
+  dwRenderTabs();
+}
+
+document.getElementById("dwTeamTabs").addEventListener("click", (ev)=>{
+  const addBtn = ev.target.closest("[data-addteam]");
+  if(addBtn){
+    const def = "Team " + (dwTeamNames.length+1);
+    const nm = prompt("Pudhu team peyar:", def);
+    if(nm===null) return;
+    const name = nm.trim() || def;
+    dwTeamNames.push(name);
+    const idx = dwTeamNames.length-1;
+    dwActiveTeam = idx;
+    document.querySelectorAll("#dwBlocksContainer .dw-team-panel").forEach(p=>{ p.style.display="none"; });
+    document.getElementById("dwBlocksContainer").insertAdjacentHTML("beforeend", dwPanelHtml(idx, name, []));
+    dwUpdateAllSubtotals();
+    return;
+  }
+  const tab = ev.target.closest("[data-team]");
+  if(tab) dwShowTeam(Number(tab.dataset.team));
+});
+
+document.getElementById("dwTeamActions").addEventListener("click", (ev)=>{
+  if(ev.target.closest("[data-renameteam]")){
+    const cur = dwTeamNames[dwActiveTeam] || "";
+    const nm = prompt("Team peyar:", cur);
+    if(nm===null) return;
+    const name = nm.trim() || cur;
+    dwTeamNames[dwActiveTeam] = name;
+    const panel = document.querySelector(`#dwBlocksContainer .dw-team-panel[data-team="${dwActiveTeam}"]`);
+    if(panel){ const t = panel.querySelector(".dw-team-title"); if(t) t.textContent = name; }
+    dwRenderTabs();
+    return;
+  }
+  if(ev.target.closest("[data-removeteam]")){
+    if(dwTeamNames.length<=1) return;
+    const nm = dwTeamNames[dwActiveTeam];
+    if(!confirm(`"${nm}" team-oda ellaa weight-um remove aagum (Save pannina dhaan permanent). Remove pannalama?`)) return;
+    const panel = document.querySelector(`#dwBlocksContainer .dw-team-panel[data-team="${dwActiveTeam}"]`);
+    if(panel) panel.remove();
+    dwTeamNames.splice(dwActiveTeam,1);
+    document.querySelectorAll("#dwBlocksContainer .dw-team-panel").forEach((p,i)=>{ p.dataset.team = String(i); });
+    dwActiveTeam = Math.min(dwActiveTeam, dwTeamNames.length-1);
+    dwShowTeam(dwActiveTeam);
+    dwUpdateDayTotal();
+  }
+});
+
+function dwMaybeAddBlock(panel, blockIndex){
+  const blocks = panel.querySelectorAll(".dw-block");
   if(blockIndex !== blocks.length-1) return; // only the current last block can trigger a new one
   const blockEl = blocks[blocks.length-1];
   const inputs = blockEl.querySelectorAll(".dw-input");
   const allFilled = Array.from(inputs).every(inp=>String(inp.value).trim()!=="");
   if(allFilled){
-    container.insertAdjacentHTML("beforeend", dwBlockHtml(blocks.length, []));
+    panel.insertAdjacentHTML("beforeend", dwBlockHtml(blocks.length, []));
   }
 }
 
-function dwCollectValues(){
-  const values = [];
-  document.querySelectorAll("#dwBlocksContainer .dw-input").forEach(inp=>{
-    const v = inp.value.trim();
-    if(v!==""){
-      const idx = Number(inp.dataset.idx);
-      values[idx] = Number(v);
-    }
+function dwCollectTeams(){
+  const teams = [];
+  document.querySelectorAll("#dwBlocksContainer .dw-team-panel").forEach((panel,ti)=>{
+    const values = [];
+    panel.querySelectorAll(".dw-input").forEach(inp=>{
+      const v = inp.value.trim();
+      if(v!==""){
+        const idx = Number(inp.dataset.idx);
+        values[idx] = Number(v);
+      }
+    });
+    // compact (remove interior undefined holes, keep order)
+    const compact = [];
+    for(let i=0;i<values.length;i++){ if(values[i]!==undefined) compact.push(values[i]); }
+    teams.push({name: dwTeamNames[ti] || ("Team "+(ti+1)), values: compact});
   });
-  // compact (remove trailing/interior undefined holes, keep order)
-  const compact = [];
-  for(let i=0;i<values.length;i++){ if(values[i]!==undefined) compact.push(values[i]); }
-  return compact;
+  return teams;
 }
 
 document.getElementById("dwBlocksContainer").addEventListener("input", (ev)=>{
   if(!ev.target.classList.contains("dw-input")) return;
+  const panel = ev.target.closest(".dw-team-panel");
   const idx = Number(ev.target.dataset.idx);
   const blockIndex = Math.floor(idx/10);
-  dwUpdateBlockSubtotal(blockIndex);
+  dwUpdateBlockSubtotal(ev.target.closest(".dw-block"));
+  dwMaybeAddBlock(panel, blockIndex);
   dwUpdateDayTotal();
-  dwMaybeAddBlock(blockIndex);
 });
 
 document.getElementById("dwSaveBtn").addEventListener("click", ()=>{
   const note = document.getElementById("dwSaveNote");
-  const values = dwCollectValues();
-  if(values.length===0){
+  const teams = dwCollectTeams();
+  if(!teams.some(t=>t.values.length>0)){
     note.textContent = "Weight entha value-um podunga.";
     setTimeout(()=>{ note.textContent=""; }, 1500);
     return;
   }
+  const flat = [];
+  teams.forEach(t=>t.values.forEach(v=>flat.push(v)));
   note.textContent = "Saving...";
   dwPersistPromise = db.collection("dryerWeight").doc(dwSelectedDate).set({
     date: dwSelectedDate,
     month: monthKey(dwSelectedDate),
-    values
+    teams,
+    values: flat
   }).then(()=>{
     note.textContent = "Saved!";
     setTimeout(()=>{ note.textContent=""; }, 1500);
@@ -5572,10 +5696,12 @@ function dwLoadRecords(){
   db.collection("dryerWeight").get().then((snap)=>{
     const records = [];
     snap.forEach(doc=>{
-      const vals = Array.isArray(doc.data().values) ? doc.data().values : [];
-      if(vals.length===0) return;
-      const total = vals.reduce((s,v)=>s+(Number(v)||0),0);
-      records.push({date:doc.id, total, count:vals.length});
+      const teamsOfDay = dwTeamsFromData(doc.data()).filter(t=>t.values.length>0);
+      if(teamsOfDay.length===0) return;
+      const teamTotals = teamsOfDay.map(t=>({name:t.name, kg:t.values.reduce((s,v)=>s+(Number(v)||0),0)}));
+      const total = teamTotals.reduce((s,t)=>s+t.kg,0);
+      const count = teamsOfDay.reduce((s,t)=>s+t.values.length,0);
+      records.push({date:doc.id, total, count, teamTotals});
     });
     records.sort((a,b)=> b.date.localeCompare(a.date));
     if(records.length===0){
@@ -5592,6 +5718,7 @@ function dwLoadRecords(){
           </div>
         </div>
         <div class="dt-record-date">${fmtNice(r.date)} &middot; ${r.count} entries</div>
+        ${r.teamTotals.length>1 ? `<div class="dt-record-date">${r.teamTotals.map(t=>dwEsc(t.name)+": "+t.kg.toFixed(2)).join(" &middot; ")}</div>` : ""}
       </div>
     `).join("");
     container.querySelectorAll("[data-editdate]").forEach(btn=>{
