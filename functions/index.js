@@ -79,7 +79,7 @@ exports.notifyAdminOnSupplierMatta = onDocumentUpdated("machineTeam/{date}", asy
           section: String(item.section)
         },
         webpush: {
-          fcmOptions: {link: "https://wm-point-e9196.web.app/"},
+          fcmOptions: {link: "https://smartvaseem7-jpg.github.io/daily-expenses/"},
           notification: {
             title:title,
             body:body,
