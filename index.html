@@ -2152,7 +2152,7 @@ function loadHomeStats(){
   const lastMk = lastMonthKeyOf(mk);
   Promise.allSettled([
     db.collection("expenses").where("month","==",mk).get(),
-    db.collection("expenses").orderBy("date","desc").limit(1).get(),
+    expReplayBalances(),
     db.collection("salaryHistory").get(),
     db.collection("workerLoans").get(),
     db.collection("expenses").where("month","==",lastMk).get()
@@ -2165,12 +2165,8 @@ function loadHomeStats(){
       });
     }
     let netBalance = 0;
-    if(results[1].status==="fulfilled" && !results[1].value.empty){
-      const d = results[1].value.docs[0].data();
-      const dItems = Array.isArray(d.items) ? d.items : [];
-      const added = Array.isArray(d.cashEntries) ? d.cashEntries.reduce((s,c)=>s+(Number(c.amount)||0),0) : (d.cashReceived!=null ? Number(d.cashReceived)||0 : 0);
-      const spent = dItems.reduce((s,i)=>s+(Number(i.price)||0),0);
-      netBalance = (Number(d.opening)||0) + added - spent;
+    if(results[1].status==="fulfilled" && results[1].value.length){
+      netBalance = results[1].value[results[1].value.length-1].balance;
     }
     let totalSalaryMonth = 0, totalSalaryLastMonth = 0;
     if(results[2].status==="fulfilled"){
@@ -2348,6 +2344,39 @@ let openingCash = 0;
 function addedCash(){ return cashEntries.reduce((s,c)=>s+Number(c.amount||0),0); }
 function totalCash(){ return openingCash + addedCash(); }
 
+// Day-by-day cash balance, replayed from the very first saved day.
+// The "opening" number stored inside each day's doc gets stale whenever an
+// earlier day is edited later, so it must never be trusted for carry-forward.
+// opening(day) = balance(previous saved day); balance = opening + cash in - spent.
+let expReplayCache = {at:0, promise:null};
+function expInvalidateReplay(){ expReplayCache = {at:0, promise:null}; }
+function expReplayBalances(){
+  if(expReplayCache.promise && (Date.now()-expReplayCache.at) < 10000) return expReplayCache.promise;
+  const p = db.collection("expenses").get().then((snap)=>{
+    const docs = [];
+    snap.forEach(doc=>docs.push({id:doc.id, d:doc.data()}));
+    docs.sort((a,b)=>a.id.localeCompare(b.id));
+    const days = [];
+    let running = null;
+    docs.forEach(x=>{
+      const d = x.d || {};
+      let added = 0;
+      if(Array.isArray(d.cashEntries)) added = d.cashEntries.reduce((s,c)=>s+(Number(c.amount)||0),0);
+      else if(d.cashReceived != null) added = Number(d.cashReceived)||0;
+      const spent = (Array.isArray(d.items) ? d.items : []).reduce((s,i)=>s+(Number(i.price)||0),0);
+      // very first saved day: keep whatever starting balance it was created with
+      if(running === null) running = Number(d.opening)||0;
+      const opening = running;
+      running = opening + added - spent;
+      days.push({date:x.id, opening, added, spent, balance:running});
+    });
+    return days;
+  });
+  p.catch(()=>{ expInvalidateReplay(); });
+  expReplayCache = {at:Date.now(), promise:p};
+  return p;
+}
+
 function loadDay(dateStr){
   document.getElementById("saveNote").textContent = "Loading...";
   // Always recompute "yesterday"'s balance fresh from whatever the previous day
@@ -2357,17 +2386,11 @@ function loadDay(dateStr){
   // days after it keep showing the old, now-wrong "Yesterday" amount.)
   Promise.all([
     db.collection("expenses").doc(dateStr).get(),
-    db.collection("expenses").where("date","<",dateStr).orderBy("date","desc").limit(1).get()
-  ]).then(([doc, prevSnap])=>{
+    expReplayBalances()
+  ]).then(([doc, allDays])=>{
     let prevBalance = 0;
-    if(!prevSnap.empty){
-      const prev = prevSnap.docs[0].data();
-      const prevOpening = Number(prev.opening)||0;
-      let prevAdded = 0;
-      if(Array.isArray(prev.cashEntries)) prevAdded = prev.cashEntries.reduce((s,c)=>s+Number(c.amount||0),0);
-      else if(prev.cashReceived != null) prevAdded = Number(prev.cashReceived)||0;
-      const prevSpent = (prev.items||[]).reduce((s,i)=>s+Number(i.price),0);
-      prevBalance = prevOpening + prevAdded - prevSpent;
+    for(const r of allDays){
+      if(r.date < dateStr) prevBalance = r.balance; else break;
     }
     if(doc.exists){
       const parsed = doc.data();
@@ -2395,6 +2418,7 @@ function loadDay(dateStr){
 let expPersistPromise = Promise.resolve();
 function persistDay(dateStr, nextCashEntries, nextItems){
   document.getElementById("saveNote").textContent = "Saving...";
+  expInvalidateReplay();
   expPersistPromise = db.collection("expenses").doc(dateStr).set({
     cashEntries: nextCashEntries,
     items: nextItems,
@@ -2402,6 +2426,7 @@ function persistDay(dateStr, nextCashEntries, nextItems){
     date: dateStr,
     month: monthKey(dateStr)
   }).then(()=>{
+    expInvalidateReplay();
     document.getElementById("saveNote").textContent = "Saved";
     setTimeout(()=>{ document.getElementById("saveNote").textContent=""; }, 1200);
   }).catch((e)=>{
@@ -2609,14 +2634,19 @@ function renderMonth(){
   document.getElementById("monthLabel").textContent = monthNice(mk);
   const container = document.getElementById("monthRows");
   container.innerHTML = '<p class="empty">Loading...</p>';
-  db.collection("expenses").where("month","==",mk).get().then((snap)=>{
+  Promise.all([
+    db.collection("expenses").where("month","==",mk).get(),
+    expReplayBalances()
+  ]).then(([snap, allDays])=>{
+    const openingMap = {};
+    allDays.forEach(r=>{ openingMap[r.date] = r.opening; });
     const rows = [];
     snap.forEach(doc=>{
       const parsed = doc.data();
       let added = 0;
       if(Array.isArray(parsed.cashEntries)) added = parsed.cashEntries.reduce((s,c)=>s+Number(c.amount||0),0);
       else if(parsed.cashReceived != null) added = Number(parsed.cashReceived)||0;
-      const opening = Number(parsed.opening)||0;
+      const opening = openingMap[doc.id] != null ? openingMap[doc.id] : (Number(parsed.opening)||0);
       const spent = (parsed.items||[]).reduce((s,i)=>s+Number(i.price),0);
       rows.push({date: doc.id, cash: opening+added, spent});
     });
