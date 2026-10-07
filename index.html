@@ -2152,7 +2152,7 @@ function loadHomeStats(){
   const lastMk = lastMonthKeyOf(mk);
   Promise.allSettled([
     db.collection("expenses").where("month","==",mk).get(),
-    db.collection("expenses").orderBy("date","desc").limit(1).get(),
+    expLatestDayForHome(),
     db.collection("salaryHistory").get(),
     db.collection("workerLoans").get(),
     db.collection("expenses").where("month","==",lastMk).get()
@@ -2348,6 +2348,80 @@ let openingCash = 0;
 function addedCash(){ return cashEntries.reduce((s,c)=>s+Number(c.amount||0),0); }
 function totalCash(){ return openingCash + addedCash(); }
 
+// ---- Carry-forward balance ----
+// Days BEFORE EXP_FRESH_FROM keep the original calculation exactly, so nothing
+// already recorded changes. From EXP_FRESH_FROM onward, each day's "Yesterday"
+// is the previous saved day's real balance, replayed forward from the balance
+// that the last old day (Monday 05 Oct) shows on its own page.
+const EXP_FRESH_FROM = "2026-10-06";
+function expAddedSpent(d){
+  let added = 0;
+  if(Array.isArray(d.cashEntries)) added = d.cashEntries.reduce((s,c)=>s+Number(c.amount||0),0);
+  else if(d.cashReceived != null) added = Number(d.cashReceived)||0;
+  const spent = (d.items||[]).reduce((s,i)=>s+Number(i.price),0);
+  return {added, spent};
+}
+function expPrevBalanceOriginal(dateStr){
+  return db.collection("expenses").where("date","<",dateStr).orderBy("date","desc").limit(1).get().then((prevSnap)=>{
+    if(prevSnap.empty) return 0;
+    const prev = prevSnap.docs[0].data();
+    const {added, spent} = expAddedSpent(prev);
+    return (Number(prev.opening)||0) + added - spent;
+  });
+}
+// Balance shown on the last old day's own page (the day before EXP_FRESH_FROM).
+function expBaseBalance(){
+  return db.collection("expenses").where("date","<",EXP_FRESH_FROM).orderBy("date","desc").limit(1).get().then((snap)=>{
+    if(snap.empty) return 0;
+    const p = snap.docs[0];
+    return expPrevBalanceOriginal(p.id).then((open)=>{
+      const {added, spent} = expAddedSpent(p.data());
+      return open + added - spent;
+    });
+  });
+}
+// opening + balance for every saved day from EXP_FRESH_FROM onward
+function expFreshMap(){
+  return Promise.all([
+    expBaseBalance(),
+    db.collection("expenses").where("date",">=",EXP_FRESH_FROM).orderBy("date","asc").get()
+  ]).then(([base, snap])=>{
+    const map = {};
+    let running = base;
+    const docs = [];
+    snap.forEach(doc=>docs.push(doc));
+    docs.sort((a,b)=>a.id.localeCompare(b.id));
+    docs.forEach(doc=>{
+      const {added, spent} = expAddedSpent(doc.data());
+      const opening = running;
+      running = opening + added - spent;
+      map[doc.id] = {opening, balance: running};
+    });
+    return {base, map};
+  });
+}
+function expPrevBalance(dateStr){
+  if(dateStr < EXP_FRESH_FROM) return expPrevBalanceOriginal(dateStr);
+  return expFreshMap().then(({base, map})=>{
+    let running = base;
+    Object.keys(map).sort().forEach(k=>{ if(k < dateStr) running = map[k].balance; });
+    return running;
+  });
+}
+// Home page "Net Balance" = latest saved day's balance
+function expLatestDayForHome(){
+  return db.collection("expenses").orderBy("date","desc").limit(1).get().then((snap)=>{
+    if(snap.empty) return snap;
+    const doc = snap.docs[0];
+    if(doc.id < EXP_FRESH_FROM) return snap;
+    const d = doc.data();
+    return expPrevBalance(doc.id).then((open)=>({
+      empty:false,
+      docs:[{id:doc.id, data:()=>Object.assign({}, d, {opening:open})}]
+    }));
+  });
+}
+
 function loadDay(dateStr){
   document.getElementById("saveNote").textContent = "Loading...";
   // Always recompute "yesterday"'s balance fresh from whatever the previous day
@@ -2357,18 +2431,8 @@ function loadDay(dateStr){
   // days after it keep showing the old, now-wrong "Yesterday" amount.)
   Promise.all([
     db.collection("expenses").doc(dateStr).get(),
-    db.collection("expenses").where("date","<",dateStr).orderBy("date","desc").limit(1).get()
-  ]).then(([doc, prevSnap])=>{
-    let prevBalance = 0;
-    if(!prevSnap.empty){
-      const prev = prevSnap.docs[0].data();
-      const prevOpening = Number(prev.opening)||0;
-      let prevAdded = 0;
-      if(Array.isArray(prev.cashEntries)) prevAdded = prev.cashEntries.reduce((s,c)=>s+Number(c.amount||0),0);
-      else if(prev.cashReceived != null) prevAdded = Number(prev.cashReceived)||0;
-      const prevSpent = (prev.items||[]).reduce((s,i)=>s+Number(i.price),0);
-      prevBalance = prevOpening + prevAdded - prevSpent;
-    }
+    expPrevBalance(dateStr)
+  ]).then(([doc, prevBalance])=>{
     if(doc.exists){
       const parsed = doc.data();
       if(Array.isArray(parsed.cashEntries)){
@@ -2609,14 +2673,17 @@ function renderMonth(){
   document.getElementById("monthLabel").textContent = monthNice(mk);
   const container = document.getElementById("monthRows");
   container.innerHTML = '<p class="empty">Loading...</p>';
-  db.collection("expenses").where("month","==",mk).get().then((snap)=>{
+  Promise.all([
+    db.collection("expenses").where("month","==",mk).get(),
+    expFreshMap()
+  ]).then(([snap, fresh])=>{
     const rows = [];
     snap.forEach(doc=>{
       const parsed = doc.data();
       let added = 0;
       if(Array.isArray(parsed.cashEntries)) added = parsed.cashEntries.reduce((s,c)=>s+Number(c.amount||0),0);
       else if(parsed.cashReceived != null) added = Number(parsed.cashReceived)||0;
-      const opening = Number(parsed.opening)||0;
+      const opening = (doc.id >= EXP_FRESH_FROM && fresh.map[doc.id]) ? fresh.map[doc.id].opening : (Number(parsed.opening)||0);
       const spent = (parsed.items||[]).reduce((s,i)=>s+Number(i.price),0);
       rows.push({date: doc.id, cash: opening+added, spent});
     });
