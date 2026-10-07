@@ -2364,8 +2364,9 @@ function expReplayBalances(){
       if(Array.isArray(d.cashEntries)) added = d.cashEntries.reduce((s,c)=>s+(Number(c.amount)||0),0);
       else if(d.cashReceived != null) added = Number(d.cashReceived)||0;
       const spent = (Array.isArray(d.items) ? d.items : []).reduce((s,i)=>s+(Number(i.price)||0),0);
-      // very first saved day: keep whatever starting balance it was created with
-      if(running === null) running = Number(d.opening)||0;
+      // very first saved day always starts from 0 (same as the Day page shows
+      // for it); its stored "opening" can be stale and must not be trusted.
+      if(running === null) running = 0;
       const opening = running;
       running = opening + added - spent;
       days.push({date:x.id, opening, added, spent, balance:running});
