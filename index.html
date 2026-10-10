@@ -346,46 +346,67 @@
   .mt-card-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
   .mt-card-head .sec-name { font-family:'Fraunces',serif; font-size:16px; font-weight:700; color:#4A3B28; }
   .mt-card-head .sec-balance { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700; color:#3B6B35; }
-  .sal-summary { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:6px 0 12px; }
-  .sal-sum-card { background:#EFE7D3; border:1px solid #D8C89A; border-radius:12px; padding:10px 12px; }
-  .sal-sum-card.dark { grid-column:1 / -1; background:#2F5233; border-color:#2F5233; color:#fff; }
-  .sal-sum-card .t { font-size:12px; font-weight:700; color:#6B5A3E; }
-  .sal-sum-card.dark .t { color:#CFE3C8; }
-  .sal-sum-card .t small { font-weight:600; opacity:.8; }
-  .sal-sum-card .v { font-size:22px; font-weight:800; color:#1F3D24; }
-  .sal-sum-card.dark .v { color:#fff; font-size:26px; }
-  .sal-sum-card .s { font-size:11.5px; color:#8A7A5C; margin-top:2px; min-height:14px; }
-  .sal-loan-all { display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap; background:#F7F1E1; border:1px solid #D8C89A; border-radius:12px; padding:8px 10px; }
-  .sal-loan-all .l { font-weight:700; font-size:13px; color:#4A3B28; }
-  .sal-loan-all input { flex:1; min-width:70px; padding:8px; border:1px solid #C9BC9C; border-radius:8px; font-size:14px; }
-  .sal-loan-all button { padding:8px 12px; border-radius:8px; border:none; background:#3B6B35; color:#fff; font-weight:700; font-size:13px; cursor:pointer; }
-  .sal-loan-all button.reset { background:#fff; color:#4A3B28; border:1px solid #C9BC9C; }
-  .sal-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .sal-name { font-family:'Fraunces',serif; font-weight:800; font-size:16px; color:#2B2216; display:flex; align-items:center; gap:8px; }
-  .sal-avatar { width:30px; height:30px; border-radius:50%; background:#4A3B28; color:#F3ECD9; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
-  .sal-balance { background:#DDEBD2; color:#1F3D24; border-radius:10px; padding:6px 10px; font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:15px; text-align:right; }
-  .sal-balance small { display:block; font-family:'Inter',sans-serif; font-size:10px; font-weight:700; color:#4F6B47; }
-  .sal-days-toggle { margin-top:8px; display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:700; color:#3B6B35; cursor:pointer; padding:7px 10px; border-radius:8px; background:#F7F1E1; border:1px dashed #C9BC9C; }
-  .sal-days-list { margin-top:6px; background:#FBF7EC; border-radius:8px; border:1px solid #E4D8B8; }
-  .sal-day-row { display:flex; justify-content:space-between; padding:7px 10px; font-size:13px; border-bottom:1px dotted #D8C89A; color:#4A3B28; }
-  .sal-day-row:last-child { border-bottom:none; }
-  .sal-grid { display:grid; grid-template-columns:1fr 1fr 1.3fr; gap:8px; margin-top:10px; align-items:end; }
-  .sal-grid .c small { display:block; font-size:11px; font-weight:700; color:#8A7A5C; margin-bottom:2px; }
-  .sal-grid .c b { font-family:'IBM Plex Mono',monospace; font-size:15px; color:#2B2216; }
-  .sal-grid .ded { display:flex; gap:4px; }
-  .sal-grid input { width:100%; min-width:0; box-sizing:border-box; padding:7px 8px; border:1px solid #C9BC9C; border-radius:8px; font-size:14px; font-family:'IBM Plex Mono',monospace; }
-  .sal-grid .full { padding:0 8px; border-radius:8px; border:none; background:#3B6B35; color:#fff; font-weight:700; font-size:12px; cursor:pointer; }
-  .sal-net { margin-top:8px; font-size:12.5px; color:#4A3B28; font-weight:600; }
-  .sal-days-bar { display:flex; justify-content:space-between; align-items:center; background:#EFE7D3; border:1px solid #D8C89A; border-radius:12px; padding:10px 12px; margin:6px 0 12px; font-size:14px; font-weight:700; color:#4A3B28; }
-  .sal-days-bar button { padding:8px 12px; border-radius:8px; border:1px solid #3B6B35; background:#fff; color:#3B6B35; font-weight:700; font-size:13px; cursor:pointer; }
-  .sal-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; display:flex; align-items:center; justify-content:center; padding:14px; }
-  .sal-modal { background:#F7F1E1; border-radius:14px; width:100%; max-width:420px; max-height:82vh; overflow:auto; padding:14px; }
-  .sal-modal h3 { margin:0 0 4px; font-family:'Fraunces',serif; font-size:18px; color:#1F3D24; }
-  .sal-modal .sub { font-size:12px; color:#8A7A5C; margin-bottom:10px; }
-  .sal-modal .day { background:#fff; border:1px solid #E4D8B8; border-radius:10px; padding:8px 10px; margin-bottom:8px; }
-  .sal-modal .day .h { display:flex; justify-content:space-between; font-weight:800; font-size:14px; color:#2B2216; }
-  .sal-modal .day .w { display:flex; justify-content:space-between; font-size:12.5px; color:#4A3B28; padding-top:3px; }
-  .sal-modal button.close { width:100%; margin-top:6px; padding:10px; border:none; border-radius:10px; background:#2F5233; color:#fff; font-weight:700; font-size:14px; cursor:pointer; }
+  /* ---- Machine Team salary page (green theme) ---- */
+  .sal-head { display:flex; justify-content:space-between; align-items:center; margin:6px 0 8px; }
+  .sal-head .ttl { font-family:'Fraunces',serif; font-weight:800; font-size:20px; color:#1F4A2B; }
+  .sal-head .cnt { background:#DDEBD2; color:#2F6B3A; font-weight:700; font-size:12px; padding:5px 10px; border-radius:999px; }
+  .sal-loan-all { display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap; background:#EEF4E8; border:1px solid #C3D7B7; border-radius:12px; padding:8px 10px; }
+  .sal-loan-all .l { font-weight:700; font-size:13px; color:#1F4A2B; }
+  .sal-loan-all input { flex:1; min-width:70px; padding:8px; border:1px solid #B5CBA8; border-radius:8px; font-size:14px; background:#fff; }
+  .sal-loan-all button { padding:8px 12px; border-radius:8px; border:none; background:#2F6B3A; color:#fff; font-weight:700; font-size:13px; cursor:pointer; }
+  .sal-loan-all button.reset { background:#fff; color:#2F6B3A; border:1px solid #B5CBA8; }
+  .sal-avatar { width:34px; height:34px; border-radius:50%; background:#1F4A2B; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:16px; flex:none; }
+  .sal-row { display:grid; grid-template-columns:34px 1fr auto 12px; gap:2px 10px; align-items:center; background:linear-gradient(180deg,#F1F6EC,#E6EFDD); border:1px solid #C3D7B7; border-radius:12px; padding:9px 10px; margin-bottom:7px; cursor:pointer; }
+  .sal-row:active { background:#DDEBD2; }
+  .sal-row-name { font-family:'Fraunces',serif; font-weight:800; font-size:15px; color:#1F3D24; line-height:1.15; }
+  .sal-row-date { font-size:11.5px; color:#5C7A55; font-weight:600; }
+  .sal-row-bal { text-align:right; }
+  .sal-row-bal small { display:block; font-size:9.5px; font-weight:700; color:#5C7A55; text-transform:uppercase; letter-spacing:.3px; }
+  .sal-row-bal b { font-family:'IBM Plex Mono',monospace; font-size:15px; color:#1F4A2B; }
+  .sal-chev { color:#5C7A55; font-size:18px; font-weight:700; }
+  .sal-chips { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+  .sal-chip { background:#fff; border:1px solid #D3E2C9; border-radius:999px; padding:3px 8px; font-size:11.5px; font-weight:700; color:#33523A; white-space:nowrap; }
+  .sal-chip.loan { color:#B33A3A; border-color:#EBC9C9; }
+  .sal-chip.ded { background:#FBEAEA; color:#B33A3A; border-color:#EBC9C9; }
+  .sal-days-bar { display:flex; justify-content:space-between; align-items:center; background:#EEF4E8; border:1px solid #C3D7B7; border-radius:12px; padding:9px 12px; margin:8px 0 12px; font-size:13.5px; font-weight:700; color:#1F4A2B; }
+  .sal-days-bar button { padding:7px 11px; border-radius:8px; border:1px solid #2F6B3A; background:#fff; color:#2F6B3A; font-weight:700; font-size:12.5px; cursor:pointer; }
+  .sal-food-box { background:#F4F8F0; border:1px solid #C3D7B7; border-radius:12px; padding:8px 10px 10px; margin-bottom:12px; }
+  .sal-food-box .ttl { font-family:'Fraunces',serif; font-weight:800; font-size:16px; color:#1F4A2B; margin:2px 0 6px; }
+  .sal-food-total { display:flex; justify-content:space-between; align-items:center; background:#E1EDD7; border-radius:8px; padding:7px 10px; font-weight:700; color:#1F4A2B; margin-top:6px; }
+  .sal-food-total b { font-family:'IBM Plex Mono',monospace; font-size:16px; }
+  .sal-payroll { background:linear-gradient(135deg,#17402A,#2F6B3A); border-radius:14px; padding:12px 14px; color:#fff; margin-bottom:12px; }
+  .sal-payroll .ttl { font-weight:800; font-size:13px; letter-spacing:.6px; color:#CFE6C6; margin-bottom:8px; }
+  .sal-payroll .grid { display:grid; grid-template-columns:1fr 1fr 1.25fr; gap:8px; align-items:end; }
+  .sal-payroll small { display:block; font-size:10.5px; font-weight:700; color:#B9D6AF; text-transform:uppercase; }
+  .sal-payroll b { font-family:'IBM Plex Mono',monospace; font-size:16px; }
+  .sal-payroll .g b { font-size:21px; }
+  .sal-payroll em { display:block; font-style:normal; font-size:10px; color:#CFE6C6; margin-top:1px; }
+  .sal-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; display:flex; align-items:center; justify-content:center; padding:14px; }
+  .wm { background:#fff; border-radius:16px; width:100%; max-width:400px; max-height:86vh; overflow:auto; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .wm-head { background:linear-gradient(135deg,#17402A,#2F6B3A); color:#fff; padding:14px; display:flex; align-items:center; gap:12px; border-radius:16px 16px 0 0; position:sticky; top:0; }
+  .wm-head .sal-avatar { width:46px; height:46px; font-size:22px; background:rgba(255,255,255,.15); border:2px solid #fff; }
+  .wm-name { font-family:'Fraunces',serif; font-weight:800; font-size:20px; }
+  .wm-date { font-size:12.5px; opacity:.9; margin-top:2px; }
+  .wm-x { margin-left:auto; width:32px; height:32px; border-radius:50%; border:1.5px solid #fff; background:transparent; color:#fff; font-size:16px; cursor:pointer; }
+  .wm-body { padding:12px; background:#F7FAF4; border-radius:0 0 16px 16px; }
+  .wm-card { background:#fff; border:1px solid #DCE8D3; border-radius:12px; padding:10px 12px; margin-bottom:10px; }
+  .wm-card.two { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .wm small { display:block; font-size:11.5px; font-weight:700; color:#6B8664; }
+  .wm b.v { font-family:'IBM Plex Mono',monospace; font-size:18px; color:#1F3D24; }
+  .wm-day { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; color:#33523A; border-bottom:1px dotted #D3E2C9; }
+  .wm-day:last-child { border-bottom:none; }
+  .wm-ded { display:flex; gap:6px; margin-top:4px; }
+  .wm-ded input { flex:1; min-width:0; padding:9px; border:1px solid #B5CBA8; border-radius:8px; font-size:15px; font-family:'IBM Plex Mono',monospace; }
+  .wm-ded button { padding:0 14px; border:none; border-radius:8px; background:#2F6B3A; color:#fff; font-weight:700; cursor:pointer; }
+  .wm-net { font-size:12.5px; color:#33523A; font-weight:600; margin-top:6px; }
+  .wm-total { background:#E4EFDB; border-radius:12px; padding:10px 12px; margin-bottom:10px; }
+  .wm-total .r { display:flex; justify-content:space-between; align-items:baseline; }
+  .wm-total .r b { font-family:'IBM Plex Mono',monospace; color:#1F3D24; }
+  .wm-total .big b { font-size:24px; }
+  .wm-close { width:100%; padding:11px; border:none; border-radius:999px; background:#1F4A2B; color:#fff; font-weight:700; font-size:15px; cursor:pointer; }
+  .wm .dd { background:#fff; border:1px solid #DCE8D3; border-radius:10px; padding:8px 10px; margin-bottom:8px; }
+  .wm .dd .h { display:flex; justify-content:space-between; font-weight:800; font-size:14px; color:#1F3D24; }
+  .wm .dd .w { display:flex; justify-content:space-between; font-size:12.5px; color:#33523A; padding-top:3px; }
   .mt-opening { font-size:14px; color:#4A3B28; font-weight:600; margin-bottom:6px; }
   .mt-line-link { font-size:14px; color:#4A3B28; font-weight:600; margin-bottom:6px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
   .mt-line-link .arrow { color:#8A7A5E; }
@@ -1196,23 +1217,7 @@
 
             <p class="empty swipe-hint no-print">&#8594; swipe pannina Workers-ku thirumba varalam</p>
 
-            <div class="sal-summary">
-              <div class="sal-sum-card">
-                <div class="t">Total Salary <small>(after loan)</small></div>
-                <div class="v mono" id="mtNetSalaryTotalVal">0</div>
-                <div class="s" id="mtSalarySubLine"></div>
-              </div>
-              <div class="sal-sum-card">
-                <div class="t">Food Cash Total</div>
-                <div class="v mono" id="mtFoodTotalVal" style="color:#B5651D;">0</div>
-                <div class="s">&nbsp;</div>
-              </div>
-              <div class="sal-sum-card dark">
-                <div class="t">Grand Total <small>(Salary + Food)</small></div>
-                <div class="v mono" id="mtGrandTotalVal">0</div>
-              </div>
-            </div>
-            <span id="mtSalaryTotalVal" style="display:none;"></span>
+            <div class="sal-head"><span class="ttl">&#128181; Salary</span><span class="cnt" id="mtWorkersCountChip">0 Workers</span></div>
 
             <div class="sal-loan-all no-print">
               <span class="l">&#128176; Loan kalikka</span>
@@ -1221,25 +1226,35 @@
               <button class="reset" id="mtLoanResetBtn">Reset</button>
             </div>
 
-            <h3 class="sub-title display" id="mtWorkersSalaryTitle">Workers Salary</h3>
             <div id="mtSalaryList"></div>
             <div class="sal-days-bar">
-              <span>Total Working Days: <b id="mtTotalDaysVal">0</b></span>
+              <span>&#128197; Total Working Days: <b id="mtTotalDaysVal">0</b></span>
               <button class="no-print" id="mtDayDetailsBtn">View Day Details</button>
             </div>
 
-            <h3 class="sub-title display">Food Cash</h3>
-            <div id="mtFoodList"></div>
+            <div class="sal-food-box">
+              <div class="ttl">&#127860; Food Cash</div>
+              <div id="mtFoodList"></div>
+              <div class="sal-food-total"><span>Food Total</span><b>&#8377;<span id="mtFoodTotalVal">0</span></b></div>
+            </div>
+
+            <div class="sal-payroll">
+              <div class="ttl">&#128176; TOTAL PAYROLL</div>
+              <div class="grid">
+                <div><small>Salary</small><b id="mtNetSalaryTotalVal">&#8377;0</b><em id="mtSalarySubLine"></em></div>
+                <div><small>Food Cash</small><b id="mtPayrollFoodVal">&#8377;0</b></div>
+                <div class="g"><small>Grand Total</small><b id="mtGrandTotalVal">&#8377;0</b></div>
+              </div>
+            </div>
+            <span id="mtSalaryTotalVal" style="display:none;"></span>
 
             <div class="save-note no-print" id="mtSalarySaveNote"></div>
             <div class="actions no-print">
-              <button class="btn-export" id="mtPaySalaryBtn" style="flex:1;">&#128181; Pay Salary (mark as paid)</button>
+              <button class="btn-export" id="mtPaySalaryBtn" style="flex:2;">&#128737; Pay Salary (Mark as Paid)</button>
+              <button class="btn-clear" id="mtSalaryClearBtn" style="flex:1;">&#128465; Delete</button>
             </div>
             <div class="actions no-print">
               <button class="btn-export" id="mtSalaryPrintBtn" style="flex:1;">&#128424; Print</button>
-            </div>
-            <div class="actions no-print" style="margin-top:22px;">
-              <button class="btn-clear" id="mtSalaryClearBtn" style="flex:1;">&#8635; Delete (history-la save aagaadhu)</button>
             </div>
           </div>
 
@@ -3562,33 +3577,34 @@ function mtDeductFor(name){
   const want = Number(mtLoanDeduct[name])||0;
   return Math.max(0, Math.min(want, loan, info.totalSalary));
 }
+function mtFoodOf(name){
+  const k = nameKey(name);
+  let t = 0;
+  Object.keys(mtFoodAggCache.map).forEach(n=>{ if(nameKey(n)===k) t += mtFoodAggCache.map[n].total; });
+  return t;
+}
+const MT_R = (n)=>"\u20b9" + rupee(n);
+
 function mtUpdateSalaryTotals(){
   const names = Object.keys(mtSalaryAggCache.map);
   let gross = 0, ded = 0;
   names.forEach(nm=>{ gross += mtSalaryAggCache.map[nm].totalSalary; ded += mtDeductFor(nm); });
   const food = Object.values(mtFoodAggCache.map).reduce((s,i)=>s+i.total,0);
   const net = gross - ded;
-  const R = (n)=>"\u20b9" + rupee(n);
   const set = (id, txt)=>{ const el = document.getElementById(id); if(el) el.textContent = txt; };
   set("mtSalaryTotalVal", rupee(gross));
-  set("mtNetSalaryTotalVal", R(net));
-  set("mtSalarySubLine", ded>0 ? (R(gross) + " \u2212 " + R(ded) + " (loan)") : "");
-  set("mtGrandTotalVal", R(net + food));
-  // per-worker lines (updated in place so the keyboard stays open while typing)
-  document.querySelectorAll("#mtSalaryList .sal-net").forEach(el=>{
-    const nm = el.dataset.name;
-    const info = mtSalaryAggCache.map[nm];
-    if(!info) return;
-    const d = mtDeductFor(nm);
-    const loan = Number(mtLoanMap[nameKey(nm)])||0;
-    let html = "Salary " + R(info.totalSalary) + " &minus; Loan " + R(d) + " = <b>Balance " + R(info.totalSalary - d) + "</b>";
-    if(loan > 0) html += " &middot; Loan baaki " + R(loan - d);
-    el.innerHTML = html;
-  });
+  set("mtNetSalaryTotalVal", MT_R(net));
+  set("mtSalarySubLine", ded>0 ? (MT_R(gross) + " \u2212 " + MT_R(ded) + " loan") : "");
+  set("mtPayrollFoodVal", MT_R(food));
+  set("mtGrandTotalVal", MT_R(net + food));
   document.querySelectorAll("#mtSalaryList .sal-balance-val").forEach(el=>{
-    const nm = el.dataset.name;
-    const info = mtSalaryAggCache.map[nm];
-    if(info) el.textContent = R(info.totalSalary - mtDeductFor(nm));
+    const info = mtSalaryAggCache.map[el.dataset.name];
+    if(info) el.textContent = MT_R(info.totalSalary - mtDeductFor(el.dataset.name));
+  });
+  document.querySelectorAll("#mtSalaryList .sal-chip.ded").forEach(el=>{
+    const d = mtDeductFor(el.dataset.name);
+    el.style.display = d>0 ? "inline-block" : "none";
+    el.textContent = "Kalichadhu \u2212" + MT_R(d);
   });
 }
 
@@ -3598,12 +3614,16 @@ function mtShortDate(ds){
   const d = new Date(ds + "T00:00:00");
   return d.getDate() + " " + MT_MONTHS_SHORT[d.getMonth()];
 }
+function mtRangeText(info){
+  const first = info.days[0].date, last = info.days[info.days.length-1].date;
+  return first===last ? mtShortDate(first) : (mtShortDate(first) + " \u2013 " + mtShortDate(last));
+}
 
 function mtRenderSalaryCards(){
   const container = document.getElementById("mtSalaryList");
   const map = mtSalaryAggCache.map;
   const names = Object.keys(map).sort();
-  document.getElementById("mtWorkersSalaryTitle").textContent = "Workers Salary (" + names.length + ")";
+  document.getElementById("mtWorkersCountChip").textContent = names.length + (names.length===1 ? " Worker" : " Workers");
   const dateSet = new Set();
   names.forEach(nm=>map[nm].days.forEach(d=>dateSet.add(d.date)));
   document.getElementById("mtTotalDaysVal").textContent = dateSet.size + (dateSet.size===1 ? " Day" : " Days");
@@ -3616,67 +3636,91 @@ function mtRenderSalaryCards(){
   names.forEach(name=>{
     const info = map[name];
     const loan = Number(mtLoanMap[nameKey(name)])||0;
-    const expandKey = "mtpage:" + name;
-    const isExpanded = salExpanded.has(expandKey);
-    const first = info.days[0].date;
-    const last = info.days[info.days.length-1].date;
-    const range = first===last ? mtShortDate(first) : (mtShortDate(first) + " \u2013 " + mtShortDate(last));
-    const dayRows = isExpanded ? `<div class="sal-days-list">` + info.days.map(d=>
-      `<div class="sal-day-row"><span>${escapeHtml(String(d.niceDate))}</span><span class="mono">\u20b9${rupee(d.amount)}</span></div>`
-    ).join("") + `</div>` : "";
-    const nmAttr = escapeHtml(name);
-    const dedCol = loan > 0
-      ? `<div class="c no-print"><small>Kalikka</small><div class="ded"><input type="number" inputmode="decimal" class="mt-sal-ded-input" data-name="${nmAttr}" value="${mtDeductFor(name)||''}" placeholder="0" /><button class="full mt-sal-ded-full" data-name="${nmAttr}">Full</button></div></div>`
-      : `<div class="c no-print"><small>Kalikka</small><b style="color:#9A8B6E;">&mdash;</b></div>`;
-    const card = document.createElement("div");
-    card.className = "mt-card";
-    card.innerHTML = `
-      <div class="sal-top">
-        <span class="sal-name"><span class="sal-avatar">${escapeHtml(name.charAt(0).toUpperCase())}</span>${escapeHtml(name.toUpperCase())}</span>
-        <span class="sal-balance"><small>Balance Salary</small><span class="sal-balance-val" data-name="${nmAttr}"></span></span>
+    const food = mtFoodOf(name);
+    const nm = escapeHtml(name);
+    const row = document.createElement("div");
+    row.className = "sal-row";
+    row.dataset.name = name;
+    row.innerHTML = `
+      <span class="sal-avatar">&#128100;</span>
+      <div>
+        <div class="sal-row-name">${escapeHtml(name.toUpperCase())}</div>
+        <div class="sal-row-date">&#128197; ${mtRangeText(info)}</div>
       </div>
-      <div class="sal-days-toggle" data-expandkey="${escapeHtml(expandKey)}">
-        <span>&#128197; ${range} &middot; ${info.workingDays} day${info.workingDays>1?"s":""}</span>
-        <span>${isExpanded?"&#9650;":"&#9660;"}</span>
-      </div>
-      ${dayRows}
-      <div class="sal-grid">
-        <div class="c"><small>Salary</small><b>\u20b9${rupee(info.totalSalary)}</b></div>
-        <div class="c"><small>Loan</small><b style="color:${loan>0?'#B33A3A':'#9A8B6E'};">\u20b9${rupee(loan)}</b></div>
-        ${dedCol}
-      </div>
-      <div class="sal-net" data-name="${nmAttr}"></div>`;
-    container.appendChild(card);
-  });
-  container.querySelectorAll(".sal-days-toggle").forEach(el=>{
-    el.addEventListener("click", ()=>{
-      const key = el.dataset.expandkey;
-      if(salExpanded.has(key)) salExpanded.delete(key); else salExpanded.add(key);
-      mtRenderSalaryCards();
-    });
-  });
-  container.querySelectorAll(".mt-sal-ded-input").forEach(inp=>{
-    inp.addEventListener("input", ()=>{
-      mtLoanDeduct[inp.dataset.name] = Number(inp.value)||0;
-      mtUpdateSalaryTotals();
-    });
-    inp.addEventListener("change", ()=>{
-      const d = mtDeductFor(inp.dataset.name);   // clamp to loan / salary
-      mtLoanDeduct[inp.dataset.name] = d;
-      inp.value = d || "";
-      mtUpdateSalaryTotals();
-    });
-  });
-  container.querySelectorAll(".mt-sal-ded-full").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const nm = btn.dataset.name;
-      const info = map[nm];
-      const loan = Number(mtLoanMap[nameKey(nm)])||0;
-      mtLoanDeduct[nm] = Math.min(loan, info ? info.totalSalary : 0);
-      mtRenderSalaryCards();
-    });
+      <div class="sal-row-bal"><small>Balance</small><b class="sal-balance-val" data-name="${nm}"></b></div>
+      <span class="sal-chev">&rsaquo;</span>
+      <div class="sal-chips">
+        <span class="sal-chip">&#128197; ${info.workingDays} day${info.workingDays>1?"s":""}</span>
+        <span class="sal-chip">&#127860; ${MT_R(food)}</span>
+        <span class="sal-chip${loan>0?" loan":""}">&#128176; Loan ${MT_R(loan)}</span>
+        <span class="sal-chip">Salary ${MT_R(info.totalSalary)}</span>
+        <span class="sal-chip ded" data-name="${nm}" style="display:none;"></span>
+      </div>`;
+    row.addEventListener("click", ()=>mtOpenWorkerModal(name));
+    container.appendChild(row);
   });
   mtUpdateSalaryTotals();
+}
+
+function mtOpenWorkerModal(name){
+  const info = mtSalaryAggCache.map[name];
+  if(!info) return;
+  const loan = Number(mtLoanMap[nameKey(name)])||0;
+  const food = mtFoodOf(name);
+  const bg = document.createElement("div");
+  bg.className = "sal-modal-bg";
+  bg.innerHTML = `<div class="wm">
+    <div class="wm-head">
+      <span class="sal-avatar">&#128100;</span>
+      <div><div class="wm-name">${escapeHtml(name.toUpperCase())}</div><div class="wm-date">&#128197; ${mtRangeText(info)}</div></div>
+      <button class="wm-x" id="wmX">&#10005;</button>
+    </div>
+    <div class="wm-body">
+      <div class="wm-card two">
+        <div><small>Working Days</small><b class="v">${info.workingDays} day${info.workingDays>1?"s":""}</b></div>
+        <div><small>Salary</small><b class="v">${MT_R(info.totalSalary)}</b></div>
+      </div>
+      <div class="wm-card">
+        <small>Days</small>
+        ${info.days.map(d=>`<div class="wm-day"><span>${escapeHtml(String(d.niceDate))}</span><span class="mono">${MT_R(d.amount)}</span></div>`).join("")}
+      </div>
+      <div class="wm-card two">
+        <div><small>Food Cash</small><b class="v">${MT_R(food)}</b></div>
+        <div><small>Loan Balance</small><b class="v" style="color:${loan>0?"#B33A3A":"#6B8664"};">${MT_R(loan)}</b></div>
+      </div>
+      ${loan>0 ? `<div class="wm-card">
+        <small>Loan kalikka (salary-la irundhu)</small>
+        <div class="wm-ded"><input type="number" inputmode="decimal" id="wmDed" placeholder="0" value="${mtDeductFor(name)||""}" /><button id="wmFull">Full</button></div>
+        <div class="wm-net" id="wmNet"></div>
+      </div>` : ""}
+      <div class="wm-total">
+        <div class="r"><small>Balance Salary</small><b id="wmBal"></b></div>
+        <div class="r big"><small>Total (Salary + Food)</small><b id="wmTot"></b></div>
+      </div>
+      <button class="wm-close" id="wmClose">Close</button>
+    </div>
+  </div>`;
+  const refresh = ()=>{
+    const d = mtDeductFor(name);
+    const bal = info.totalSalary - d;
+    bg.querySelector("#wmBal").textContent = MT_R(bal);
+    bg.querySelector("#wmTot").textContent = MT_R(bal + food);
+    const net = bg.querySelector("#wmNet");
+    if(net) net.innerHTML = "Salary " + MT_R(info.totalSalary) + " &minus; Loan " + MT_R(d) + " = <b>" + MT_R(bal) + "</b> &middot; Loan baaki " + MT_R(loan - d);
+    mtUpdateSalaryTotals();
+  };
+  const close = ()=>{ bg.remove(); mtRenderSalaryCards(); };
+  bg.addEventListener("click", (ev)=>{ if(ev.target===bg) close(); });
+  bg.querySelector("#wmX").addEventListener("click", close);
+  bg.querySelector("#wmClose").addEventListener("click", close);
+  const inp = bg.querySelector("#wmDed");
+  if(inp){
+    inp.addEventListener("input", ()=>{ mtLoanDeduct[name] = Number(inp.value)||0; refresh(); });
+    inp.addEventListener("change", ()=>{ const d = mtDeductFor(name); mtLoanDeduct[name] = d; inp.value = d || ""; refresh(); });
+    bg.querySelector("#wmFull").addEventListener("click", ()=>{ mtLoanDeduct[name] = Math.min(loan, info.totalSalary); inp.value = mtLoanDeduct[name] || ""; refresh(); });
+  }
+  document.body.appendChild(bg);
+  refresh();
 }
 
 document.getElementById("mtLoanAllBtn").addEventListener("click", ()=>{
@@ -3704,22 +3748,28 @@ document.getElementById("mtDayDetailsBtn").addEventListener("click", ()=>{
   if(dates.length === 0) return;
   const bg = document.createElement("div");
   bg.className = "sal-modal-bg";
-  bg.innerHTML = `<div class="sal-modal">
-    <h3>Day Details</h3>
-    <div class="sub">${dates.length} Working Day${dates.length>1?"s":""}</div>
-    ${dates.map((dt,i)=>{
-      const g = byDate[dt];
-      const total = g.rows.reduce((s,r)=>s+r.amount,0);
-      return `<div class="day"><div class="h"><span>Day ${i+1} &middot; ${escapeHtml(String(g.nice))}</span><span class="mono">\u20b9${rupee(total)}</span></div>
-        <div class="w" style="font-weight:700;"><span>${g.rows.length} worker${g.rows.length>1?"s":""}</span><span></span></div>
-        ${g.rows.sort((a,b)=>a.name.localeCompare(b.name)).map(r=>`<div class="w"><span>${escapeHtml(r.name)}</span><span class="mono">\u20b9${rupee(r.amount)}</span></div>`).join("")}
-      </div>`;
-    }).join("")}
-    <button class="close">Close</button>
+  bg.innerHTML = `<div class="wm">
+    <div class="wm-head">
+      <span class="sal-avatar">&#128197;</span>
+      <div><div class="wm-name">Day Details</div><div class="wm-date">${dates.length} Working Day${dates.length>1?"s":""}</div></div>
+      <button class="wm-x" id="ddX">&#10005;</button>
+    </div>
+    <div class="wm-body">
+      ${dates.map((dt,i)=>{
+        const g = byDate[dt];
+        const total = g.rows.reduce((s,r)=>s+r.amount,0);
+        return `<div class="dd"><div class="h"><span>Day ${i+1} &middot; ${escapeHtml(String(g.nice))}</span><span class="mono">${MT_R(total)}</span></div>
+          <div class="w" style="font-weight:700;"><span>${g.rows.length} worker${g.rows.length>1?"s":""}</span><span></span></div>
+          ${g.rows.sort((a,b)=>a.name.localeCompare(b.name)).map(r=>`<div class="w"><span>${escapeHtml(r.name)}</span><span class="mono">${MT_R(r.amount)}</span></div>`).join("")}
+        </div>`;
+      }).join("")}
+      <button class="wm-close" id="ddClose">Close</button>
+    </div>
   </div>`;
   const close = ()=>bg.remove();
   bg.addEventListener("click", (ev)=>{ if(ev.target===bg) close(); });
-  bg.querySelector(".close").addEventListener("click", close);
+  bg.querySelector("#ddX").addEventListener("click", close);
+  bg.querySelector("#ddClose").addEventListener("click", close);
   document.body.appendChild(bg);
 });
 
