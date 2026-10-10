@@ -1468,6 +1468,10 @@
       </div>
       <p class="empty" id="loanEmptyNote" style="display:none;">Loading loan records...</p>
       <div id="loanWorkersList"></div>
+      <div class="no-print" style="margin-top:18px;">
+        <button class="btn-clear" id="loanClearAllBtn" style="width:100%; color:#B33A3A; border-color:#B33A3A;">&#128465; Clear all loans (ellaathaiyum azhi)</button>
+        <div class="save-note" id="loanClearNote"></div>
+      </div>
     </div>
 
     <!-- ===== SALARY ===== -->
@@ -5885,6 +5889,63 @@ function loadLoanPage(){
     container.appendChild(retryBtn);
   });
 }
+
+// Wipes ALL loan data: balances, Loan-page entries, and the loan numbers stored
+// inside Machine Team / Dryer day records (the day records themselves, salary and
+// everything else stay untouched).
+async function loanClearAll(){
+  const chunked = async (ops)=>{
+    for(let i=0;i<ops.length;i+=400){
+      const batch = db.batch();
+      ops.slice(i,i+400).forEach(fn=>fn(batch));
+      await batch.commit();
+    }
+  };
+  const ops = [];
+  const [balSnap, entSnap] = await Promise.all([
+    db.collection("workerLoans").get(),
+    db.collection("loanEntries").get()
+  ]);
+  balSnap.forEach(doc=>ops.push(b=>b.delete(doc.ref)));
+  entSnap.forEach(doc=>ops.push(b=>b.delete(doc.ref)));
+  for(const coll of ["machineTeam","dryerTeam","dryerBatches"]){
+    const snap = await db.collection(coll).get();
+    snap.forEach(doc=>{
+      const arr = Array.isArray(doc.data().workers) ? doc.data().workers : null;
+      if(!arr) return;
+      let changed = false;
+      const cleaned = arr.map(w=>{
+        if(!w) return w;
+        const has = ["loanOpening","loanTaken","loanRepaid","loanBalance"].some(f=>(Number(w[f])||0)!==0);
+        if(!has) return w;
+        changed = true;
+        return Object.assign({}, w, {loanOpening:0, loanTaken:0, loanRepaid:0, loanBalance:0});
+      });
+      if(changed) ops.push(b=>b.update(doc.ref, {workers: cleaned}));
+    });
+  }
+  await chunked(ops);
+  // forget anything still sitting in memory so it can't be saved back
+  mtWorkers.forEach(w=>{ w.loanOpening = 0; w.loanTaken = 0; w.loanRepaid = 0; w.loanBalance = 0; });
+  mtLoanMap = {};
+  mtLoanDeduct = {};
+  return ops.length;
+}
+document.getElementById("loanClearAllBtn").addEventListener("click", ()=>{
+  const note = document.getElementById("loanClearNote");
+  if(!confirm("Ellaa loan data-vum (balance, entries, history) azhinjuduum. Thirumba edukka mudiyaadhu.\n\nMunnaadi screenshot eduthukkonga.\n\nContinue pannalaama?")) return;
+  const typed = prompt("Confirm panna CLEAR nu type pannunga:");
+  if(typed === null) return;
+  if(typed.trim().toUpperCase() !== "CLEAR"){ note.textContent = "Cancel aachu (CLEAR nu type pannala)."; setTimeout(()=>{ note.textContent=""; }, 2500); return; }
+  note.textContent = "Clearing...";
+  loanClearAll().then(()=>{
+    note.textContent = "Ellaa loan data-vum azhichachu.";
+    setTimeout(()=>{ note.textContent=""; }, 3000);
+    loadLoanPage();
+  }).catch((e)=>{
+    note.textContent = "Clear aagala: " + (e && e.message ? e.message : "check internet");
+  });
+});
 
 function loanAddFromForm(type){
   const note = document.getElementById("loanSaveNote");
