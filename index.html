@@ -1160,6 +1160,8 @@
             <div id="mtSalaryList"></div>
             <div class="totals" style="margin-bottom:16px;">
               <div class="line"><span class="label">Machine Team Total &raquo;&raquo;</span><span class="val mono" id="mtSalaryTotalVal" style="color:#3B6B35;"></span></div>
+              <div class="line" id="mtLoanDeductLine" style="display:none;"><span class="label">Loan kalichadhu &raquo;&raquo;</span><span class="val mono" id="mtLoanDeductTotalVal" style="color:#B33A3A;"></span></div>
+              <div class="line" id="mtNetSalaryLine" style="display:none;"><span class="label">Salary balance &raquo;&raquo;</span><span class="val mono" id="mtNetSalaryTotalVal" style="color:#3B6B35;font-weight:900;"></span></div>
             </div>
 
             <h3 class="sub-title display">Food Cash</h3>
@@ -3491,20 +3493,57 @@ function mtPersist(){
 let mtSalaryAggCache = {map:{}, dayDocs:{}};
 let mtFoodAggCache = {map:{}, dayDocs:{}};
 
+// ---- Loan deduction from salary (Machine Team salary page) ----
+let mtLoanMap = {};      // nameKey -> current loan balance (from workerLoans)
+let mtLoanDeduct = {};   // worker name -> amount to deduct from this salary
+function mtDeductFor(name){
+  const info = mtSalaryAggCache.map[name];
+  if(!info) return 0;
+  const loan = Number(mtLoanMap[nameKey(name)])||0;
+  const want = Number(mtLoanDeduct[name])||0;
+  return Math.max(0, Math.min(want, loan, info.totalSalary));
+}
+function mtUpdateSalaryTotals(){
+  const names = Object.keys(mtSalaryAggCache.map);
+  let gross = 0, ded = 0;
+  names.forEach(nm=>{ gross += mtSalaryAggCache.map[nm].totalSalary; ded += mtDeductFor(nm); });
+  const food = Object.values(mtFoodAggCache.map).reduce((s,i)=>s+i.total,0);
+  const net = gross - ded;
+  const dl = document.getElementById("mtLoanDeductLine");
+  const nl = document.getElementById("mtNetSalaryLine");
+  if(dl) dl.style.display = ded>0 ? "flex" : "none";
+  if(nl) nl.style.display = ded>0 ? "flex" : "none";
+  const dv = document.getElementById("mtLoanDeductTotalVal"); if(dv) dv.textContent = "- " + rupee(ded);
+  const nv = document.getElementById("mtNetSalaryTotalVal"); if(nv) nv.textContent = rupee(net);
+  document.getElementById("mtGrandTotalVal").textContent = rupee(net + food);
+  // per-worker summary lines (no re-render, so the keyboard stays open)
+  document.querySelectorAll("#mtSalaryList .mt-sal-net").forEach(el=>{
+    const nm = el.dataset.name;
+    const info = mtSalaryAggCache.map[nm];
+    if(!info) return;
+    const d = mtDeductFor(nm);
+    el.innerHTML = "Salary " + rupee(info.totalSalary) + " &minus; Loan " + rupee(d) + " = <b>Balance " + rupee(info.totalSalary - d) + "</b>";
+  });
+}
+
+
 function loadMachineTeamSalary(){
   Promise.allSettled([
     db.collection("machineTeam").get(),
-    db.collection("foodCash").get()
+    db.collection("foodCash").get(),
+    db.collection("workerLoans").get()
   ]).then((results)=>{
     const mtSnap = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
     const fcSnap = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
+    mtLoanMap = {};
+    if(results[2].status==="fulfilled"){
+      results[2].value.forEach(doc=>{ mtLoanMap[doc.id] = Number(doc.data().loanBalance)||0; });
+    }
     mtSalaryAggCache = computeSalaryAccumulation(mtSnap, "salary");
     mtFoodAggCache = computeFoodCashAccumulation(fcSnap, "onlyMachine");
     renderSalaryTable("mtSalaryList","mtSalaryTotalVal", mtSalaryAggCache.map, "mtpage");
     renderFoodCashTable("mtFoodList","mtFoodTotalVal", mtFoodAggCache.map, "mtSalarySaveNote", loadMachineTeamSalary);
-    const salaryTotal = Object.values(mtSalaryAggCache.map).reduce((s,i)=>s+i.totalSalary,0);
-    const foodTotal = Object.values(mtFoodAggCache.map).reduce((s,i)=>s+i.total,0);
-    document.getElementById("mtGrandTotalVal").textContent = rupee(salaryTotal+foodTotal);
+    mtUpdateSalaryTotals();
   }).catch(()=>{
     document.getElementById("mtSalaryList").innerHTML = '<p class="empty">Couldn\u2019t load. Check internet and try again.</p>';
   });
@@ -3527,9 +3566,25 @@ document.getElementById("mtPaySalaryBtn").addEventListener("click", ()=>{
   note.textContent = "Saving...";
   const paidDate = fmtDate(new Date());
   const historyWrites = [];
+  const loanWrites = [];
   salaryNames.forEach(name=>{
     const info = mtSalaryAggCache.map[name];
-    historyWrites.push(db.collection("salaryHistory").add({team:"Machine Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, paidDate}));
+    const ded = mtDeductFor(name);
+    if(ded > 0){
+      // Record it as "Loan repaid" on the worker's last unpaid working day, so the
+      // Loan page history shows it, and bring the worker's loan balance down.
+      const lastDay = info.days[info.days.length-1];
+      const docObj = lastDay ? mtSalaryAggCache.dayDocs[lastDay.date] : null;
+      const arr = docObj && Array.isArray(docObj.workers) ? docObj.workers : [];
+      const w = arr.find(x=>x && x.name && x.name.trim()===name);
+      if(w){
+        w.loanRepaid = (Number(w.loanRepaid)||0) + ded;
+        mtRecalcWorkerLoan(w);
+      }
+      const newBal = Math.max(0, (Number(mtLoanMap[nameKey(name)])||0) - ded);
+      loanWrites.push(db.collection("workerLoans").doc(nameKey(name)).set({name, loanBalance:newBal, lastUpdatedDate: lastDay ? lastDay.date : paidDate}));
+    }
+    historyWrites.push(db.collection("salaryHistory").add({team:"Machine Team", name, workingDays:info.workingDays, totalSalary:info.totalSalary, loanDeducted:ded, netPaid:info.totalSalary-ded, paidDate}));
   });
   foodNames.forEach(name=>{
     const info = mtFoodAggCache.map[name];
@@ -3538,8 +3593,10 @@ document.getElementById("mtPaySalaryBtn").addEventListener("click", ()=>{
   Promise.all([
     paySalaryTeam("machineTeam", mtSalaryAggCache, "salary"),
     payFoodCash(mtFoodAggCache),
+    ...loanWrites,
     ...historyWrites
   ]).then(()=>{
+    mtLoanDeduct = {};
     note.textContent = "Salary paid — saved to history!";
     setTimeout(()=>{ note.textContent=""; }, 2000);
     loadMachineTeamSalary();
@@ -5922,6 +5979,20 @@ function renderSalaryTable(listId, totalId, map, prefix){
           daysHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:13px;">${dinfo.niceDate}</div><div class="iprice mono" style="font-size:13px;">${rupee(dinfo.amount)}</div></div>`;
         });
       }
+      let loanHtml = "";
+      if(prefix === "mtpage"){
+        const loan = Number(mtLoanMap[nameKey(name)])||0;
+        if(loan > 0){
+          const d = mtDeductFor(name);
+          loanHtml = `
+        <div class="mt-opening" style="margin-top:8px;">Loan balance: <b style="color:#B33A3A;">${rupee(loan)}</b></div>
+        <div class="form-row no-print" style="margin-top:6px;">
+          <input type="number" inputmode="decimal" placeholder="Loan kalikka (amount)" value="${d||''}" class="mt-sal-ded-input" data-name="${escapeHtml(name)}" style="flex:1;" />
+          <button class="fadd mt-sal-ded-full" data-name="${escapeHtml(name)}">Full</button>
+        </div>
+        <div class="mt-opening mt-sal-net" data-name="${escapeHtml(name)}" style="margin-top:4px;"></div>`;
+        }
+      }
       const card = document.createElement("div");
       card.className = "mt-card";
       card.innerHTML = `
@@ -5932,6 +6003,7 @@ function renderSalaryTable(listId, totalId, map, prefix){
           </span>
           <span class="sec-balance">${info.workingDays} day${info.workingDays>1?"s":""} &middot; ${rupee(info.totalSalary)} ${isExpanded?"&#9650;":"&#9660;"}</span>
         </div>
+        ${loanHtml}
         ${daysHtml}`;
       container.appendChild(card);
     });
@@ -5944,6 +6016,32 @@ function renderSalaryTable(listId, totalId, map, prefix){
         document.getElementById(totalId).textContent = rupee(total);
       });
     });
+    if(prefix === "mtpage"){
+      container.querySelectorAll(".mt-sal-ded-input").forEach(inp=>{
+        inp.addEventListener("input", ()=>{
+          mtLoanDeduct[inp.dataset.name] = Number(inp.value)||0;
+          mtUpdateSalaryTotals();
+        });
+        inp.addEventListener("change", ()=>{
+          const d = mtDeductFor(inp.dataset.name);   // clamp to loan / salary
+          mtLoanDeduct[inp.dataset.name] = d;
+          inp.value = d || "";
+          mtUpdateSalaryTotals();
+        });
+      });
+      container.querySelectorAll(".mt-sal-ded-full").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const nm = btn.dataset.name;
+          const info = map[nm];
+          const loan = Number(mtLoanMap[nameKey(nm)])||0;
+          mtLoanDeduct[nm] = Math.min(loan, info ? info.totalSalary : 0);
+          const inp = container.querySelector(`.mt-sal-ded-input[data-name="${nm.replace(/"/g,'\\"')}"]`);
+          if(inp) inp.value = mtLoanDeduct[nm] || "";
+          mtUpdateSalaryTotals();
+        });
+      });
+      mtUpdateSalaryTotals();
+    }
   }
   document.getElementById(totalId).textContent = rupee(total);
 }
@@ -6270,7 +6368,7 @@ function loadSalaryHistory(){
       const d = doc.data();
       const key = d.paidDate + "|" + d.team + "|" + (d.period||"");
       if(!groups[key]) groups[key] = {paidDate:d.paidDate, team:d.team, period:d.period||"", rows:[], total:0};
-      groups[key].rows.push({name:d.name||"", workingDays:Number(d.workingDays)||0, totalSalary:Number(d.totalSalary)||0});
+      groups[key].rows.push({name:d.name||"", workingDays:Number(d.workingDays)||0, totalSalary:Number(d.totalSalary)||0, loanDeducted:Number(d.loanDeducted)||0});
       groups[key].total += Number(d.totalSalary)||0;
     });
     Object.values(groups).forEach(g=>{
@@ -6278,7 +6376,8 @@ function loadSalaryHistory(){
       card.className = "mt-card";
       let rowsHtml = "";
       g.rows.forEach(r=>{
-        const subLabel = g.period ? "" : `<div class="icat">${r.workingDays} days</div>`;
+        const loanNote = r.loanDeducted>0 ? `<div class="icat" style="color:#B33A3A;">Loan &minus;${rupee(r.loanDeducted)} &rarr; Paid ${rupee(r.totalSalary-r.loanDeducted)}</div>` : "";
+        const subLabel = (g.period ? "" : `<div class="icat">${r.workingDays} days</div>`) + loanNote;
         rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml(r.name.toUpperCase())}${subLabel}</div><div class="iprice mono" style="font-size:14px;">${rupee(r.totalSalary)}</div></div>`;
       });
       const headerLabel = g.period ? `${g.team} &middot; ${g.period}` : `${fmtNice(g.paidDate)} &middot; ${g.team}`;
