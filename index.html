@@ -395,13 +395,13 @@
   .sal-food-box .ttl { font-family:'Fraunces',serif; font-weight:800; font-size:16px; color:#1F4A2B; margin:2px 0 6px; }
   .sal-food-total { display:flex; justify-content:space-between; align-items:center; background:#E1EDD7; border-radius:8px; padding:7px 10px; font-weight:700; color:#1F4A2B; margin-top:6px; }
   .sal-food-total b { font-family:'IBM Plex Mono',monospace; font-size:16px; }
-  .sal-payroll { background:linear-gradient(135deg,#17402A,#2F6B3A); border-radius:14px; padding:12px 14px; color:#fff; margin-bottom:12px; }
-  .sal-payroll .ttl { font-weight:800; font-size:13px; letter-spacing:.6px; color:#CFE6C6; margin-bottom:8px; }
-  .sal-payroll .grid { display:grid; grid-template-columns:1fr 1fr 1.25fr; gap:8px; align-items:end; }
-  .sal-payroll small { display:block; font-size:10.5px; font-weight:700; color:#B9D6AF; text-transform:uppercase; }
-  .sal-payroll b { font-family:'IBM Plex Mono',monospace; font-size:16px; }
-  .sal-payroll .g b { font-size:21px; }
-  .sal-payroll em { display:block; font-style:normal; font-size:10px; color:#CFE6C6; margin-top:1px; }
+  .sal-payroll { background:linear-gradient(135deg,#17402A,#2F6B3A); border-radius:14px; padding:12px 16px 14px; color:#DDF3B0; margin-bottom:12px; }
+  .sal-payroll .ttl { font-weight:800; font-size:13px; letter-spacing:.8px; color:#C8F55A; margin-bottom:6px; }
+  .sal-payroll .pr { display:flex; justify-content:space-between; align-items:baseline; padding:7px 0; border-bottom:1px dashed rgba(200,245,90,.28); font-size:14px; font-weight:600; color:#DDF3B0; }
+  .sal-payroll .pr b { font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:700; color:#C8F55A; }
+  .sal-payroll .pr.grand { border-bottom:none; border-top:2px solid rgba(200,245,90,.55); margin-top:4px; padding-top:10px; }
+  .sal-payroll .pr.grand span { font-weight:800; letter-spacing:.5px; color:#fff; }
+  .sal-payroll .pr.grand b { font-size:24px; color:#D4FF5E; }
   .sal-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; display:flex; align-items:center; justify-content:center; padding:14px; }
   .wm { background:#fff; border-radius:16px; width:100%; max-width:400px; max-height:86vh; overflow:auto; box-shadow:0 10px 30px rgba(0,0,0,.35); }
   .wm-head { background:linear-gradient(135deg,#17402A,#2F6B3A); color:#fff; padding:14px; display:flex; align-items:center; gap:12px; border-radius:16px 16px 0 0; position:sticky; top:0; }
@@ -1240,13 +1240,6 @@
 
             <div class="sal-head"><span class="ttl">&#128181; Salary</span><span class="cnt" id="mtWorkersCountChip">0 Workers</span></div>
 
-            <div class="sal-loan-all no-print">
-              <span class="l">&#128176; Loan kalikka</span>
-              <input type="number" inputmode="decimal" id="mtLoanAllInput" placeholder="Amount" />
-              <button id="mtLoanAllBtn">Ellarukkum</button>
-              <button class="reset" id="mtLoanResetBtn">Reset</button>
-            </div>
-
             <div id="mtSalaryList"></div>
             <div class="sal-days-bar">
               <span>&#128197; Total Working Days: <b id="mtTotalDaysVal">0</b></span>
@@ -1261,13 +1254,12 @@
 
             <div class="sal-payroll">
               <div class="ttl">&#128176; TOTAL PAYROLL</div>
-              <div class="grid">
-                <div><small>Salary</small><b id="mtNetSalaryTotalVal">&#8377;0</b><em id="mtSalarySubLine"></em></div>
-                <div><small>Food Cash</small><b id="mtPayrollFoodVal">&#8377;0</b></div>
-                <div class="g"><small>Grand Total</small><b id="mtGrandTotalVal">&#8377;0</b></div>
-              </div>
+              <div class="pr"><span>Salary</span><b id="mtSalaryTotalVal">&#8377;0</b></div>
+              <div class="pr" id="mtPrLoanRow" style="display:none;"><span>Loan kalichadhu</span><b id="mtLoanDeductTotalVal">&minus;&#8377;0</b></div>
+              <div class="pr" id="mtPrNetRow" style="display:none;"><span>Salary balance</span><b id="mtNetSalaryTotalVal">&#8377;0</b></div>
+              <div class="pr"><span>Food Cash</span><b id="mtPayrollFoodVal">&#8377;0</b></div>
+              <div class="pr grand"><span>GRAND TOTAL</span><b id="mtGrandTotalVal">&#8377;0</b></div>
             </div>
-            <span id="mtSalaryTotalVal" style="display:none;"></span>
 
             <div class="save-note no-print" id="mtSalarySaveNote"></div>
             <div class="actions no-print">
@@ -3613,9 +3605,12 @@ function mtUpdateSalaryTotals(){
   const food = Object.values(mtFoodAggCache.map).reduce((s,i)=>s+i.total,0);
   const net = gross - ded;
   const set = (id, txt)=>{ const el = document.getElementById(id); if(el) el.textContent = txt; };
-  set("mtSalaryTotalVal", rupee(gross));
+  set("mtSalaryTotalVal", MT_R(gross));
+  set("mtLoanDeductTotalVal", "\u2212" + MT_R(ded));
   set("mtNetSalaryTotalVal", MT_R(net));
-  set("mtSalarySubLine", ded>0 ? (MT_R(gross) + " \u2212 " + MT_R(ded) + " loan") : "");
+  const showLoan = ded > 0 ? "flex" : "none";
+  const r1 = document.getElementById("mtPrLoanRow"); if(r1) r1.style.display = showLoan;
+  const r2 = document.getElementById("mtPrNetRow"); if(r2) r2.style.display = showLoan;
   set("mtPayrollFoodVal", MT_R(food));
   set("mtGrandTotalVal", MT_R(net + food));
   document.querySelectorAll("#mtSalaryList .sal-balance-val").forEach(el=>{
@@ -3743,21 +3738,6 @@ function mtOpenWorkerModal(name){
   document.body.appendChild(bg);
   refresh();
 }
-
-document.getElementById("mtLoanAllBtn").addEventListener("click", ()=>{
-  const v = Number(document.getElementById("mtLoanAllInput").value)||0;
-  if(v <= 0) return;
-  Object.keys(mtSalaryAggCache.map).forEach(nm=>{
-    const loan = Number(mtLoanMap[nameKey(nm)])||0;
-    mtLoanDeduct[nm] = loan > 0 ? Math.min(v, loan, mtSalaryAggCache.map[nm].totalSalary) : 0;
-  });
-  mtRenderSalaryCards();
-});
-document.getElementById("mtLoanResetBtn").addEventListener("click", ()=>{
-  mtLoanDeduct = {};
-  document.getElementById("mtLoanAllInput").value = "";
-  mtRenderSalaryCards();
-});
 
 document.getElementById("mtDayDetailsBtn").addEventListener("click", ()=>{
   const map = mtSalaryAggCache.map;
