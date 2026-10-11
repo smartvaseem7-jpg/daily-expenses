@@ -5892,24 +5892,36 @@ function loadLoanPage(){
 
 // Wipes ALL loan data: balances, Loan-page entries, and the loan numbers stored
 // inside Machine Team / Dryer day records (the day records themselves, salary and
-// everything else stay untouched).
+// everything else stay untouched). Returns a list of problems (empty = all clear).
 async function loanClearAll(){
-  const chunked = async (ops)=>{
-    for(let i=0;i<ops.length;i+=400){
-      const batch = db.batch();
-      ops.slice(i,i+400).forEach(fn=>fn(batch));
-      await batch.commit();
+  const problems = [];
+  const msgOf = (e)=>(e && e.message) ? e.message : "unknown error";
+  // delete the doc; if deleting is refused, blank it instead so it disappears from the page
+  const removeDoc = async (ref, blankData)=>{
+    try{ await ref.delete(); }
+    catch(e1){
+      try{ await ref.set(blankData, {merge:true}); }
+      catch(e2){ problems.push(msgOf(e1)); }
     }
   };
-  const ops = [];
+  const inChunks = async (items, fn)=>{
+    for(let i=0;i<items.length;i+=15){
+      await Promise.all(items.slice(i,i+15).map(fn));
+    }
+  };
+
   const [balSnap, entSnap] = await Promise.all([
     db.collection("workerLoans").get(),
     db.collection("loanEntries").get()
   ]);
-  balSnap.forEach(doc=>ops.push(b=>b.delete(doc.ref)));
-  entSnap.forEach(doc=>ops.push(b=>b.delete(doc.ref)));
+  const balDocs = []; balSnap.forEach(d=>balDocs.push(d));
+  const entDocs = []; entSnap.forEach(d=>entDocs.push(d));
+  await inChunks(balDocs, (d)=>removeDoc(d.ref, {loanBalance:0}));
+  await inChunks(entDocs, (d)=>removeDoc(d.ref, {amount:0}));
+
   for(const coll of ["machineTeam","dryerTeam","dryerBatches"]){
     const snap = await db.collection(coll).get();
+    const updates = [];
     snap.forEach(doc=>{
       const arr = Array.isArray(doc.data().workers) ? doc.data().workers : null;
       if(!arr) return;
@@ -5921,29 +5933,52 @@ async function loanClearAll(){
         changed = true;
         return Object.assign({}, w, {loanOpening:0, loanTaken:0, loanRepaid:0, loanBalance:0});
       });
-      if(changed) ops.push(b=>b.update(doc.ref, {workers: cleaned}));
+      if(changed) updates.push({ref:doc.ref, cleaned});
+    });
+    await inChunks(updates, async (u)=>{
+      try{ await u.ref.update({workers: u.cleaned}); }
+      catch(e){ problems.push(msgOf(e)); }
     });
   }
-  await chunked(ops);
+
   // forget anything still sitting in memory so it can't be saved back
   mtWorkers.forEach(w=>{ w.loanOpening = 0; w.loanTaken = 0; w.loanRepaid = 0; w.loanBalance = 0; });
   mtLoanMap = {};
   mtLoanDeduct = {};
-  return ops.length;
+
+  // check again from the database
+  try{
+    const check = await db.collection("workerLoans").get();
+    let left = 0; check.forEach(d=>{ if((Number(d.data().loanBalance)||0)!==0) left++; });
+    if(left > 0) problems.push(left + " worker-oda balance innum irukku");
+  }catch(e){ problems.push(msgOf(e)); }
+  return problems;
 }
 document.getElementById("loanClearAllBtn").addEventListener("click", ()=>{
   const note = document.getElementById("loanClearNote");
   if(!confirm("Ellaa loan data-vum (balance, entries, history) azhinjuduum. Thirumba edukka mudiyaadhu.\n\nMunnaadi screenshot eduthukkonga.\n\nContinue pannalaama?")) return;
   const typed = prompt("Confirm panna CLEAR nu type pannunga:");
   if(typed === null) return;
-  if(typed.trim().toUpperCase() !== "CLEAR"){ note.textContent = "Cancel aachu (CLEAR nu type pannala)."; setTimeout(()=>{ note.textContent=""; }, 2500); return; }
+  if(typed.trim().toUpperCase() !== "CLEAR"){
+    note.textContent = "Cancel aachu (CLEAR nu type pannala).";
+    alert("CLEAR nu sariyaa type pannala, so edhuvum azhiyala.");
+    return;
+  }
   note.textContent = "Clearing...";
-  loanClearAll().then(()=>{
-    note.textContent = "Ellaa loan data-vum azhichachu.";
-    setTimeout(()=>{ note.textContent=""; }, 3000);
+  loanClearAll().then((problems)=>{
+    if(problems.length === 0){
+      note.textContent = "Ellaa loan data-vum azhichachu.";
+      alert("Ellaa loan data-vum azhichachu.");
+    } else {
+      const msg = "Muzhusa azhiyala: " + problems[0] + (problems.length>1 ? " (+" + (problems.length-1) + " matra problems)" : "");
+      note.textContent = msg;
+      alert(msg);
+    }
     loadLoanPage();
   }).catch((e)=>{
-    note.textContent = "Clear aagala: " + (e && e.message ? e.message : "check internet");
+    const msg = "Clear aagala: " + (e && e.message ? e.message : "check internet");
+    note.textContent = msg;
+    alert(msg);
   });
 });
 
