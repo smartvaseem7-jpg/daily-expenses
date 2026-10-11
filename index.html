@@ -346,6 +346,25 @@
   .mt-card-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
   .mt-card-head .sec-name { font-family:'Fraunces',serif; font-size:16px; font-weight:700; color:#4A3B28; }
   .mt-card-head .sec-balance { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700; color:#3B6B35; }
+  /* ---- Workers page ---- */
+  .wk-card { background:linear-gradient(180deg,#F1F6EC,#E6EFDD); border:1px solid #C3D7B7; border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+  .wk-row { display:grid; grid-template-columns:34px 1fr auto; gap:10px; align-items:center; }
+  .wk-name { font-family:'Fraunces',serif; font-weight:800; font-size:15px; color:#1F3D24; line-height:1.2; overflow-wrap:anywhere; }
+  .wk-time { font-size:12px; color:#5C7A55; font-weight:600; margin-top:2px; }
+  .wk-sal { text-align:right; }
+  .wk-sal small { display:block; font-size:9.5px; font-weight:700; color:#5C7A55; text-transform:uppercase; letter-spacing:.3px; }
+  .wk-sal b { font-family:'IBM Plex Mono',monospace; font-size:15px; color:#1F4A2B; white-space:nowrap; }
+  .wk-edit { display:flex; gap:6px; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid #CFE0C5; }
+  .wk-edit input { flex:1; min-width:0; padding:8px; border:1px solid #B5CBA8; border-radius:8px; font-size:14px; background:#fff; }
+  .wk-edit .save { padding:8px 12px; border:none; border-radius:8px; background:#2F6B3A; color:#fff; font-weight:700; font-size:13px; cursor:pointer; }
+  .wk-edit .ib { padding:6px 10px; border:1px solid #B5CBA8; background:#fff; border-radius:8px; font-size:15px; cursor:pointer; }
+  .wk-add { flex-direction:column; gap:8px; background:#EEF4E8; border:1px solid #C3D7B7; border-radius:14px; padding:10px 12px; margin:10px 0; }
+  .wk-add > input { width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid #B5CBA8; border-radius:8px; font-size:14px; background:#fff; }
+  .wk-add .fadd { padding:11px 14px; border-radius:10px; border:none; background:#2F6B3A; color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
+  .wk-add-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .wk-add-grid label { font-size:11.5px; font-weight:700; color:#5C7A55; display:block; }
+  .wk-add-grid input { display:block; width:100%; box-sizing:border-box; margin-top:3px; padding:8px; border:1px solid #B5CBA8; border-radius:8px; font-size:14px; background:#fff; }
+  #mtRateDisplay { background:#EEF4E8; border:1px solid #C3D7B7; border-radius:999px; padding:6px 12px; font-weight:700; color:#1F4A2B; text-align:center; font-size:13px; }
   /* ---- Loan page ---- */
   .loan-add { background:#EEF4E8; border:1px solid #C3D7B7; border-radius:14px; padding:10px 12px; margin-bottom:12px; }
   .loan-add-title { font-family:'Fraunces',serif; font-weight:800; font-size:16px; color:#1F4A2B; margin-bottom:8px; }
@@ -1199,18 +1218,21 @@
             </div>
             <p class="empty" id="mtRateDisplay" style="display:none;"></p>
 
-            <h3 class="sub-title display">Workers Today</h3>
+            <div class="sal-head"><span class="ttl">Workers Today</span><span class="cnt" id="mtWorkersTodayChip">0 Workers</span></div>
             <div id="mtWorkersList"></div>
-            <div class="form-row no-print" id="mtWorkerFormRow" style="display:none;">
-              <input type="text" placeholder="Worker name" id="mtWorkerNameInput" list="machineWorkerNamesList" style="flex:2;min-width:100px;" />
-              <input type="time" id="mtWorkerTimeIn" style="flex:1;min-width:90px;" />
-              <input type="time" id="mtWorkerTimeOut" style="flex:1;min-width:90px;" />
-              <input type="number" inputmode="decimal" placeholder="Morning food" id="mtWorkerMorningInput" style="flex:1;min-width:90px;" />
-              <input type="number" inputmode="decimal" placeholder="Lunch food" id="mtWorkerLunchInput" style="flex:1;min-width:90px;" />
-              <input type="number" inputmode="decimal" placeholder="Evening food" id="mtWorkerEveningInput" style="flex:1;min-width:90px;" />
-              <button class="fadd" id="mtAddWorkerBtn">+ Add</button>
+            <div class="wk-add no-print" id="mtWorkerFormRow" style="display:none;">
+              <div class="loan-add-title">&#10133; Worker add pannu</div>
+              <input type="text" placeholder="Worker peyar" id="mtWorkerNameInput" list="machineWorkerNamesList" autocomplete="off" />
+              <div class="wk-add-grid">
+                <label>Vandha time<input type="time" id="mtWorkerTimeIn" /></label>
+                <label>Pona time<input type="time" id="mtWorkerTimeOut" /></label>
+                <label>Morning food<input type="number" inputmode="decimal" placeholder="0" id="mtWorkerMorningInput" /></label>
+                <label>Lunch food<input type="number" inputmode="decimal" placeholder="0" id="mtWorkerLunchInput" /></label>
+                <label>Evening food<input type="number" inputmode="decimal" placeholder="0" id="mtWorkerEveningInput" /></label>
+              </div>
+              <button class="fadd" id="mtAddWorkerBtn" style="width:100%;">+ Add worker</button>
             </div>
-            <p class="empty" id="mtWorkersCount"></p>
+            <p class="empty" id="mtWorkersCount" style="display:none;"></p>
 
             <div class="section-divider"></div>
             <h3 class="sub-title display">Supplier Logins</h3>
@@ -4096,6 +4118,8 @@ function mtRenderTotalsOnly(){
 
 function mtRenderWorkerCount(){
   document.getElementById("mtWorkersCount").textContent = `Workers today: ${mtWorkers.length}`;
+  const chip = document.getElementById("mtWorkersTodayChip");
+  if(chip) chip.textContent = mtWorkers.length + (mtWorkers.length===1 ? " Worker" : " Workers");
 }
 
 function mtRender(){
@@ -4116,31 +4140,27 @@ function mtRender(){
         row.innerHTML = `<input type="text" value="${escapeHtml(w.name)}" data-edit-w-name="${w.id}" list="machineWorkerNamesList" style="flex:1.4;" /><input type="time" value="${w.timeIn||''}" data-edit-w-in="${w.id}" /><input type="time" value="${w.timeOut||''}" data-edit-w-out="${w.id}" /><button class="isave" data-save-w="${w.id}">&#10003; Save</button>`;
         wList.appendChild(row);
       } else {
-        const isExpanded = mtExpandedWorkers.has(w.id);
         const hrs = hoursBetween(w.timeIn, w.timeOut);
-        const timeLabel = (w.timeIn||w.timeOut) ? `${w.timeIn||"—"} to ${w.timeOut||"—"} &middot; ${fmtHours(hrs)}` : "No time logged";
-        const icons = mtEditMode ? `<button class="iedit no-print" data-editwid="${w.id}">&#9998;</button><button class="idel no-print" data-wid="${w.id}">&#128465;</button>` : "";
-        const loanFormHtml = mtEditMode ? `
-          <div class="form-row no-print" style="margin-top:8px;">
-            <input type="number" inputmode="decimal" placeholder="Salary" value="${w.salary||''}" class="mt-salary-input" data-wid="${w.id}" style="flex:1;" />
-            <button class="fadd mt-salary-save" data-wid="${w.id}">&#10003; Save</button>
-          </div>
-` : "";
-        const detailsHtml = isExpanded ? `
-          <div class="mt-opening" style="font-family:'IBM Plex Mono',monospace;margin-top:8px;">${timeLabel}</div>
-          ${loanFormHtml}` : "";
+        const timeLabel = (w.timeIn||w.timeOut) ? `${w.timeIn||"\u2014"} \u2013 ${w.timeOut||"\u2014"} &middot; ${fmtHours(hrs)}` : "Time log pannala";
+        const editHtml = mtEditMode ? `
+          <div class="wk-edit no-print">
+            <input type="number" inputmode="decimal" placeholder="Salary" value="${w.salary||''}" class="mt-salary-input" data-wid="${w.id}" />
+            <button class="save mt-salary-save" data-wid="${w.id}">&#10003; Save</button>
+            <button class="ib iedit" data-editwid="${w.id}">&#9998;</button>
+            <button class="ib idel" data-wid="${w.id}">&#128465;</button>
+          </div>` : "";
         const card = document.createElement("div");
-        card.className = "mt-card";
+        card.className = "wk-card";
         card.innerHTML = `
-          <div class="mt-card-head worker-toggle" data-toggle="${w.id}" style="cursor:pointer;">
-            <span class="sec-name display" style="display:flex;align-items:center;gap:8px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:#4A3B28;color:#F3ECD9;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">&#128100;</span>
-              ${escapeHtml(w.name.toUpperCase())}
-            </span>
-            <span class="sec-balance">Salary ${rupee(w.salary)} ${isExpanded?"&#9650;":"&#9660;"}</span>
+          <div class="wk-row">
+            <span class="sal-avatar">&#128100;</span>
+            <div>
+              <div class="wk-name">${escapeHtml(w.name.toUpperCase())}</div>
+              <div class="wk-time">${timeLabel}</div>
+            </div>
+            <div class="wk-sal"><small>Salary</small><b>\u20b9${rupee(w.salary)}</b></div>
           </div>
-          ${icons ? `<div class="no-print" style="text-align:right;margin-top:4px;">${icons}</div>` : ""}
-          ${detailsHtml}`;
+          ${editHtml}`;
         wList.appendChild(card);
       }
     });
