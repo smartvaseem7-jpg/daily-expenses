@@ -385,10 +385,12 @@
   .sal-row-bal small { display:block; font-size:9.5px; font-weight:700; color:#5C7A55; text-transform:uppercase; letter-spacing:.3px; }
   .sal-row-bal b { font-family:'IBM Plex Mono',monospace; font-size:15px; color:#1F4A2B; }
   .sal-chev { color:#5C7A55; font-size:18px; font-weight:700; }
-  .sal-chips { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
-  .sal-chip { background:#fff; border:1px solid #D3E2C9; border-radius:999px; padding:3px 8px; font-size:11.5px; font-weight:700; color:#33523A; white-space:nowrap; }
-  .sal-chip.loan { color:#B33A3A; border-color:#EBC9C9; }
-  .sal-chip.ded { background:#FBEAEA; color:#B33A3A; border-color:#EBC9C9; }
+  .sal-stats { grid-column:1 / -1; display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:8px; padding-top:8px; border-top:1px solid #CFE0C5; }
+  .sal-stat small { display:block; font-size:10.5px; font-weight:700; color:#6B8664; text-transform:uppercase; letter-spacing:.3px; margin-bottom:1px; }
+  .sal-stat b { display:block; font-family:'IBM Plex Mono',monospace; font-size:13.5px; font-weight:700; color:#1F3D24; white-space:nowrap; }
+  .sal-stat b.red { color:#B33A3A; }
+  .sal-ded { grid-column:1 / -1; text-align:right; font-size:12px; font-weight:700; color:#B33A3A; margin-top:5px; display:none; }
+  .sal-hint { font-size:12px; color:#6B8664; margin:0 2px 8px; line-height:1.4; }
   .sal-days-bar { display:flex; justify-content:space-between; align-items:center; background:#EEF4E8; border:1px solid #C3D7B7; border-radius:12px; padding:9px 12px; margin:8px 0 12px; font-size:13.5px; font-weight:700; color:#1F4A2B; }
   .sal-days-bar button { padding:7px 11px; border-radius:8px; border:1px solid #2F6B3A; background:#fff; color:#2F6B3A; font-weight:700; font-size:12.5px; cursor:pointer; }
   .sal-food-box { background:#F4F8F0; border:1px solid #C3D7B7; border-radius:12px; padding:8px 10px 10px; margin-bottom:12px; }
@@ -1240,6 +1242,7 @@
 
             <div class="sal-head"><span class="ttl">&#128181; Salary</span><span class="cnt" id="mtWorkersCountChip">0 Workers</span></div>
 
+            <div class="sal-hint">Balance = Salary &minus; Loan kalichadhu. Oru worker-a tap pannina full details varum.</div>
             <div id="mtSalaryList"></div>
             <div class="sal-days-bar">
               <span>&#128197; Total Working Days: <b id="mtTotalDaysVal">0</b></span>
@@ -3617,10 +3620,10 @@ function mtUpdateSalaryTotals(){
     const info = mtSalaryAggCache.map[el.dataset.name];
     if(info) el.textContent = MT_R(info.totalSalary - mtDeductFor(el.dataset.name));
   });
-  document.querySelectorAll("#mtSalaryList .sal-chip.ded").forEach(el=>{
+  document.querySelectorAll("#mtSalaryList .sal-ded").forEach(el=>{
     const d = mtDeductFor(el.dataset.name);
-    el.style.display = d>0 ? "inline-block" : "none";
-    el.textContent = "Kalichadhu \u2212" + MT_R(d);
+    el.style.display = d>0 ? "block" : "none";
+    el.textContent = "Loan kalichadhu \u2212" + MT_R(d);
   });
 }
 
@@ -3661,17 +3664,17 @@ function mtRenderSalaryCards(){
       <span class="sal-avatar">&#128100;</span>
       <div>
         <div class="sal-row-name">${escapeHtml(name.toUpperCase())}</div>
-        <div class="sal-row-date">&#128197; ${mtRangeText(info)}</div>
+        <div class="sal-row-date">${mtRangeText(info)}</div>
       </div>
       <div class="sal-row-bal"><small>Balance</small><b class="sal-balance-val" data-name="${nm}"></b></div>
       <span class="sal-chev">&rsaquo;</span>
-      <div class="sal-chips">
-        <span class="sal-chip">&#128197; ${info.workingDays} day${info.workingDays>1?"s":""}</span>
-        <span class="sal-chip">&#127860; ${MT_R(food)}</span>
-        <span class="sal-chip${loan>0?" loan":""}">&#128176; Loan ${MT_R(loan)}</span>
-        <span class="sal-chip">Salary ${MT_R(info.totalSalary)}</span>
-        <span class="sal-chip ded" data-name="${nm}" style="display:none;"></span>
-      </div>`;
+      <div class="sal-stats">
+        <div class="sal-stat"><small>Days</small><b>${info.workingDays}</b></div>
+        <div class="sal-stat"><small>Salary</small><b>${MT_R(info.totalSalary)}</b></div>
+        <div class="sal-stat"><small>Food</small><b>${MT_R(food)}</b></div>
+        <div class="sal-stat"><small>Loan</small><b class="${loan>0?"red":""}">${MT_R(loan)}</b></div>
+      </div>
+      <div class="sal-ded" data-name="${nm}"></div>`;
     row.addEventListener("click", ()=>mtOpenWorkerModal(name));
     container.appendChild(row);
   });
