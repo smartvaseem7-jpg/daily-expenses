@@ -1471,6 +1471,7 @@
       <div class="no-print" style="margin-top:18px;">
         <button class="btn-clear" id="loanClearAllBtn" style="width:100%; color:#B33A3A; border-color:#B33A3A;">&#128465; Clear all loans (ellaathaiyum azhi)</button>
         <div class="save-note" id="loanClearNote"></div>
+        <div style="text-align:center; font-size:11px; color:#9A8B6E; margin-top:6px;">App version: v17</div>
       </div>
     </div>
 
@@ -5910,12 +5911,15 @@ async function loanClearAll(){
     }
   };
 
-  const [balSnap, entSnap] = await Promise.all([
+  // each collection on its own, so one that can't be read doesn't stop the others
+  const [balRes, entRes] = await Promise.allSettled([
     db.collection("workerLoans").get(),
     db.collection("loanEntries").get()
   ]);
-  const balDocs = []; balSnap.forEach(d=>balDocs.push(d));
-  const entDocs = []; entSnap.forEach(d=>entDocs.push(d));
+  if(balRes.status !== "fulfilled") throw balRes.reason;
+  if(entRes.status !== "fulfilled") problems.push("loanEntries: " + msgOf(entRes.reason));
+  const balDocs = []; balRes.value.forEach(d=>balDocs.push(d));
+  const entDocs = []; if(entRes.status === "fulfilled") entRes.value.forEach(d=>entDocs.push(d));
   await inChunks(balDocs, (d)=>removeDoc(d.ref, {loanBalance:0}));
   await inChunks(entDocs, (d)=>removeDoc(d.ref, {amount:0}));
 
