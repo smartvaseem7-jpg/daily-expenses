@@ -382,6 +382,13 @@
   .mt-modal-sheet { background:#F4F8F0; }
   .mt-modal-title { color:#1F4A2B; }
   .mt-modal-close, .mt-modal-back { background:#DDEBD2; color:#1F4A2B; }
+  /* ---- Dryer: workers grid ---- */
+  .dtw-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px; }
+  .dtw-item { background:#fff; border:1px solid #C3D7B7; border-radius:14px; padding:10px 4px 9px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; }
+  .dtw-item:active { background:#DDEBD2; }
+  .dtw-item .sal-avatar { width:52px; height:52px; font-size:24px; }
+  .dtw-name { font-size:12px; font-weight:800; color:#1F3D24; max-width:100%; overflow-wrap:anywhere; line-height:1.15; }
+  .dtw-amt { font-size:13.5px; font-weight:800; color:#2F6B3A; }
   /* ---- Dryer Team page (green theme, full width) ---- */
   .wrap:has(#dryerSection[style*="block"]) { max-width:none; padding:6px 4px 40px; }
   .wrap:has(#dryerSection[style*="block"]) .card { padding:14px 8px; border-radius:12px; }
@@ -1438,7 +1445,7 @@
 
               <div id="dtpDaysList"></div>
 
-              <div class="dt-section-label" style="margin-top:16px;">Food Cash</div>
+              <div class="dt-section-label" style="margin-top:16px;">Workers <span style="font-size:11px;font-weight:600;color:#5C7A55;text-transform:none;letter-spacing:0;" class="no-print">tap pannina full details</span></div>
               <div id="dtpFoodList"></div>
 
               <div class="dtp-food-totals">
@@ -1771,6 +1778,12 @@ function fmtCompact(dstr){
   const month = String(d.getMonth()+1).padStart(2,"0");
   const year = String(d.getFullYear()).slice(-2);
   return `${day}-${month}-${year}`;
+}
+// same as fmtCompact, plus the weekday: 14-10-26 (Wed)
+function fmtCompactDay(dstr){
+  const d = new Date(dstr+"T00:00:00");
+  const wd = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+  return fmtCompact(dstr) + " (" + wd + ")";
 }
 function monthKey(dstr){ return dstr.slice(0,7); }
 function monthNice(mk){
@@ -5411,7 +5424,7 @@ function dtRenderPeriodCard(){
     daysListEl.innerHTML = "";
   } else {
     const days = Object.keys(p.days).sort();
-    rangeEl.textContent = days.length===1 ? fmtCompact(days[0]) : `${fmtCompact(days[0])} \u2013 ${fmtCompact(days[days.length-1])}`;
+    rangeEl.textContent = days.length===1 ? fmtCompactDay(days[0]) : `${fmtCompactDay(days[0])} \u2013 ${fmtCompactDay(days[days.length-1])}`;
     let totalKg = 0;
     days.forEach(ds=>{ totalKg += Number(p.days[ds].kg)||0; });
     document.getElementById("dtpTotalKg").textContent = totalKg;
@@ -5420,20 +5433,17 @@ function dtRenderPeriodCard(){
     daysListEl.innerHTML = days.map(ds=>{
       const d = p.days[ds];
       const dTotal = (Number(d.kg)||0)*RATE_PER_KG;
-      const perWorker = d.workers.length>0 ? dTotal/d.workers.length : 0;
-      const workerLines = d.workers.map(nm=>`<div class="dtp-day-worker-line"><span>${escapeHtml(nm.toUpperCase())}</span><span class="amt">\u20b9${rupee(perWorker)}</span></div>`).join("");
       return `<div class="dtp-day-row">
         <div class="dtp-day-row-head">
-          <span class="dtp-day-row-date">${fmtCompact(ds)}</span>
+          <span class="dtp-day-row-date">${fmtCompactDay(ds)}</span>
           <span class="dtp-day-row-actions no-print">
             <button class="dt-icon-btn" data-editday="${ds}" title="Edit">&#9998;</button>
             <button class="dt-icon-btn danger" data-delday="${ds}" title="Delete">&#128465;</button>
           </span>
         </div>
         <div class="dtp-day-row-kg">${d.kg} KG \u00d7 \u20b9${RATE_PER_KG} = \u20b9${rupee(dTotal)} \u00f7 ${d.workers.length} worker${d.workers.length>1?"s":""}</div>
-        ${workerLines}
       </div>`;
-    }).join("") + dtWorkerTotalsHtml(p);
+    }).join("");
 
     daysListEl.querySelectorAll("[data-editday]").forEach(btn=>btn.addEventListener("click", ()=>dtEditDay(btn.dataset.editday)));
     daysListEl.querySelectorAll("[data-delday]").forEach(btn=>btn.addEventListener("click", ()=>dtDeleteDay(btn.dataset.delday)));
@@ -5509,24 +5519,101 @@ function dtFoodGroupHtml(groups, editable){
   }).join("");
 }
 
+// Everything one worker has in the active period: salary per date + food cash per date.
+function dtWorkerDetails(){
+  const map = {};
+  const get = (nm)=>{
+    const key = String(nm||"").trim().toLowerCase();
+    if(!map[key]) map[key] = {name:String(nm||"").trim(), salaryRows:[], foodRows:[], salary:0, kg:0, food:0};
+    return map[key];
+  };
+  const p = dtCurrentPeriod;
+  if(p){
+    Object.keys(p.days||{}).sort().forEach(ds=>{
+      const d = p.days[ds];
+      const n = d.workers.length || 1;
+      const kgShare = (Number(d.kg)||0)/n;
+      const amount = kgShare*RATE_PER_KG;
+      d.workers.forEach(nm=>{
+        const w = get(nm);
+        w.salaryRows.push({date:ds, kg:kgShare, amount});
+        w.salary += amount; w.kg += kgShare;
+      });
+    });
+  }
+  dtFoodCashCache.forEach(e=>{
+    const w = get(e.name);
+    w.foodRows.push(e);
+    w.food += e.total;
+  });
+  return Object.values(map).sort((a,b)=>a.name.localeCompare(b.name));
+}
+const dtKg = (n)=> (n % 1 === 0 ? String(n) : n.toFixed(1));
+
+function dtOpenWorkerModal(key){
+  const w = dtWorkerDetails().find(x=>x.name.trim().toLowerCase()===key);
+  if(!w) return;
+  const total = w.salary + w.food;
+  const salaryHtml = w.salaryRows.length ? w.salaryRows.map(r=>
+    `<div class="wm-day"><span>${fmtCompactDay(r.date)} &middot; ${dtKg(r.kg)} KG</span><span class="mono">\u20b9${rupee(r.amount)}</span></div>`
+  ).join("") + `<div class="wm-day" style="font-weight:800;"><span>Salary total &middot; ${dtKg(w.kg)} KG</span><span class="mono">\u20b9${rupee(w.salary)}</span></div>`
+    : `<div class="wm-day"><span style="color:#6B8664;">Salary entry illa</span><span></span></div>`;
+  const foodHtml = w.foodRows.length ? w.foodRows.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>
+    `<div class="wm-day" style="align-items:flex-start;">
+      <span>${fmtCompactDay(e.date)}<br><span style="font-size:11.5px;color:#6B8664;">Morning \u20b9${rupee(e.morning)} &middot; Lunch \u20b9${rupee(e.lunch)} &middot; Evening \u20b9${rupee(e.evening)}</span></span>
+      <span style="text-align:right;white-space:nowrap;"><span class="mono">\u20b9${rupee(e.total)}</span><br>
+        <span class="no-print"><button class="dt-icon-btn" data-editfood="${e.date}::${e.entryId}" title="Edit">&#9998;</button> <button class="dt-icon-btn danger" data-delfood="${e.date}::${e.entryId}" title="Delete">&#128465;</button></span></span>
+    </div>`
+  ).join("") + `<div class="wm-day" style="font-weight:800;"><span>Food total</span><span class="mono">\u20b9${rupee(w.food)}</span></div>`
+    : `<div class="wm-day"><span style="color:#6B8664;">Food cash entry illa</span><span></span></div>`;
+
+  const bg = document.createElement("div");
+  bg.className = "sal-modal-bg";
+  bg.innerHTML = `<div class="wm">
+    <div class="wm-head">
+      <span class="sal-avatar">&#128100;</span>
+      <div><div class="wm-name">${escapeHtml(w.name.toUpperCase())}</div><div class="wm-date">Total cash \u20b9${rupee(total)}</div></div>
+      <button class="wm-x" id="dtwX">&#10005;</button>
+    </div>
+    <div class="wm-body">
+      <div class="wm-card"><small>Salary (KG \u00d7 \u20b9${RATE_PER_KG})</small>${salaryHtml}</div>
+      <div class="wm-card"><small>Food Cash</small>${foodHtml}</div>
+      <div class="wm-total">
+        <div class="r"><small>Salary</small><b>\u20b9${rupee(w.salary)}</b></div>
+        <div class="r"><small>Food Cash</small><b>\u20b9${rupee(w.food)}</b></div>
+        <div class="r big"><small>Total Cash</small><b>\u20b9${rupee(total)}</b></div>
+      </div>
+      <button class="wm-close" id="dtwClose">Close</button>
+    </div>
+  </div>`;
+  const close = ()=>bg.remove();
+  bg.addEventListener("click", (ev)=>{ if(ev.target===bg) close(); });
+  bg.querySelector("#dtwX").addEventListener("click", close);
+  bg.querySelector("#dtwClose").addEventListener("click", close);
+  bg.querySelectorAll("[data-editfood]").forEach(btn=>btn.addEventListener("click", ()=>{
+    const [d,eid] = btn.dataset.editfood.split("::"); close(); dtEditFoodEntry(d,eid);
+  }));
+  bg.querySelectorAll("[data-delfood]").forEach(btn=>btn.addEventListener("click", ()=>{
+    const [d,eid] = btn.dataset.delfood.split("::"); close(); dtDeleteFoodEntry(d,eid);
+  }));
+  document.body.appendChild(bg);
+}
+
 function dtRenderFoodCashInCard(){
   const list = document.getElementById("dtpFoodList");
   const entries = dtFoodCashCache;
-  if(entries.length===0){
-    list.innerHTML = '<p class="empty" style="margin:8px 0;">Food cash entries edhuvum illa.</p>';
+  const workers = dtWorkerDetails();
+  if(workers.length===0){
+    list.innerHTML = '<p class="empty" style="margin:8px 0;">Worker edhuvum illa.</p>';
   } else {
-    list.innerHTML = dtFoodGroupHtml(dtGroupFoodByWorker(entries), true);
-    list.querySelectorAll("[data-editfood]").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const [d,eid] = btn.dataset.editfood.split("::");
-        dtEditFoodEntry(d,eid);
-      });
-    });
-    list.querySelectorAll("[data-delfood]").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const [d,eid] = btn.dataset.delfood.split("::");
-        dtDeleteFoodEntry(d,eid);
-      });
+    list.innerHTML = '<div class="dtw-grid">' + workers.map(w=>`
+      <div class="dtw-item" data-wkey="${escapeHtml(w.name.trim().toLowerCase())}">
+        <span class="sal-avatar">&#128100;</span>
+        <div class="dtw-name">${escapeHtml(w.name.toUpperCase())}</div>
+        <div class="dtw-amt mono">\u20b9${rupee(w.salary + w.food)}</div>
+      </div>`).join("") + '</div>';
+    list.querySelectorAll(".dtw-item").forEach(el=>{
+      el.addEventListener("click", ()=>dtOpenWorkerModal(el.dataset.wkey));
     });
   }
   let m=0,l=0,ev=0;
