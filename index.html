@@ -5536,7 +5536,7 @@ function dtWorkerDetails(){
       const amount = kgShare*RATE_PER_KG;
       d.workers.forEach(nm=>{
         const w = get(nm);
-        w.salaryRows.push({date:ds, kg:kgShare, amount});
+        w.salaryRows.push({date:ds, kg:kgShare, amount, dayKg:Number(d.kg)||0, count:n});
         w.salary += amount; w.kg += kgShare;
       });
     });
@@ -5555,7 +5555,10 @@ function dtOpenWorkerModal(key){
   if(!w) return;
   const total = w.salary + w.food;
   const salaryHtml = w.salaryRows.length ? w.salaryRows.map(r=>
-    `<div class="wm-day"><span>${fmtCompactDay(r.date)} &middot; ${dtKg(r.kg)} KG</span><span class="mono">\u20b9${rupee(r.amount)}</span></div>`
+    `<div class="wm-day" style="align-items:flex-start;">
+      <span>${fmtCompactDay(r.date)}<br><span style="font-size:12px;color:#6B8664;">Total ${dtKg(r.dayKg)} KG &divide; ${r.count} worker${r.count>1?"s":""} = ${dtKg(r.kg)} KG</span></span>
+      <span class="mono">\u20b9${rupee(r.amount)}</span>
+    </div>`
   ).join("") + `<div class="wm-day" style="font-weight:800;"><span>Salary total &middot; ${dtKg(w.kg)} KG</span><span class="mono">\u20b9${rupee(w.salary)}</span></div>`
     : `<div class="wm-day"><span style="color:#6B8664;">Salary entry illa</span><span></span></div>`;
   const foodHtml = w.foodRows.length ? w.foodRows.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>
