@@ -382,6 +382,19 @@
   .mt-modal-sheet { background:#F4F8F0; }
   .mt-modal-title { color:#1F4A2B; }
   .mt-modal-close, .mt-modal-back { background:#DDEBD2; color:#1F4A2B; }
+  /* ---- Statement table (bank / Excel style) ---- */
+  .stmt-wrap { overflow-x:auto; border:1px solid #B5CBA8; border-radius:10px; margin-top:6px; }
+  .stmt { width:100%; border-collapse:collapse; font-size:11.5px; }
+  .stmt th { background:#1F4A2B; color:#fff; padding:7px 6px; text-align:right; font-weight:700; white-space:nowrap; }
+  .stmt td { padding:7px 6px; text-align:right; font-family:'IBM Plex Mono',monospace; border-bottom:1px solid #DCE8D3; white-space:nowrap; color:#1F3D24; }
+  .stmt th:first-child, .stmt td:first-child { text-align:left; }
+  .stmt tbody tr:nth-child(even) td { background:#F1F6EC; }
+  .stmt td.date { font-family:'Inter',sans-serif; font-weight:700; }
+  .stmt td.date small { display:block; font-size:10px; font-weight:600; color:#6B8664; margin:0; }
+  .stmt td.b { font-weight:700; }
+  .stmt tfoot td { background:#DDEBD2; font-weight:800; border-top:2px solid #1F4A2B; border-bottom:none; }
+  .stmt-legend { font-size:11px; color:#6B8664; margin-top:6px; line-height:1.45; }
+  .dtw-loan { font-size:11px; font-weight:700; color:#B33A3A; }
   /* ---- Dryer: workers grid ---- */
   .dtw-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px; }
   .dtw-item { background:#fff; border:1px solid #C3D7B7; border-radius:14px; padding:10px 4px 9px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; }
@@ -1459,6 +1472,10 @@
                 <span>GRAND TOTAL CASH</span>
                 <span class="mono" id="dtpGrandTotal">&#8377;0</span>
               </div>
+              <div id="dtpLoanLines" style="display:none;">
+                <div class="dtp-food-total-line" style="margin:8px 4px 4px;"><span>Loan kalichadhu</span><span class="mono" id="dtpLoanDedVal" style="color:#B33A3A;"></span></div>
+                <div class="dtp-grand-total"><span>NET CASH</span><span class="mono" id="dtpNetTotal">&#8377;0</span></div>
+              </div>
 
               <button class="dt-week-done-btn no-print" id="dtpPaySalaryBtn">&#9989; Pay Salary</button>
               <div class="save-note no-print" id="dtpPayNote"></div>
@@ -1541,7 +1558,8 @@
       </div>
       <div class="loan-add no-print">
         <div class="loan-add-title">&#10133; Loan add pannu</div>
-        <input type="text" id="loanNameInput" list="machineWorkerNamesList" placeholder="Worker peyar" autocomplete="off" />
+        <input type="text" id="loanNameInput" list="loanNamesList" placeholder="Worker peyar" autocomplete="off" />
+        <datalist id="loanNamesList"></datalist>
         <div class="loan-add-row">
           <input type="number" inputmode="decimal" id="loanAmountInput" placeholder="Amount" />
           <input type="date" id="loanDateInput" />
@@ -5550,56 +5568,121 @@ function dtWorkerDetails(){
 }
 const dtKg = (n)=> (n % 1 === 0 ? String(n) : n.toFixed(1));
 
+const DT_WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function dtWd(ds){ return DT_WD[new Date(ds + "T00:00:00").getDay()]; }
+
+// ---- Dryer worker loans (balances live on the Loan page, shared by name) ----
+let dtLoanMap = {};     // nameKey -> loan balance
+let dtLoanDeduct = {};  // nameKey -> amount to take off this pay
+function dtLoanOf(name){ return Number(dtLoanMap[nameKey(String(name||""))])||0; }
+// capped by the loan balance and by the worker's salary (food cash is paid in full)
+function dtDeductFor(w){
+  const want = Number(dtLoanDeduct[nameKey(w.name)])||0;
+  return Math.max(0, Math.min(want, dtLoanOf(w.name), Math.floor(w.salary)));
+}
+
 function dtOpenWorkerModal(key){
   const w = dtWorkerDetails().find(x=>x.name.trim().toLowerCase()===key);
   if(!w) return;
-  const total = w.salary + w.food;
-  const salaryHtml = w.salaryRows.length ? w.salaryRows.map(r=>
-    `<div class="wm-day" style="align-items:flex-start;">
-      <span>${fmtCompactDay(r.date)}<br><span style="font-size:12px;color:#6B8664;">Total ${dtKg(r.dayKg)} KG &divide; ${r.count} worker${r.count>1?"s":""} = ${dtKg(r.kg)} KG</span></span>
-      <span class="mono">\u20b9${rupee(r.amount)}</span>
-    </div>`
-  ).join("") + `<div class="wm-day" style="font-weight:800;"><span>Salary total &middot; ${dtKg(w.kg)} KG</span><span class="mono">\u20b9${rupee(w.salary)}</span></div>`
-    : `<div class="wm-day"><span style="color:#6B8664;">Salary entry illa</span><span></span></div>`;
-  const foodHtml = w.foodRows.length ? w.foodRows.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>
+  const loan = dtLoanOf(w.name);
+
+  // bank-statement style table: one row per date
+  const byDate = {};
+  w.salaryRows.forEach(r=>{ (byDate[r.date] = byDate[r.date] || {sal:null, food:0}).sal = r; });
+  w.foodRows.forEach(e=>{ (byDate[e.date] = byDate[e.date] || {sal:null, food:0}).food += e.total; });
+  const dates = Object.keys(byDate).sort();
+  let tKg = 0, tShare = 0, tSal = 0, tFood = 0;
+  const dash = "\u2013";
+  const rowsHtml = dates.map(ds=>{
+    const r = byDate[ds], sal = r.sal;
+    const amt = sal ? sal.amount : 0;
+    if(sal){ tKg += sal.dayKg; tShare += sal.kg; tSal += amt; }
+    tFood += r.food;
+    return `<tr>
+      <td class="date">${fmtCompact(ds)}<small>${dtWd(ds)}</small></td>
+      <td>${sal ? dtKg(sal.dayKg) : dash}</td>
+      <td>${sal ? sal.count : dash}</td>
+      <td>${sal ? dtKg(sal.kg) : dash}</td>
+      <td class="b">${sal ? rupee(amt) : dash}</td>
+      <td>${r.food ? rupee(r.food) : dash}</td>
+      <td class="b">${rupee(amt + r.food)}</td>
+    </tr>`;
+  }).join("");
+  const tableHtml = dates.length ? `
+    <div class="stmt-wrap"><table class="stmt">
+      <thead><tr><th>Date</th><th>KG</th><th>Ppl</th><th>Share</th><th>Salary</th><th>Food</th><th>Total</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot><tr><td>TOTAL</td><td>${dtKg(tKg)}</td><td></td><td>${dtKg(tShare)}</td><td>${rupee(tSal)}</td><td>${rupee(tFood)}</td><td>${rupee(tSal + tFood)}</td></tr></tfoot>
+    </table></div>
+    <div class="stmt-legend">KG = andha naal moththam KG &middot; Ppl = ethana peru velai &middot; Share = ivar KG (KG &divide; Ppl) &middot; Salary = Share &times; \u20b9${RATE_PER_KG} &middot; Amounts \u20b9-la</div>`
+    : `<p class="empty" style="margin:6px 0;">Entry edhuvum illa.</p>`;
+
+  const foodEntriesHtml = w.foodRows.length ? `<div class="wm-card"><small>Food entries (edit / delete)</small>` +
+    w.foodRows.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>
     `<div class="wm-day" style="align-items:flex-start;">
       <span>${fmtCompactDay(e.date)}<br><span style="font-size:11.5px;color:#6B8664;">Morning \u20b9${rupee(e.morning)} &middot; Lunch \u20b9${rupee(e.lunch)} &middot; Evening \u20b9${rupee(e.evening)}</span></span>
       <span style="text-align:right;white-space:nowrap;"><span class="mono">\u20b9${rupee(e.total)}</span><br>
         <span class="no-print"><button class="dt-icon-btn" data-editfood="${e.date}::${e.entryId}" title="Edit">&#9998;</button> <button class="dt-icon-btn danger" data-delfood="${e.date}::${e.entryId}" title="Delete">&#128465;</button></span></span>
-    </div>`
-  ).join("") + `<div class="wm-day" style="font-weight:800;"><span>Food total</span><span class="mono">\u20b9${rupee(w.food)}</span></div>`
-    : `<div class="wm-day"><span style="color:#6B8664;">Food cash entry illa</span><span></span></div>`;
+    </div>`).join("") + `</div>` : "";
+
+  const loanHtml = loan > 0 ? `<div class="wm-card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;"><small>Loan balance</small><b class="v" style="color:#B33A3A;">\u20b9${rupee(loan)}</b></div>
+      <small style="margin-top:8px;">Loan kalikka (salary-la irundhu)</small>
+      <div class="wm-ded"><input type="number" inputmode="decimal" id="dtwDed" placeholder="0" value="${dtDeductFor(w)||""}" /><button id="dtwFull">Full</button></div>
+      <div class="wm-net" id="dtwNet"></div>
+    </div>` : "";
 
   const bg = document.createElement("div");
   bg.className = "sal-modal-bg";
   bg.innerHTML = `<div class="wm">
     <div class="wm-head">
       <span class="sal-avatar">&#128100;</span>
-      <div><div class="wm-name">${escapeHtml(w.name.toUpperCase())}</div><div class="wm-date">Total cash \u20b9${rupee(total)}</div></div>
+      <div><div class="wm-name">${escapeHtml(w.name.toUpperCase())}</div><div class="wm-date" id="dtwSub"></div></div>
       <button class="wm-x" id="dtwX">&#10005;</button>
     </div>
     <div class="wm-body">
-      <div class="wm-card"><small>Salary (KG \u00d7 \u20b9${RATE_PER_KG})</small>${salaryHtml}</div>
-      <div class="wm-card"><small>Food Cash</small>${foodHtml}</div>
+      <div class="wm-card"><small>Salary &amp; Food statement</small>${tableHtml}</div>
+      ${foodEntriesHtml}
+      ${loanHtml}
       <div class="wm-total">
         <div class="r"><small>Salary</small><b>\u20b9${rupee(w.salary)}</b></div>
         <div class="r"><small>Food Cash</small><b>\u20b9${rupee(w.food)}</b></div>
-        <div class="r big"><small>Total Cash</small><b>\u20b9${rupee(total)}</b></div>
+        <div class="r" id="dtwLoanRow" style="display:none;"><small>Loan kalichadhu</small><b id="dtwLoanVal" style="color:#B33A3A;"></b></div>
+        <div class="r big"><small>Total Cash</small><b id="dtwTot"></b></div>
       </div>
       <button class="wm-close" id="dtwClose">Close</button>
     </div>
   </div>`;
-  const close = ()=>bg.remove();
+  const refresh = ()=>{
+    const d = dtDeductFor(w);
+    const total = w.salary - d + w.food;
+    bg.querySelector("#dtwTot").textContent = "\u20b9" + rupee(total);
+    bg.querySelector("#dtwSub").textContent = "Total cash \u20b9" + rupee(total);
+    const row = bg.querySelector("#dtwLoanRow");
+    row.style.display = d > 0 ? "flex" : "none";
+    bg.querySelector("#dtwLoanVal").textContent = "\u2212\u20b9" + rupee(d);
+    const net = bg.querySelector("#dtwNet");
+    if(net) net.innerHTML = "Salary \u20b9" + rupee(w.salary) + " &minus; Loan \u20b9" + rupee(d) + " = <b>\u20b9" + rupee(w.salary - d) + "</b> &middot; Loan baaki \u20b9" + rupee(loan - d);
+  };
+  const close = ()=>{ bg.remove(); dtRenderFoodCashInCard(); };
   bg.addEventListener("click", (ev)=>{ if(ev.target===bg) close(); });
   bg.querySelector("#dtwX").addEventListener("click", close);
   bg.querySelector("#dtwClose").addEventListener("click", close);
   bg.querySelectorAll("[data-editfood]").forEach(btn=>btn.addEventListener("click", ()=>{
-    const [d,eid] = btn.dataset.editfood.split("::"); close(); dtEditFoodEntry(d,eid);
+    const [d,eid] = btn.dataset.editfood.split("::"); bg.remove(); dtEditFoodEntry(d,eid);
   }));
   bg.querySelectorAll("[data-delfood]").forEach(btn=>btn.addEventListener("click", ()=>{
-    const [d,eid] = btn.dataset.delfood.split("::"); close(); dtDeleteFoodEntry(d,eid);
+    const [d,eid] = btn.dataset.delfood.split("::"); bg.remove(); dtDeleteFoodEntry(d,eid);
   }));
+  const inp = bg.querySelector("#dtwDed");
+  if(inp){
+    const k = nameKey(w.name);
+    inp.addEventListener("input", ()=>{ dtLoanDeduct[k] = Number(inp.value)||0; refresh(); });
+    inp.addEventListener("change", ()=>{ const d = dtDeductFor(w); dtLoanDeduct[k] = d; inp.value = d || ""; refresh(); });
+    bg.querySelector("#dtwFull").addEventListener("click", ()=>{ dtLoanDeduct[k] = Math.min(loan, Math.floor(w.salary)); inp.value = dtLoanDeduct[k] || ""; refresh(); });
+  }
   document.body.appendChild(bg);
+  refresh();
 }
 
 function dtRenderFoodCashInCard(){
@@ -5609,12 +5692,18 @@ function dtRenderFoodCashInCard(){
   if(workers.length===0){
     list.innerHTML = '<p class="empty" style="margin:8px 0;">Worker edhuvum illa.</p>';
   } else {
-    list.innerHTML = '<div class="dtw-grid">' + workers.map(w=>`
+    list.innerHTML = '<div class="dtw-grid">' + workers.map(w=>{
+      const loan = dtLoanOf(w.name);
+      const ded = dtDeductFor(w);
+      const loanLine = ded > 0 ? `<div class="dtw-loan">\u2212\u20b9${rupee(ded)} loan</div>` : (loan > 0 ? `<div class="dtw-loan">Loan \u20b9${rupee(loan)}</div>` : "");
+      return `
       <div class="dtw-item" data-wkey="${escapeHtml(w.name.trim().toLowerCase())}">
         <span class="sal-avatar">&#128100;</span>
         <div class="dtw-name">${escapeHtml(w.name.toUpperCase())}</div>
-        <div class="dtw-amt mono">\u20b9${rupee(w.salary + w.food)}</div>
-      </div>`).join("") + '</div>';
+        <div class="dtw-amt mono">\u20b9${rupee(w.salary - ded + w.food)}</div>
+        ${loanLine}
+      </div>`;
+    }).join("") + '</div>';
     list.querySelectorAll(".dtw-item").forEach(el=>{
       el.addEventListener("click", ()=>dtOpenWorkerModal(el.dataset.wkey));
     });
@@ -5628,10 +5717,16 @@ function dtRenderFoodCashInCard(){
 
   const salaryTotal = dtCurrentPeriod ? Object.keys(dtCurrentPeriod.days).reduce((s,ds)=>s+((Number(dtCurrentPeriod.days[ds].kg)||0)*RATE_PER_KG),0) : 0;
   document.getElementById("dtpGrandTotal").textContent = "\u20b9"+rupee(salaryTotal+m+l+ev);
+  const totalDed = workers.reduce((sum,w)=>sum+dtDeductFor(w),0);
+  const loanBox = document.getElementById("dtpLoanLines");
+  loanBox.style.display = totalDed > 0 ? "block" : "none";
+  document.getElementById("dtpLoanDedVal").textContent = "\u2212\u20b9" + rupee(totalDed);
+  document.getElementById("dtpNetTotal").textContent = "\u20b9" + rupee(salaryTotal+m+l+ev-totalDed);
 }
 
 // ----- Pay Salary (shared by the active-period button and older unpaid periods) -----
-function dtPayPeriod(period, note, onDone){
+function dtPayPeriod(period, note, onDone, opts){
+  const deductions = (opts && opts.deductions) || {};
   const days = Object.keys(period.days||{}).sort();
   if(days.length===0){ if(note) note.textContent = "Onnume illa pay panna."; return; }
   const paidDate = fmtDate(new Date());
@@ -5655,7 +5750,11 @@ function dtPayPeriod(period, note, onDone){
   if(note) note.textContent = "Saving...";
   const historyWrites = [];
   Object.keys(salaryByName).forEach(nm=>{
-    historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team", name:nm, workingDays:daysByName[nm]||0, totalSalary:salaryByName[nm], paidDate, period:periodLabel}));
+    const ded = Math.max(0, Math.min(Number(deductions[nameKey(nm)])||0, dtLoanOf(nm), Math.floor(salaryByName[nm])));
+    if(ded > 0){
+      historyWrites.push(loanRecordEntry({name:nm, type:"repaid", amount:ded, date:paidDate, note:"Dryer salary-la irundhu kalichadhu", source:"salary", clamp:true}));
+    }
+    historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team", name:nm, workingDays:daysByName[nm]||0, totalSalary:salaryByName[nm], loanDeducted:ded, paidDate, period:periodLabel}));
   });
   Object.keys(foodByName).forEach(nm=>{
     historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team Food Cash", name:nm, workingDays:0, totalSalary:foodByName[nm], paidDate, period:periodLabel}));
@@ -5678,6 +5777,7 @@ function dtPayPeriod(period, note, onDone){
 
   Promise.all([periodWrite, ...foodWrites, ...historyWrites]).then(()=>{
     if(note){ note.textContent = "Paid \u2014 saved to Salary History!"; setTimeout(()=>{ note.textContent=""; }, 2000); }
+    dtLoanDeduct = {};
     if(onDone) onDone();
     dtLoadPeriods();
   }).catch(()=>{
@@ -5692,7 +5792,19 @@ document.getElementById("dtpPaySalaryBtn").addEventListener("click", ()=>{
     setTimeout(()=>{ note.textContent=""; }, 1500);
     return;
   }
-  dtPayPeriod(dtCurrentPeriod, note);
+  const ws = dtWorkerDetails();
+  const deductions = {};
+  let salary = 0, food = 0, ded = 0;
+  ws.forEach(w=>{
+    salary += w.salary; food += w.food;
+    const d = dtDeductFor(w);
+    if(d > 0){ deductions[nameKey(w.name)] = d; ded += d; }
+  });
+  const msg = "Salary pay pannalama?\n\nSalary: \u20b9" + rupee(salary) + "\nFood cash: \u20b9" + rupee(food) +
+    (ded>0 ? ("\nLoan kalichadhu: \u2212\u20b9" + rupee(ded)) : "") +
+    "\n\nTotal cash: \u20b9" + rupee(salary + food - ded);
+  if(!confirm(msg)) return;
+  dtPayPeriod(dtCurrentPeriod, note, null, {deductions});
 });
 
 // Paid periods carry a frozen foodCashSnapshot (captured at pay time) so history stays
@@ -5812,9 +5924,14 @@ function dtRenderPreviousRecords(){
 function dtLoadPeriods(){
   Promise.allSettled([
     db.collection("dryerPeriods").get(),
-    db.collection("foodCash").get()
+    db.collection("foodCash").get(),
+    db.collection("workerLoans").get()
   ]).then((results)=>{
     dtPeriodsCache = [];
+    dtLoanMap = {};
+    if(results[2].status==="fulfilled"){
+      results[2].value.forEach(doc=>{ dtLoanMap[doc.id] = Number(doc.data().loanBalance)||0; });
+    }
     const pSnap = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
     const fcSnap = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
 
@@ -5907,7 +6024,32 @@ function loanDeleteTx(info){
   });
 }
 
+function loanLoadNameSuggestions(){
+  Promise.allSettled([
+    db.collection("machineWorkerNames").get(),
+    db.collection("dryerWorkerNames").get(),
+    db.collection("workerLoans").get()
+  ]).then((rs)=>{
+    const seen = {};
+    const dl = document.getElementById("loanNamesList");
+    dl.innerHTML = "";
+    rs.forEach(r=>{
+      if(r.status!=="fulfilled") return;
+      r.value.forEach(doc=>{
+        const name = String(doc.data().name||"").trim();
+        const k = name.toLowerCase();
+        if(!name || seen[k]) return;
+        seen[k] = true;
+        const opt = document.createElement("option");
+        opt.value = name;
+        dl.appendChild(opt);
+      });
+    });
+  });
+}
+
 function loadLoanPage(){
+  loanLoadNameSuggestions();
   const emptyNote = document.getElementById("loanEmptyNote");
   const container = document.getElementById("loanWorkersList");
   const dateInput = document.getElementById("loanDateInput");
