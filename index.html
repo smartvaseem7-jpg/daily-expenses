@@ -395,6 +395,21 @@
   .stmt tfoot td { background:#DDEBD2; font-weight:800; border-top:2px solid #1F4A2B; border-bottom:none; }
   .stmt-legend { font-size:11px; color:#6B8664; margin-top:6px; line-height:1.45; }
   .dtw-loan { font-size:11px; font-weight:700; color:#B33A3A; }
+  /* ---- Dryer: actual salary entry ---- */
+  .dte-card { background:#fff; border:1px solid #C3D7B7; border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+  .dte-head { display:flex; align-items:center; gap:8px; }
+  .dte-head .sal-avatar { width:30px; height:30px; font-size:14px; }
+  .dte-name { font-family:'Fraunces',serif; font-weight:800; font-size:14px; color:#1F3D24; flex:1; min-width:0; overflow-wrap:anywhere; }
+  .dte-calc { font-size:11px; color:#5C7A55; font-weight:700; text-align:right; line-height:1.3; }
+  .dte-calc b { font-size:14px; color:#1F4A2B; }
+  .dte-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .dte-grid label { font-size:11px; font-weight:700; color:#5C7A55; display:block; }
+  .dte-grid input { display:block; width:100%; box-sizing:border-box; margin-top:3px; }
+  .dte-diff { display:flex; justify-content:space-between; align-items:baseline; margin-top:8px; padding-top:6px; border-top:1px dashed #C3D7B7; font-size:13px; font-weight:700; color:#33523A; }
+  .dte-diff b { font-size:15px; }
+  .dtt-two { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:10px 0; border-bottom:1px dashed rgba(200,245,90,.28); }
+  .dtt-two small { display:block; font-size:10.5px; font-weight:700; color:#B9D6AF; text-transform:uppercase; }
+  .dtt-two b { font-family:'IBM Plex Mono',monospace; font-size:20px; color:#C8F55A; }
   /* ---- Dryer: workers grid ---- */
   .dtw-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px; }
   .dtw-item { background:#fff; border:1px solid #C3D7B7; border-radius:14px; padding:10px 4px 9px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; }
@@ -1461,6 +1476,10 @@
               <div class="dt-section-label" style="margin-top:16px;">Workers <span style="font-size:11px;font-weight:600;color:#5C7A55;text-transform:none;letter-spacing:0;" class="no-print">tap pannina full details</span></div>
               <div id="dtpFoodList"></div>
 
+              <div class="dt-section-label" style="margin-top:16px;">Actual Salary Entry <span style="font-size:11px;font-weight:600;color:#5C7A55;text-transform:none;letter-spacing:0;" class="no-print">kudutha amount pathivu pannunga</span></div>
+              <div id="dtpEntryList"></div>
+              <button class="fadd no-print" id="dtpAddWorkerBtn" style="margin-top:6px;">+ Add Worker</button>
+
               <div class="dtp-food-totals">
                 <div class="dtp-food-total-line"><span>Total Morning Food</span><span class="mono" id="dtpFoodMorningTotal">&#8377;0</span></div>
                 <div class="dtp-food-total-line"><span>Total Lunch Food</span><span class="mono" id="dtpFoodLunchTotal">&#8377;0</span></div>
@@ -1468,14 +1487,20 @@
                 <div class="dtp-food-total-line total"><span>Total Food Cash</span><span class="mono" id="dtpFoodGrandTotal">&#8377;0</span></div>
               </div>
 
-              <div class="dtp-grand-total">
-                <span>GRAND TOTAL CASH</span>
-                <span class="mono" id="dtpGrandTotal">&#8377;0</span>
+              <div class="sal-payroll">
+                <div class="ttl">DRYER TEAM TOTAL</div>
+                <div class="pr"><span>KG Amount</span><b id="dttKg">&#8377;0</b></div>
+                <div class="pr"><span>Food Cash</span><b id="dttFood">&#8377;0</b></div>
+                <div class="pr"><span>Salary without KG</span><b id="dttNoKg">&#8377;0</b></div>
+                <div class="pr"><span>Loan Deduction</span><b id="dttLoan">&minus;&#8377;0</b></div>
+                <div class="dtt-two">
+                  <div><small>Calculated Total</small><b id="dttCalc">&#8377;0</b></div>
+                  <div><small>Actual Total Paid</small><b id="dttActual">&#8377;0</b></div>
+                </div>
+                <div class="pr grand"><span>Total Difference</span><b id="dttDiff">&#8377;0</b></div>
               </div>
-              <div id="dtpLoanLines" style="display:none;">
-                <div class="dtp-food-total-line" style="margin:8px 4px 4px;"><span>Loan kalichadhu</span><span class="mono" id="dtpLoanDedVal" style="color:#B33A3A;"></span></div>
-                <div class="dtp-grand-total"><span>NET CASH</span><span class="mono" id="dtpNetTotal">&#8377;0</span></div>
-              </div>
+              <button class="btn-export no-print" id="dtpCopyBtn" style="width:100%; margin-bottom:6px;">&#128203; Copy Dryer Salary Details</button>
+              <div class="save-note no-print" id="dtpCopyNote"></div>
 
               <button class="dt-week-done-btn no-print" id="dtpPaySalaryBtn">&#9989; Pay Salary</button>
               <div class="save-note no-print" id="dtpPayNote"></div>
@@ -3702,6 +3727,40 @@ let mtFoodAggCache = {map:{}, dayDocs:{}};
 // ---- Loan deduction from salary (Machine Team salary page) ----
 let mtLoanMap = {};      // nameKey -> current loan balance (from workerLoans)
 let mtLoanDeduct = {};   // worker name -> amount to deduct from this salary
+
+// The loan amounts you plan to take off are saved right away (and kept until Pay Salary),
+// so they are still there the next day / on another phone.
+const MT_DRAFT_LS = "mtLoanDeductDraft";
+let mtDraftTimer = null;
+function mtSaveDeductDraft(){
+  clearTimeout(mtDraftTimer);
+  mtDraftTimer = setTimeout(()=>{
+    const obj = {};
+    Object.keys(mtSalaryAggCache.map).forEach(nm=>{ const d = mtDeductFor(nm); if(d>0) obj[nameKey(nm)] = d; });
+    try{ localStorage.setItem(MT_DRAFT_LS, JSON.stringify(obj)); }catch(_){}
+    db.collection("salaryDrafts").doc("machineTeam").set({deductions: obj, updatedAt: new Date().toISOString()}).catch(()=>{});
+  }, 400);
+}
+function mtClearDeductDraft(){
+  clearTimeout(mtDraftTimer);
+  try{ localStorage.removeItem(MT_DRAFT_LS); }catch(_){}
+  db.collection("salaryDrafts").doc("machineTeam").delete().catch(()=>{});
+}
+// fsRes = result of reading the saved draft from the database
+function mtApplyDeductDraft(fsRes){
+  let saved = null;
+  if(fsRes && fsRes.status==="fulfilled"){
+    saved = fsRes.value.exists ? (fsRes.value.data().deductions || {}) : null;
+  } else {
+    try{ saved = JSON.parse(localStorage.getItem(MT_DRAFT_LS) || "null"); }catch(_){ saved = null; }
+  }
+  mtLoanDeduct = {};
+  if(!saved) return;
+  Object.keys(mtSalaryAggCache.map).forEach(nm=>{
+    const v = Number(saved[nameKey(nm)])||0;
+    if(v>0) mtLoanDeduct[nm] = v;
+  });
+}
 function mtDeductFor(name){
   const info = mtSalaryAggCache.map[name];
   if(!info) return 0;
@@ -3843,6 +3902,7 @@ function mtOpenWorkerModal(name){
     const net = bg.querySelector("#wmNet");
     if(net) net.innerHTML = "Salary " + MT_R(info.totalSalary) + " &minus; Loan " + MT_R(d) + " = <b>" + MT_R(bal) + "</b> &middot; Loan baaki " + MT_R(loan - d);
     mtUpdateSalaryTotals();
+    mtSaveDeductDraft();
   };
   const close = ()=>{ bg.remove(); mtRenderSalaryCards(); };
   bg.addEventListener("click", (ev)=>{ if(ev.target===bg) close(); });
@@ -3897,7 +3957,8 @@ function loadMachineTeamSalary(){
   Promise.allSettled([
     db.collection("machineTeam").get(),
     db.collection("foodCash").get(),
-    db.collection("workerLoans").get()
+    db.collection("workerLoans").get(),
+    db.collection("salaryDrafts").doc("machineTeam").get()
   ]).then((results)=>{
     const mtSnap = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
     const fcSnap = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
@@ -3907,6 +3968,7 @@ function loadMachineTeamSalary(){
     }
     mtSalaryAggCache = computeSalaryAccumulation(mtSnap, "salary");
     mtFoodAggCache = computeFoodCashAccumulation(fcSnap, "onlyMachine");
+    mtApplyDeductDraft(results[3]);
     renderFoodCashTable("mtFoodList","mtFoodTotalVal", mtFoodAggCache.map, "mtSalarySaveNote", loadMachineTeamSalary);
     mtRenderSalaryCards();
   }).catch(()=>{
@@ -3963,6 +4025,7 @@ document.getElementById("mtPaySalaryBtn").addEventListener("click", ()=>{
     ...historyWrites
   ]).then(()=>{
     mtLoanDeduct = {};
+    mtClearDeductDraft();
     note.textContent = "Salary paid — saved to history!";
     setTimeout(()=>{ note.textContent=""; }, 2000);
     loadMachineTeamSalary();
@@ -3986,6 +4049,8 @@ document.getElementById("mtSalaryClearBtn").addEventListener("click", ()=>{
     paySalaryTeam("machineTeam", mtSalaryAggCache, "salary"),
     payFoodCash(mtFoodAggCache)
   ]).then(()=>{
+    mtLoanDeduct = {};
+    mtClearDeductDraft();
     note.textContent = "Cleared.";
     setTimeout(()=>{ note.textContent=""; }, 1500);
     loadMachineTeamSalary();
@@ -5542,7 +5607,7 @@ function dtWorkerDetails(){
   const map = {};
   const get = (nm)=>{
     const key = String(nm||"").trim().toLowerCase();
-    if(!map[key]) map[key] = {name:String(nm||"").trim(), salaryRows:[], foodRows:[], salary:0, kg:0, food:0};
+    if(!map[key]) map[key] = {name:String(nm||"").trim(), salaryRows:[], foodRows:[], salary:0, kg:0, food:0, noKg:0, actual:null};
     return map[key];
   };
   const p = dtCurrentPeriod;
@@ -5564,6 +5629,13 @@ function dtWorkerDetails(){
     w.foodRows.push(e);
     w.food += e.total;
   });
+  const extras = (p && p.workerExtras) || {};
+  Object.keys(extras).forEach(k=>{
+    const e = extras[k] || {};
+    const w = get(e.name || k);
+    w.noKg = Number(e.noKg)||0;
+    w.actual = (e.actual===null || e.actual===undefined || e.actual==="") ? null : Number(e.actual);
+  });
   return Object.values(map).sort((a,b)=>a.name.localeCompare(b.name));
 }
 const dtKg = (n)=> (n % 1 === 0 ? String(n) : n.toFixed(1));
@@ -5574,11 +5646,38 @@ function dtWd(ds){ return DT_WD[new Date(ds + "T00:00:00").getDay()]; }
 // ---- Dryer worker loans (balances live on the Loan page, shared by name) ----
 let dtLoanMap = {};     // nameKey -> loan balance
 let dtLoanDeduct = {};  // nameKey -> amount to take off this pay
+const DT_DRAFT_LS = "dtLoanDeductDraft";
+let dtDraftTimer = null;
+function dtSaveDeductDraft(){
+  clearTimeout(dtDraftTimer);
+  dtDraftTimer = setTimeout(()=>{
+    const obj = {};
+    dtWorkerDetails().forEach(w=>{ const d = dtDeductFor(w); if(d>0) obj[nameKey(w.name)] = d; });
+    try{ localStorage.setItem(DT_DRAFT_LS, JSON.stringify(obj)); }catch(_){}
+    db.collection("salaryDrafts").doc("dryerTeam").set({deductions: obj, updatedAt: new Date().toISOString()}).catch(()=>{});
+  }, 400);
+}
+function dtClearDeductDraft(){
+  clearTimeout(dtDraftTimer);
+  try{ localStorage.removeItem(DT_DRAFT_LS); }catch(_){}
+  db.collection("salaryDrafts").doc("dryerTeam").delete().catch(()=>{});
+}
+function dtApplyDeductDraft(fsRes){
+  let saved = null;
+  if(fsRes && fsRes.status==="fulfilled"){
+    saved = fsRes.value.exists ? (fsRes.value.data().deductions || {}) : null;
+  } else {
+    try{ saved = JSON.parse(localStorage.getItem(DT_DRAFT_LS) || "null"); }catch(_){ saved = null; }
+  }
+  dtLoanDeduct = {};
+  if(!saved) return;
+  Object.keys(saved).forEach(k=>{ const v = Number(saved[k])||0; if(v>0) dtLoanDeduct[k] = v; });
+}
 function dtLoanOf(name){ return Number(dtLoanMap[nameKey(String(name||""))])||0; }
 // capped by the loan balance and by the worker's salary (food cash is paid in full)
 function dtDeductFor(w){
   const want = Number(dtLoanDeduct[nameKey(w.name)])||0;
-  return Math.max(0, Math.min(want, dtLoanOf(w.name), Math.floor(w.salary)));
+  return Math.max(0, Math.min(want, dtLoanOf(w.name), Math.floor(w.salary + (w.noKg||0))));
 }
 
 function dtOpenWorkerModal(key){
@@ -5647,22 +5746,26 @@ function dtOpenWorkerModal(key){
       <div class="wm-total">
         <div class="r"><small>Salary</small><b>\u20b9${rupee(w.salary)}</b></div>
         <div class="r"><small>Food Cash</small><b>\u20b9${rupee(w.food)}</b></div>
+        ${w.noKg>0 ? `<div class="r"><small>Salary without KG</small><b>\u20b9${rupee(w.noKg)}</b></div>` : ""}
         <div class="r" id="dtwLoanRow" style="display:none;"><small>Loan kalichadhu</small><b id="dtwLoanVal" style="color:#B33A3A;"></b></div>
         <div class="r big"><small>Total Cash</small><b id="dtwTot"></b></div>
+        ${w.actual!==null ? `<div class="r"><small>Actual paid</small><b>\u20b9${rupee(w.actual)}</b></div><div class="r"><small>Difference</small><b id="dtwDiff"></b></div>` : ""}
       </div>
       <button class="wm-close" id="dtwClose">Close</button>
     </div>
   </div>`;
   const refresh = ()=>{
     const d = dtDeductFor(w);
-    const total = w.salary - d + w.food;
+    const total = w.salary + (w.noKg||0) - d + w.food;
     bg.querySelector("#dtwTot").textContent = "\u20b9" + rupee(total);
+    const dd = bg.querySelector("#dtwDiff"); if(dd) dd.textContent = dtSigned(Math.round(w.actual) - Math.round(total));
     bg.querySelector("#dtwSub").textContent = "Total cash \u20b9" + rupee(total);
     const row = bg.querySelector("#dtwLoanRow");
     row.style.display = d > 0 ? "flex" : "none";
     bg.querySelector("#dtwLoanVal").textContent = "\u2212\u20b9" + rupee(d);
     const net = bg.querySelector("#dtwNet");
-    if(net) net.innerHTML = "Salary \u20b9" + rupee(w.salary) + " &minus; Loan \u20b9" + rupee(d) + " = <b>\u20b9" + rupee(w.salary - d) + "</b> &middot; Loan baaki \u20b9" + rupee(loan - d);
+    if(net) net.innerHTML = "Salary \u20b9" + rupee(w.salary + (w.noKg||0)) + " &minus; Loan \u20b9" + rupee(d) + " = <b>\u20b9" + rupee(w.salary + (w.noKg||0) - d) + "</b> &middot; Loan baaki \u20b9" + rupee(loan - d);
+    dtSaveDeductDraft();
   };
   const close = ()=>{ bg.remove(); dtRenderFoodCashInCard(); };
   bg.addEventListener("click", (ev)=>{ if(ev.target===bg) close(); });
@@ -5679,11 +5782,157 @@ function dtOpenWorkerModal(key){
     const k = nameKey(w.name);
     inp.addEventListener("input", ()=>{ dtLoanDeduct[k] = Number(inp.value)||0; refresh(); });
     inp.addEventListener("change", ()=>{ const d = dtDeductFor(w); dtLoanDeduct[k] = d; inp.value = d || ""; refresh(); });
-    bg.querySelector("#dtwFull").addEventListener("click", ()=>{ dtLoanDeduct[k] = Math.min(loan, Math.floor(w.salary)); inp.value = dtLoanDeduct[k] || ""; refresh(); });
+    bg.querySelector("#dtwFull").addEventListener("click", ()=>{ dtLoanDeduct[k] = Math.min(loan, Math.floor(w.salary + (w.noKg||0))); inp.value = dtLoanDeduct[k] || ""; refresh(); });
   }
   document.body.appendChild(bg);
   refresh();
 }
+
+// ---- Actual salary entry + Dryer Team Total ----
+function dtExtraKey(name){ return nameKey(String(name||"")).replace(/[.\/~*\[\]`]/g,"_"); }
+function dtSetExtra(name, patch){
+  if(!dtCurrentPeriod) return null;
+  const key = dtExtraKey(name);
+  const ex = dtCurrentPeriod.workerExtras = dtCurrentPeriod.workerExtras || {};
+  ex[key] = Object.assign({name:String(name).trim(), noKg:0, actual:null}, ex[key]||{}, patch||{});
+  return key;
+}
+function dtSaveExtra(name){
+  if(!dtCurrentPeriod) return;
+  const key = dtExtraKey(name);
+  const e = dtCurrentPeriod.workerExtras && dtCurrentPeriod.workerExtras[key];
+  if(!e) return;
+  db.collection("dryerPeriods").doc(dtCurrentPeriod.id).set({workerExtras:{[key]:e}}, {merge:true}).catch(()=>{});
+}
+// everything about one worker's money, rounded to whole rupees
+function dtCalc(w){
+  const ded = dtDeductFor(w);
+  const kg = Math.round(w.salary), food = Math.round(w.food), noKg = Math.round(w.noKg||0);
+  const calc = kg + noKg + food - ded;
+  const actual = (w.actual===null || w.actual===undefined) ? calc : w.actual;
+  return {kg, food, noKg, ded, calc, actual, diff: actual - calc, entered: !(w.actual===null || w.actual===undefined)};
+}
+const dtSigned = (n)=> n>0 ? "+\u20b9"+rupee(n) : (n<0 ? "\u2212\u20b9"+rupee(-n) : "\u20b90");
+
+// updates numbers in place (no re-render, so the keyboard stays open while typing)
+function dtRefreshNumbers(workers){
+  const t = {kg:0, food:0, noKg:0, ded:0, calc:0, actual:0};
+  workers.forEach(w=>{
+    const c = dtCalc(w);
+    t.kg += c.kg; t.food += c.food; t.noKg += c.noKg; t.ded += c.ded; t.calc += c.calc; t.actual += c.actual;
+    const key = dtExtraKey(w.name);
+    document.querySelectorAll("#dtpEntryList .dte-card").forEach(card=>{
+      if(card.dataset.key !== key) return;
+      card.querySelector(".dte-calc-val").textContent = "\u20b9" + rupee(c.calc);
+      const dv = card.querySelector(".dte-diff-val");
+      dv.textContent = dtSigned(c.diff);
+      dv.style.color = c.diff===0 ? "#2F6B3A" : (c.diff>0 ? "#B5651D" : "#B33A3A");
+    });
+    document.querySelectorAll("#dtpFoodList .dtw-item").forEach(el=>{
+      if(el.dataset.wkey === w.name.trim().toLowerCase()) el.querySelector(".dtw-amt").textContent = "\u20b9" + rupee(c.calc);
+    });
+  });
+  const set = (id, txt)=>{ const el = document.getElementById(id); if(el) el.textContent = txt; };
+  set("dttKg", "\u20b9" + rupee(t.kg));
+  set("dttFood", "\u20b9" + rupee(t.food));
+  set("dttNoKg", "\u20b9" + rupee(t.noKg));
+  set("dttLoan", "\u2212\u20b9" + rupee(t.ded));
+  set("dttCalc", "\u20b9" + rupee(t.calc));
+  set("dttActual", "\u20b9" + rupee(t.actual));
+  set("dttDiff", dtSigned(t.actual - t.calc));
+  return t;
+}
+
+function dtRenderEntryList(workers){
+  const box = document.getElementById("dtpEntryList");
+  const addBtn = document.getElementById("dtpAddWorkerBtn");
+  if(!dtCurrentPeriod){
+    box.innerHTML = '<p class="empty" style="margin:8px 0;">Mudhalla oru date add pannunga.</p>';
+    addBtn.style.display = "none";
+    return;
+  }
+  addBtn.style.display = "block";
+  if(workers.length===0){ box.innerHTML = '<p class="empty" style="margin:8px 0;">Worker edhuvum illa.</p>'; return; }
+  box.innerHTML = workers.map(w=>{
+    const key = dtExtraKey(w.name);
+    return `<div class="dte-card" data-key="${escapeHtml(key)}" data-name="${escapeHtml(w.name)}">
+      <div class="dte-head">
+        <span class="sal-avatar">&#128100;</span>
+        <span class="dte-name">${escapeHtml(w.name.toUpperCase())}</span>
+        <span class="dte-calc">Calculated<br><b class="dte-calc-val mono"></b></span>
+      </div>
+      <div class="dte-grid">
+        <label>Salary without KG (Rs.)<input type="number" inputmode="decimal" class="dte-nokg" placeholder="0" value="${w.noKg||""}" /></label>
+        <label>Actual Salary Paid (Rs.)<input type="number" inputmode="decimal" class="dte-actual" placeholder="calculated" value="${w.actual===null||w.actual===undefined?"":w.actual}" /></label>
+      </div>
+      <div class="dte-diff"><span>Difference</span><b class="dte-diff-val mono"></b></div>
+    </div>`;
+  }).join("");
+  box.querySelectorAll(".dte-card").forEach(card=>{
+    const name = card.dataset.name;
+    const noKgInp = card.querySelector(".dte-nokg"), actInp = card.querySelector(".dte-actual");
+    const onInput = ()=>{
+      dtSetExtra(name, {
+        noKg: Number(noKgInp.value)||0,
+        actual: actInp.value.trim()==="" ? null : (Number(actInp.value)||0)
+      });
+      dtRefreshNumbers(dtWorkerDetails());
+    };
+    noKgInp.addEventListener("input", onInput);
+    actInp.addEventListener("input", onInput);
+    const onChange = ()=>{ onInput(); dtSaveExtra(name); dtRenderGridOnly(); };
+    noKgInp.addEventListener("change", onChange);
+    actInp.addEventListener("change", onChange);
+  });
+}
+
+function dtCopyDetails(){
+  const workers = dtWorkerDetails();
+  if(workers.length===0) return "";
+  const days = dtCurrentPeriod ? Object.keys(dtCurrentPeriod.days||{}).sort() : [];
+  const range = days.length ? (days.length===1 ? fmtCompactDay(days[0]) : `${fmtCompactDay(days[0])} \u2013 ${fmtCompactDay(days[days.length-1])}`) : "";
+  const R = (n)=>"Rs. " + rupee(n);
+  let t = {kg:0, food:0, noKg:0, ded:0, calc:0, actual:0};
+  const lines = workers.map(w=>{
+    const c = dtCalc(w);
+    t.kg+=c.kg; t.food+=c.food; t.noKg+=c.noKg; t.ded+=c.ded; t.calc+=c.calc; t.actual+=c.actual;
+    return `${w.name.toUpperCase()}: KG ${R(c.kg)} + Food ${R(c.food)} + Without KG ${R(c.noKg)} - Loan ${R(c.ded)} = ${R(c.calc)} | Actual ${R(c.actual)} | Diff ${c.diff>0?"+":""}${c.diff}`;
+  });
+  return `Dryer Team Salary${range ? " (" + range + ")" : ""}\n\n` + lines.join("\n") +
+    `\n\nKG Amount: ${R(t.kg)}\nFood Cash: ${R(t.food)}\nSalary without KG: ${R(t.noKg)}\nLoan Deduction: ${R(t.ded)}\n` +
+    `Calculated Total: ${R(t.calc)}\nActual Total Paid: ${R(t.actual)}\nTotal Difference: ${t.actual-t.calc>0?"+":""}${t.actual-t.calc}`;
+}
+function dtCopyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+  return new Promise((resolve, reject)=>{
+    try{
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      ok ? resolve() : reject(new Error("copy failed"));
+    }catch(e){ reject(e); }
+  });
+}
+document.getElementById("dtpCopyBtn").addEventListener("click", ()=>{
+  const note = document.getElementById("dtpCopyNote");
+  const text = dtCopyDetails();
+  if(!text){ note.textContent = "Copy panna edhuvum illa."; setTimeout(()=>{ note.textContent=""; }, 1800); return; }
+  dtCopyToClipboard(text).then(()=>{
+    note.textContent = "Copy aachu!";
+  }).catch(()=>{
+    note.textContent = "Copy aagala.";
+  }).finally(()=>{ setTimeout(()=>{ note.textContent=""; }, 1800); });
+});
+document.getElementById("dtpAddWorkerBtn").addEventListener("click", ()=>{
+  if(!dtCurrentPeriod){ alert("Mudhalla oru date add pannunga."); return; }
+  const nm = (prompt("Worker peyar:") || "").trim();
+  if(!nm) return;
+  dtSetExtra(nm, {});
+  dtSaveExtra(nm);
+  dtRenderFoodCashInCard();
+});
 
 function dtRenderFoodCashInCard(){
   const list = document.getElementById("dtpFoodList");
@@ -5700,7 +5949,7 @@ function dtRenderFoodCashInCard(){
       <div class="dtw-item" data-wkey="${escapeHtml(w.name.trim().toLowerCase())}">
         <span class="sal-avatar">&#128100;</span>
         <div class="dtw-name">${escapeHtml(w.name.toUpperCase())}</div>
-        <div class="dtw-amt mono">\u20b9${rupee(w.salary - ded + w.food)}</div>
+        <div class="dtw-amt mono">\u20b9${rupee(dtCalc(w).calc)}</div>
         ${loanLine}
       </div>`;
     }).join("") + '</div>';
@@ -5715,13 +5964,13 @@ function dtRenderFoodCashInCard(){
   document.getElementById("dtpFoodEveningTotal").textContent = "\u20b9"+rupee(ev);
   document.getElementById("dtpFoodGrandTotal").textContent = "\u20b9"+rupee(m+l+ev);
 
-  const salaryTotal = dtCurrentPeriod ? Object.keys(dtCurrentPeriod.days).reduce((s,ds)=>s+((Number(dtCurrentPeriod.days[ds].kg)||0)*RATE_PER_KG),0) : 0;
-  document.getElementById("dtpGrandTotal").textContent = "\u20b9"+rupee(salaryTotal+m+l+ev);
-  const totalDed = workers.reduce((sum,w)=>sum+dtDeductFor(w),0);
-  const loanBox = document.getElementById("dtpLoanLines");
-  loanBox.style.display = totalDed > 0 ? "block" : "none";
-  document.getElementById("dtpLoanDedVal").textContent = "\u2212\u20b9" + rupee(totalDed);
-  document.getElementById("dtpNetTotal").textContent = "\u20b9" + rupee(salaryTotal+m+l+ev-totalDed);
+  dtRenderEntryList(workers);
+  dtRefreshNumbers(workers);
+}
+
+function dtRenderGridOnly(){
+  // re-draw just the worker tiles (after salary-without-KG changes the loan cap etc.)
+  dtRenderFoodCashInCard();
 }
 
 // ----- Pay Salary (shared by the active-period button and older unpaid periods) -----
@@ -5742,6 +5991,17 @@ function dtPayPeriod(period, note, onDone, opts){
       daysByName[nm] = (daysByName[nm]||0) + 1;
     });
   });
+  const extras = period.workerExtras || {};
+  const extraFor = (nm)=> extras[dtExtraKey(nm)] || null;
+  Object.keys(extras).forEach(k=>{
+    const e = extras[k] || {};
+    const nm = String(e.name||"").trim();
+    const noKg = Number(e.noKg)||0;
+    if(!nm || noKg <= 0) return;
+    let key = Object.keys(salaryByName).find(x=>nameKey(x)===nameKey(nm));
+    if(!key){ key = nm; salaryByName[key] = 0; daysByName[key] = 0; }
+    salaryByName[key] += noKg;
+  });
   const periodFood = dtFoodCashCache.slice(); // all currently-unpaid food cash goes with whichever period is being paid
   const foodByName = {};
   periodFood.forEach(e=>{ foodByName[e.name] = (foodByName[e.name]||0) + e.total; });
@@ -5754,7 +6014,11 @@ function dtPayPeriod(period, note, onDone, opts){
     if(ded > 0){
       historyWrites.push(loanRecordEntry({name:nm, type:"repaid", amount:ded, date:paidDate, note:"Dryer salary-la irundhu kalichadhu", source:"salary", clamp:true}));
     }
-    historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team", name:nm, workingDays:daysByName[nm]||0, totalSalary:salaryByName[nm], loanDeducted:ded, paidDate, period:periodLabel}));
+    const foodOfWorker = Object.keys(foodByName).filter(x=>nameKey(x)===nameKey(nm)).reduce((sum,x)=>sum+foodByName[x],0);
+    const calcTotal = Math.round(salaryByName[nm]) + Math.round(foodOfWorker) - ded;
+    const ex = extraFor(nm);
+    const actualPaid = (ex && ex.actual!==null && ex.actual!==undefined && ex.actual!=="") ? Number(ex.actual) : null;
+    historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team", name:nm, workingDays:daysByName[nm]||0, totalSalary:salaryByName[nm], loanDeducted:ded, calcTotal, actualPaid, paidDate, period:periodLabel}));
   });
   Object.keys(foodByName).forEach(nm=>{
     historyWrites.push(db.collection("salaryHistory").add({team:"Dryer Team Food Cash", name:nm, workingDays:0, totalSalary:foodByName[nm], paidDate, period:periodLabel}));
@@ -5777,7 +6041,7 @@ function dtPayPeriod(period, note, onDone, opts){
 
   Promise.all([periodWrite, ...foodWrites, ...historyWrites]).then(()=>{
     if(note){ note.textContent = "Paid \u2014 saved to Salary History!"; setTimeout(()=>{ note.textContent=""; }, 2000); }
-    dtLoanDeduct = {};
+    if(opts && opts.deductions){ dtLoanDeduct = {}; dtClearDeductDraft(); }
     if(onDone) onDone();
     dtLoadPeriods();
   }).catch(()=>{
@@ -5794,15 +6058,18 @@ document.getElementById("dtpPaySalaryBtn").addEventListener("click", ()=>{
   }
   const ws = dtWorkerDetails();
   const deductions = {};
-  let salary = 0, food = 0, ded = 0;
+  let kgAmt = 0, food = 0, noKg = 0, ded = 0, calc = 0, actual = 0;
   ws.forEach(w=>{
-    salary += w.salary; food += w.food;
-    const d = dtDeductFor(w);
-    if(d > 0){ deductions[nameKey(w.name)] = d; ded += d; }
+    const c = dtCalc(w);
+    kgAmt += c.kg; food += c.food; noKg += c.noKg; ded += c.ded; calc += c.calc; actual += c.actual;
+    if(c.ded > 0) deductions[nameKey(w.name)] = c.ded;
   });
-  const msg = "Salary pay pannalama?\n\nSalary: \u20b9" + rupee(salary) + "\nFood cash: \u20b9" + rupee(food) +
-    (ded>0 ? ("\nLoan kalichadhu: \u2212\u20b9" + rupee(ded)) : "") +
-    "\n\nTotal cash: \u20b9" + rupee(salary + food - ded);
+  const R = (n)=>"\u20b9" + rupee(n);
+  const msg = "Salary pay pannalama?\n\nKG amount: " + R(kgAmt) + "\nFood cash: " + R(food) +
+    (noKg>0 ? ("\nSalary without KG: " + R(noKg)) : "") +
+    (ded>0 ? ("\nLoan kalichadhu: \u2212" + R(ded)) : "") +
+    "\n\nCalculated total: " + R(calc) +
+    ((actual!==calc) ? ("\nActual total paid: " + R(actual) + "\nDifference: " + dtSigned(actual-calc)) : "");
   if(!confirm(msg)) return;
   dtPayPeriod(dtCurrentPeriod, note, null, {deductions});
 });
@@ -5833,7 +6100,8 @@ function dtRenderPreviousRecords(){
     const days = Object.keys(p.days).sort();
     let totalKg = 0;
     days.forEach(ds=>{ totalKg += Number(p.days[ds].kg)||0; });
-    const totalSalary = totalKg*RATE_PER_KG;
+    const noKgSum = Object.values(p.workerExtras||{}).reduce((sum,e)=>sum+(Number(e.noKg)||0),0);
+    const totalSalary = totalKg*RATE_PER_KG + noKgSum;
     const rangeLabel = days.length===1 ? fmtCompact(days[0]) : `${fmtCompact(days[0])} \u2013 ${fmtCompact(days[days.length-1])}`;
 
     const periodFood = dtFoodCashForPeriod(p);
@@ -5925,19 +6193,21 @@ function dtLoadPeriods(){
   Promise.allSettled([
     db.collection("dryerPeriods").get(),
     db.collection("foodCash").get(),
-    db.collection("workerLoans").get()
+    db.collection("workerLoans").get(),
+    db.collection("salaryDrafts").doc("dryerTeam").get()
   ]).then((results)=>{
     dtPeriodsCache = [];
     dtLoanMap = {};
     if(results[2].status==="fulfilled"){
       results[2].value.forEach(doc=>{ dtLoanMap[doc.id] = Number(doc.data().loanBalance)||0; });
     }
+    dtApplyDeductDraft(results[3]);
     const pSnap = results[0].status==="fulfilled" ? results[0].value : {forEach:()=>{}};
     const fcSnap = results[1].status==="fulfilled" ? results[1].value : {forEach:()=>{}};
 
     pSnap.forEach(doc=>{
       const d = doc.data();
-      dtPeriodsCache.push({ id:doc.id, periodStart:d.periodStart||"", status:d.status||"open", days: d.days||{}, paidDate:d.paidDate||"", foodCashSnapshot: Array.isArray(d.foodCashSnapshot) ? d.foodCashSnapshot : undefined });
+      dtPeriodsCache.push({ id:doc.id, periodStart:d.periodStart||"", status:d.status||"open", days: d.days||{}, workerExtras: d.workerExtras||{}, paidDate:d.paidDate||"", foodCashSnapshot: Array.isArray(d.foodCashSnapshot) ? d.foodCashSnapshot : undefined });
     });
 
     dtFoodCashCache = [];
@@ -6247,6 +6517,7 @@ async function loanClearAll(){
   mtWorkers.forEach(w=>{ w.loanOpening = 0; w.loanTaken = 0; w.loanRepaid = 0; w.loanBalance = 0; });
   mtLoanMap = {};
   mtLoanDeduct = {};
+  mtClearDeductDraft();
 
   // check again from the database
   try{
@@ -7104,7 +7375,7 @@ function loadSalaryHistory(){
       const d = doc.data();
       const key = d.paidDate + "|" + d.team + "|" + (d.period||"");
       if(!groups[key]) groups[key] = {paidDate:d.paidDate, team:d.team, period:d.period||"", rows:[], total:0};
-      groups[key].rows.push({name:d.name||"", workingDays:Number(d.workingDays)||0, totalSalary:Number(d.totalSalary)||0, loanDeducted:Number(d.loanDeducted)||0});
+      groups[key].rows.push({name:d.name||"", workingDays:Number(d.workingDays)||0, totalSalary:Number(d.totalSalary)||0, loanDeducted:Number(d.loanDeducted)||0, actualPaid:(d.actualPaid===null||d.actualPaid===undefined)?null:Number(d.actualPaid), calcTotal:(d.calcTotal===null||d.calcTotal===undefined)?null:Number(d.calcTotal)});
       groups[key].total += Number(d.totalSalary)||0;
     });
     Object.values(groups).forEach(g=>{
@@ -7113,7 +7384,8 @@ function loadSalaryHistory(){
       let rowsHtml = "";
       g.rows.forEach(r=>{
         const loanNote = r.loanDeducted>0 ? `<div class="icat" style="color:#B33A3A;">Loan &minus;${rupee(r.loanDeducted)} &rarr; Paid ${rupee(r.totalSalary-r.loanDeducted)}</div>` : "";
-        const subLabel = (g.period ? "" : `<div class="icat">${r.workingDays} days</div>`) + loanNote;
+        const actNote = (r.actualPaid!==null && r.calcTotal!==null) ? `<div class="icat">Actual paid ${rupee(r.actualPaid)} &middot; Diff ${r.actualPaid-r.calcTotal>0?"+":(r.actualPaid-r.calcTotal<0?"\u2212":"")}${rupee(Math.abs(r.actualPaid-r.calcTotal))}</div>` : "";
+        const subLabel = (g.period ? "" : `<div class="icat">${r.workingDays} days</div>`) + loanNote + actNote;
         rowsHtml += `<div class="ledger-row display" style="padding:6px 2px;"><div class="iname" style="font-size:14px;">${escapeHtml(r.name.toUpperCase())}${subLabel}</div><div class="iprice mono" style="font-size:14px;">${rupee(r.totalSalary)}</div></div>`;
       });
       const headerLabel = g.period ? `${g.team} &middot; ${g.period}` : `${fmtNice(g.paidDate)} &middot; ${g.team}`;
