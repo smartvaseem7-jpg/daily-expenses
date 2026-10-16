@@ -382,6 +382,17 @@
   .mt-modal-sheet { background:#F4F8F0; }
   .mt-modal-title { color:#1F4A2B; }
   .mt-modal-close, .mt-modal-back { background:#DDEBD2; color:#1F4A2B; }
+  /* ---- Dryer: one clean page, popups for forms/details ---- */
+  .dt-act-row { display:flex; gap:8px; margin:10px 0 12px; }
+  .dt-act-row button { flex:1; padding:12px 8px; border-radius:12px; font-weight:800; font-size:14px; cursor:pointer; border:1.5px solid #2F6B3A; }
+  .dt-act-row .primary { background:#2F6B3A; color:#fff; }
+  .dt-act-row .alt { background:#fff; color:#2F6B3A; }
+  .dt-wk-head { display:flex; justify-content:space-between; align-items:center; margin-top:16px; }
+  #dryerSection #dtpAddWorkerBtn { width:auto; padding:6px 12px; font-size:12.5px; }
+  .dt-hint { font-size:12px; color:#6B8664; margin:2px 2px 8px; line-height:1.4; }
+  .dtc-actual { grid-column:1 / -1; font-size:12px; font-weight:700; color:#33523A; margin-top:6px; }
+  .dtt-food-split { font-size:12px; color:#5C7A55; text-align:center; margin:-4px 0 10px; }
+  .dtt-food-split b { font-family:'IBM Plex Mono',monospace; color:#1F4A2B; }
   /* ---- Statement table (bank / Excel style) ---- */
   .stmt-wrap { overflow-x:auto; border:1px solid #B5CBA8; border-radius:10px; margin-top:6px; }
   .stmt { width:100%; border-collapse:collapse; font-size:11.5px; }
@@ -1417,52 +1428,6 @@
               <h2 class="section-title">DRYER TEAM</h2>
             </div>
 
-            <div class="mt-card no-print" id="dtAddRecordCard">
-              <div class="mt-card-head" id="dtAddRecordToggle" style="cursor:pointer;">
-                <span class="sec-name display">Add Record</span>
-                <span class="dt-icon-btn" style="pointer-events:none;" id="dtAddRecordChevron">&#9660;</span>
-              </div>
-
-              <div id="dtAddRecordBody" style="display:none;">
-              <div class="dt-section-label">Add Date</div>
-              <div class="dt-field-label" style="margin-top:0;">Date</div>
-              <input type="date" id="dtpDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
-
-              <div class="dt-field-label">Total KG (this date)</div>
-              <input type="number" inputmode="decimal" placeholder="0" id="dtpKgInput" class="dt-kg-input no-print" />
-
-              <div class="dt-field-label">Workers (tap to select)</div>
-              <div id="dtpWorkerChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
-              <div class="form-row no-print">
-                <input type="text" placeholder="New worker name" id="dtpNewWorkerInput" style="flex:1;" />
-                <button class="fadd" id="dtpNewWorkerAddBtn">+ Add name</button>
-              </div>
-
-              <div class="dt-calc-box">
-                <div class="dt-calc-line hero" id="dtpCalcLine1"></div>
-                <div class="dt-calc-line" id="dtpCalcLine2"></div>
-                <div class="dt-calc-line" id="dtpCalcLine3"></div>
-              </div>
-
-              <button class="btn-export no-print" id="dtpAddDateBtn" style="width:100%;font-size:15px;padding:13px 0;">&#10003; Add This Date</button>
-              <div class="save-note no-print" id="dtpSaveNote"></div>
-
-              <div class="section-divider"></div>
-              <div class="dt-section-label">Add Food Cash</div>
-              <div class="dt-field-label" style="margin-top:0;">Worker</div>
-              <select id="dtpFoodWorkerSelect" class="no-print" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;background:#fff;"><option value="">Select worker</option></select>
-              <div class="dt-field-label">Date</div>
-              <input type="date" id="dtpFoodDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
-              <div class="form-row no-print" style="margin-top:8px;">
-                <input type="number" inputmode="decimal" placeholder="Morning" id="dtpFoodMorningInput" style="flex:1;min-width:80px;" />
-                <input type="number" inputmode="decimal" placeholder="Lunch" id="dtpFoodLunchInput" style="flex:1;min-width:80px;" />
-                <input type="number" inputmode="decimal" placeholder="Evening" id="dtpFoodEveningInput" style="flex:1;min-width:80px;" />
-              </div>
-              <button class="fadd no-print" id="dtpFoodAddBtn" style="width:100%;margin-top:8px;">+ Add</button>
-              <div class="save-note no-print" id="dtpFoodSaveNote"></div>
-              </div>
-            </div>
-
             <div class="mt-card" id="dtpCard">
               <div class="mt-card-head"><span class="sec-name display">Current Period</span></div>
               <div class="dtp-range" id="dtpRange">No active period yet</div>
@@ -1471,21 +1436,19 @@
                 <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total Salary</span><span class="dtp-top-stat-val mono" id="dtpTotalSalary">&#8377;0</span></div>
               </div>
 
+              <div class="dt-act-row no-print">
+                <button class="primary" id="dtpOpenDateBtn">&#10133; KG add</button>
+                <button class="alt" id="dtpOpenFoodBtn">&#127860; Food add</button>
+              </div>
+
               <div id="dtpDaysList"></div>
 
-              <div class="dt-section-label" style="margin-top:16px;">Workers <span style="font-size:11px;font-weight:600;color:#5C7A55;text-transform:none;letter-spacing:0;" class="no-print">tap pannina full details</span></div>
-              <div id="dtpFoodList"></div>
-
-              <div class="dt-section-label" style="margin-top:16px;">Actual Salary Entry <span style="font-size:11px;font-weight:600;color:#5C7A55;text-transform:none;letter-spacing:0;" class="no-print">kudutha amount pathivu pannunga</span></div>
-              <div id="dtpEntryList"></div>
-              <button class="fadd no-print" id="dtpAddWorkerBtn" style="margin-top:6px;">+ Add Worker</button>
-
-              <div class="dtp-food-totals">
-                <div class="dtp-food-total-line"><span>Total Morning Food</span><span class="mono" id="dtpFoodMorningTotal">&#8377;0</span></div>
-                <div class="dtp-food-total-line"><span>Total Lunch Food</span><span class="mono" id="dtpFoodLunchTotal">&#8377;0</span></div>
-                <div class="dtp-food-total-line"><span>Total Evening Food</span><span class="mono" id="dtpFoodEveningTotal">&#8377;0</span></div>
-                <div class="dtp-food-total-line total"><span>Total Food Cash</span><span class="mono" id="dtpFoodGrandTotal">&#8377;0</span></div>
+              <div class="dt-wk-head">
+                <span class="dt-section-label" style="margin:0;">Workers</span>
+                <button class="fadd no-print" id="dtpAddWorkerBtn">+ Worker</button>
               </div>
+              <div class="dt-hint no-print">Worker-a tap pannina: statement, Salary without KG, Actual paid, Loan ellaam varum.</div>
+              <div id="dtpFoodList"></div>
 
               <div class="sal-payroll">
                 <div class="ttl">DRYER TEAM TOTAL</div>
@@ -1499,6 +1462,7 @@
                 </div>
                 <div class="pr grand"><span>Total Difference</span><b id="dttDiff">&#8377;0</b></div>
               </div>
+              <div class="dtt-food-split">Food: Morning <b id="dtpFoodMorningTotal">&#8377;0</b> &middot; Lunch <b id="dtpFoodLunchTotal">&#8377;0</b> &middot; Evening <b id="dtpFoodEveningTotal">&#8377;0</b><span id="dtpFoodGrandTotal" style="display:none;"></span></div>
               <button class="btn-export no-print" id="dtpCopyBtn" style="width:100%; margin-bottom:6px;">&#128203; Copy Dryer Salary Details</button>
               <div class="save-note no-print" id="dtpCopyNote"></div>
 
@@ -1528,6 +1492,63 @@
             <div id="dtpRecordsList"></div>
           </div>
 
+        </div>
+      </div>
+
+      <div class="sal-modal-bg dt-sheet-bg no-print" id="dtSheetDate" style="display:none;">
+        <div class="wm">
+          <div class="wm-head">
+            <span class="sal-avatar">&#128197;</span>
+            <div><div class="wm-name">KG add pannu</div><div class="wm-date">Date, KG, worker select</div></div>
+            <button class="wm-x" data-closesheet>&#10005;</button>
+          </div>
+          <div class="wm-body">
+              <div class="dt-field-label" style="margin-top:0;">Date</div>
+              <input type="date" id="dtpDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
+
+              <div class="dt-field-label">Total KG (this date)</div>
+              <input type="number" inputmode="decimal" placeholder="0" id="dtpKgInput" class="dt-kg-input no-print" />
+
+              <div class="dt-field-label">Workers (tap to select)</div>
+              <div id="dtpWorkerChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+              <div class="form-row no-print">
+                <input type="text" placeholder="New worker name" id="dtpNewWorkerInput" style="flex:1;" />
+                <button class="fadd" id="dtpNewWorkerAddBtn">+ Add name</button>
+              </div>
+
+              <div class="dt-calc-box">
+                <div class="dt-calc-line hero" id="dtpCalcLine1"></div>
+                <div class="dt-calc-line" id="dtpCalcLine2"></div>
+                <div class="dt-calc-line" id="dtpCalcLine3"></div>
+              </div>
+
+              <button class="btn-export no-print" id="dtpAddDateBtn" style="width:100%;font-size:15px;padding:13px 0;">&#10003; Add This Date</button>
+              <div class="save-note no-print" id="dtpSaveNote"></div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="sal-modal-bg dt-sheet-bg no-print" id="dtSheetFood" style="display:none;">
+        <div class="wm">
+          <div class="wm-head">
+            <span class="sal-avatar">&#127860;</span>
+            <div><div class="wm-name">Food cash add pannu</div><div class="wm-date">Worker, date, morning / lunch / evening</div></div>
+            <button class="wm-x" data-closesheet>&#10005;</button>
+          </div>
+          <div class="wm-body">
+              <div class="dt-field-label" style="margin-top:0;">Worker</div>
+              <select id="dtpFoodWorkerSelect" class="no-print" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;background:#fff;"><option value="">Select worker</option></select>
+              <div class="dt-field-label">Date</div>
+              <input type="date" id="dtpFoodDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
+              <div class="form-row no-print" style="margin-top:8px;">
+                <input type="number" inputmode="decimal" placeholder="Morning" id="dtpFoodMorningInput" style="flex:1;min-width:80px;" />
+                <input type="number" inputmode="decimal" placeholder="Lunch" id="dtpFoodLunchInput" style="flex:1;min-width:80px;" />
+                <input type="number" inputmode="decimal" placeholder="Evening" id="dtpFoodEveningInput" style="flex:1;min-width:80px;" />
+              </div>
+              <button class="fadd no-print" id="dtpFoodAddBtn" style="width:100%;margin-top:8px;">+ Add</button>
+              <div class="save-note no-print" id="dtpFoodSaveNote"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -5320,12 +5341,27 @@ function dtRenderWorkerChips(){
   });
 }
 
-document.getElementById("dtAddRecordToggle").addEventListener("click", ()=>{
-  const body = document.getElementById("dtAddRecordBody");
-  const chevron = document.getElementById("dtAddRecordChevron");
-  const isOpen = body.style.display !== "none";
-  body.style.display = isOpen ? "none" : "block";
-  chevron.innerHTML = isOpen ? "&#9660;" : "&#9650;";
+// ---- Forms open as popups (sheets) ----
+function dtOpenSheet(which){
+  const food = which === "food";
+  const di = document.getElementById(food ? "dtpFoodDateInput" : "dtpDateInput");
+  if(!di.value) di.value = fmtDate(new Date());
+  document.getElementById(food ? "dtSheetFood" : "dtSheetDate").style.display = "flex";
+}
+function dtCloseSheets(){
+  ["dtSheetDate","dtSheetFood"].forEach(id=>{ document.getElementById(id).style.display = "none"; });
+  if(dtEditingFoodKey){   // forget a half-finished food edit
+    dtEditingFoodKey = null;
+    document.getElementById("dtpFoodAddBtn").textContent = "+ Add";
+    ["dtpFoodWorkerSelect","dtpFoodDateInput","dtpFoodMorningInput","dtpFoodLunchInput","dtpFoodEveningInput"].forEach(id=>{ document.getElementById(id).value = ""; });
+  }
+}
+document.getElementById("dtpOpenDateBtn").addEventListener("click", ()=>dtOpenSheet("date"));
+document.getElementById("dtpOpenFoodBtn").addEventListener("click", ()=>dtOpenSheet("food"));
+document.querySelectorAll("#dtSheetDate [data-closesheet], #dtSheetFood [data-closesheet]").forEach(btn=>btn.addEventListener("click", dtCloseSheets));
+["dtSheetDate","dtSheetFood"].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener("click", (ev)=>{ if(ev.target===el) dtCloseSheets(); });
 });
 
 document.getElementById("dtpNewWorkerAddBtn").addEventListener("click", ()=>{
@@ -5396,6 +5432,7 @@ document.getElementById("dtpAddDateBtn").addEventListener("click", ()=>{
   }).then(()=>{
     note.textContent = "Added";
     setTimeout(()=>{ note.textContent=""; }, 1200);
+    dtCloseSheets();
     document.getElementById("dtpDateInput").value = "";
     document.getElementById("dtpKgInput").value = "";
     dtFormWorkers = [];
@@ -5416,7 +5453,7 @@ function dtEditDay(dateStr){
   dtFormWorkers = Array.from(d.workers);
   dtRenderWorkerChips();
   dtUpdatePreview();
-  document.getElementById("dtpDateInput").scrollIntoView({behavior:"smooth", block:"center"});
+  dtOpenSheet("date");
 }
 
 function dtDeleteDay(dateStr){
@@ -5455,6 +5492,7 @@ document.getElementById("dtpFoodAddBtn").addEventListener("click", ()=>{
     document.getElementById("dtpFoodEveningInput").value = "";
     dtEditingFoodKey = null;
     document.getElementById("dtpFoodAddBtn").textContent = "+ Add";
+    dtCloseSheets();
     dtLoadPeriods();
   };
   const doAdd = ()=> addFoodCashEntry(dateStr, name, morning, lunch, evening, "Dryer Team");
@@ -5491,7 +5529,7 @@ function dtEditFoodEntry(dateStr, entryId){
   document.getElementById("dtpFoodEveningInput").value = e.evening || "";
   dtEditingFoodKey = dateStr + "::" + entryId;
   document.getElementById("dtpFoodAddBtn").textContent = "Update";
-  document.getElementById("dtpFoodWorkerSelect").scrollIntoView({behavior:"smooth", block:"center"});
+  dtOpenSheet("food");
 }
 
 // ----- Rendering: the active Salary Period card -----
@@ -5743,28 +5781,51 @@ function dtOpenWorkerModal(key){
       <div class="wm-card"><small>Salary &amp; Food statement</small>${tableHtml}</div>
       ${foodEntriesHtml}
       ${loanHtml}
+      ${dtCurrentPeriod ? `<div class="wm-card">
+        <small>Extra &amp; Actual (pathivu pannunga)</small>
+        <div class="dte-grid">
+          <label>Salary without KG (Rs.)<input type="number" inputmode="decimal" id="dtwNoKg" placeholder="0" value="${w.noKg||""}" /></label>
+          <label>Actual Salary Paid (Rs.)<input type="number" inputmode="decimal" id="dtwActual" placeholder="calculated" value="${(w.actual===null||w.actual===undefined)?"":w.actual}" /></label>
+        </div>
+        <div class="stmt-legend">Actual blank-na calculated-a eduthukkum.</div>
+      </div>` : ""}
       <div class="wm-total">
-        <div class="r"><small>Salary</small><b>\u20b9${rupee(w.salary)}</b></div>
-        <div class="r"><small>Food Cash</small><b>\u20b9${rupee(w.food)}</b></div>
-        ${w.noKg>0 ? `<div class="r"><small>Salary without KG</small><b>\u20b9${rupee(w.noKg)}</b></div>` : ""}
+        <div class="r"><small>KG Salary</small><b id="dtwSalaryVal"></b></div>
+        <div class="r"><small>Food Cash</small><b id="dtwFoodVal"></b></div>
+        <div class="r" id="dtwNoKgRow" style="display:none;"><small>Salary without KG</small><b id="dtwNoKgVal"></b></div>
         <div class="r" id="dtwLoanRow" style="display:none;"><small>Loan kalichadhu</small><b id="dtwLoanVal" style="color:#B33A3A;"></b></div>
         <div class="r big"><small>Total Cash</small><b id="dtwTot"></b></div>
-        ${w.actual!==null ? `<div class="r"><small>Actual paid</small><b>\u20b9${rupee(w.actual)}</b></div><div class="r"><small>Difference</small><b id="dtwDiff"></b></div>` : ""}
+        <div class="r" id="dtwActualRow" style="display:none;"><small>Actual paid</small><b id="dtwActualVal"></b></div>
+        <div class="r" id="dtwDiffRow" style="display:none;"><small>Difference</small><b id="dtwDiff"></b></div>
       </div>
       <button class="wm-close" id="dtwClose">Close</button>
     </div>
   </div>`;
   const refresh = ()=>{
     const d = dtDeductFor(w);
-    const total = w.salary + (w.noKg||0) - d + w.food;
-    bg.querySelector("#dtwTot").textContent = "\u20b9" + rupee(total);
-    const dd = bg.querySelector("#dtwDiff"); if(dd) dd.textContent = dtSigned(Math.round(w.actual) - Math.round(total));
-    bg.querySelector("#dtwSub").textContent = "Total cash \u20b9" + rupee(total);
-    const row = bg.querySelector("#dtwLoanRow");
-    row.style.display = d > 0 ? "flex" : "none";
-    bg.querySelector("#dtwLoanVal").textContent = "\u2212\u20b9" + rupee(d);
-    const net = bg.querySelector("#dtwNet");
-    if(net) net.innerHTML = "Salary \u20b9" + rupee(w.salary + (w.noKg||0)) + " &minus; Loan \u20b9" + rupee(d) + " = <b>\u20b9" + rupee(w.salary + (w.noKg||0) - d) + "</b> &middot; Loan baaki \u20b9" + rupee(loan - d);
+    const noKg = w.noKg || 0;
+    const total = w.salary + noKg - d + w.food;
+    const q = (id)=>bg.querySelector(id);
+    q("#dtwTot").textContent = "\u20b9" + rupee(total);
+    q("#dtwSub").textContent = "Total cash \u20b9" + rupee(total);
+    q("#dtwSalaryVal").textContent = "\u20b9" + rupee(w.salary);
+    q("#dtwFoodVal").textContent = "\u20b9" + rupee(w.food);
+    q("#dtwNoKgRow").style.display = noKg > 0 ? "flex" : "none";
+    q("#dtwNoKgVal").textContent = "\u20b9" + rupee(noKg);
+    q("#dtwLoanRow").style.display = d > 0 ? "flex" : "none";
+    q("#dtwLoanVal").textContent = "\u2212\u20b9" + rupee(d);
+    const has = !(w.actual===null || w.actual===undefined);
+    q("#dtwActualRow").style.display = has ? "flex" : "none";
+    q("#dtwDiffRow").style.display = has ? "flex" : "none";
+    if(has){
+      const diff = Math.round(w.actual) - Math.round(total);
+      q("#dtwActualVal").textContent = "\u20b9" + rupee(w.actual);
+      const dv = q("#dtwDiff");
+      dv.textContent = dtSigned(diff);
+      dv.style.color = diff===0 ? "#2F6B3A" : (diff>0 ? "#B5651D" : "#B33A3A");
+    }
+    const net = q("#dtwNet");
+    if(net) net.innerHTML = "Salary \u20b9" + rupee(w.salary + noKg) + " &minus; Loan \u20b9" + rupee(d) + " = <b>\u20b9" + rupee(w.salary + noKg - d) + "</b> &middot; Loan baaki \u20b9" + rupee(loan - d);
     dtSaveDeductDraft();
   };
   const close = ()=>{ bg.remove(); dtRenderFoodCashInCard(); };
@@ -5783,6 +5844,20 @@ function dtOpenWorkerModal(key){
     inp.addEventListener("input", ()=>{ dtLoanDeduct[k] = Number(inp.value)||0; refresh(); });
     inp.addEventListener("change", ()=>{ const d = dtDeductFor(w); dtLoanDeduct[k] = d; inp.value = d || ""; refresh(); });
     bg.querySelector("#dtwFull").addEventListener("click", ()=>{ dtLoanDeduct[k] = Math.min(loan, Math.floor(w.salary + (w.noKg||0))); inp.value = dtLoanDeduct[k] || ""; refresh(); });
+  }
+  const nkInp = bg.querySelector("#dtwNoKg"), acInp = bg.querySelector("#dtwActual");
+  if(nkInp && acInp){
+    const onExtra = ()=>{
+      w.noKg = Number(nkInp.value)||0;
+      w.actual = acInp.value.trim()==="" ? null : (Number(acInp.value)||0);
+      dtSetExtra(w.name, {noKg:w.noKg, actual:w.actual});
+      refresh();
+    };
+    nkInp.addEventListener("input", onExtra);
+    acInp.addEventListener("input", onExtra);
+    const onSave = ()=>{ onExtra(); dtSaveExtra(w.name); };
+    nkInp.addEventListener("change", onSave);
+    acInp.addEventListener("change", onSave);
   }
   document.body.appendChild(bg);
   refresh();
@@ -5812,6 +5887,11 @@ function dtCalc(w){
   const actual = (w.actual===null || w.actual===undefined) ? calc : w.actual;
   return {kg, food, noKg, ded, calc, actual, diff: actual - calc, entered: !(w.actual===null || w.actual===undefined)};
 }
+function dtActualLine(c){
+  if(!c.entered) return '<span style="color:#9A8B6E;">Actual paid pathivu pannala</span>';
+  const col = c.diff===0 ? "#2F6B3A" : (c.diff>0 ? "#B5651D" : "#B33A3A");
+  return "Actual \u20b9" + rupee(c.actual) + ' &middot; <b style="color:' + col + ';">Diff ' + dtSigned(c.diff) + "</b>";
+}
 const dtSigned = (n)=> n>0 ? "+\u20b9"+rupee(n) : (n<0 ? "\u2212\u20b9"+rupee(-n) : "\u20b90");
 
 // updates numbers in place (no re-render, so the keyboard stays open while typing)
@@ -5821,15 +5901,10 @@ function dtRefreshNumbers(workers){
     const c = dtCalc(w);
     t.kg += c.kg; t.food += c.food; t.noKg += c.noKg; t.ded += c.ded; t.calc += c.calc; t.actual += c.actual;
     const key = dtExtraKey(w.name);
-    document.querySelectorAll("#dtpEntryList .dte-card").forEach(card=>{
-      if(card.dataset.key !== key) return;
-      card.querySelector(".dte-calc-val").textContent = "\u20b9" + rupee(c.calc);
-      const dv = card.querySelector(".dte-diff-val");
-      dv.textContent = dtSigned(c.diff);
-      dv.style.color = c.diff===0 ? "#2F6B3A" : (c.diff>0 ? "#B5651D" : "#B33A3A");
-    });
-    document.querySelectorAll("#dtpFoodList .dtw-item").forEach(el=>{
-      if(el.dataset.wkey === w.name.trim().toLowerCase()) el.querySelector(".dtw-amt").textContent = "\u20b9" + rupee(c.calc);
+    document.querySelectorAll("#dtpFoodList .dtc").forEach(el=>{
+      if(el.dataset.wkey !== w.name.trim().toLowerCase()) return;
+      el.querySelector(".dtc-calc").textContent = "\u20b9" + rupee(c.calc);
+      el.querySelector(".dtc-actual").innerHTML = dtActualLine(c);
     });
   });
   const set = (id, txt)=>{ const el = document.getElementById(id); if(el) el.textContent = txt; };
@@ -5841,49 +5916,6 @@ function dtRefreshNumbers(workers){
   set("dttActual", "\u20b9" + rupee(t.actual));
   set("dttDiff", dtSigned(t.actual - t.calc));
   return t;
-}
-
-function dtRenderEntryList(workers){
-  const box = document.getElementById("dtpEntryList");
-  const addBtn = document.getElementById("dtpAddWorkerBtn");
-  if(!dtCurrentPeriod){
-    box.innerHTML = '<p class="empty" style="margin:8px 0;">Mudhalla oru date add pannunga.</p>';
-    addBtn.style.display = "none";
-    return;
-  }
-  addBtn.style.display = "block";
-  if(workers.length===0){ box.innerHTML = '<p class="empty" style="margin:8px 0;">Worker edhuvum illa.</p>'; return; }
-  box.innerHTML = workers.map(w=>{
-    const key = dtExtraKey(w.name);
-    return `<div class="dte-card" data-key="${escapeHtml(key)}" data-name="${escapeHtml(w.name)}">
-      <div class="dte-head">
-        <span class="sal-avatar">&#128100;</span>
-        <span class="dte-name">${escapeHtml(w.name.toUpperCase())}</span>
-        <span class="dte-calc">Calculated<br><b class="dte-calc-val mono"></b></span>
-      </div>
-      <div class="dte-grid">
-        <label>Salary without KG (Rs.)<input type="number" inputmode="decimal" class="dte-nokg" placeholder="0" value="${w.noKg||""}" /></label>
-        <label>Actual Salary Paid (Rs.)<input type="number" inputmode="decimal" class="dte-actual" placeholder="calculated" value="${w.actual===null||w.actual===undefined?"":w.actual}" /></label>
-      </div>
-      <div class="dte-diff"><span>Difference</span><b class="dte-diff-val mono"></b></div>
-    </div>`;
-  }).join("");
-  box.querySelectorAll(".dte-card").forEach(card=>{
-    const name = card.dataset.name;
-    const noKgInp = card.querySelector(".dte-nokg"), actInp = card.querySelector(".dte-actual");
-    const onInput = ()=>{
-      dtSetExtra(name, {
-        noKg: Number(noKgInp.value)||0,
-        actual: actInp.value.trim()==="" ? null : (Number(actInp.value)||0)
-      });
-      dtRefreshNumbers(dtWorkerDetails());
-    };
-    noKgInp.addEventListener("input", onInput);
-    actInp.addEventListener("input", onInput);
-    const onChange = ()=>{ onInput(); dtSaveExtra(name); dtRenderGridOnly(); };
-    noKgInp.addEventListener("change", onChange);
-    actInp.addEventListener("change", onChange);
-  });
 }
 
 function dtCopyDetails(){
@@ -5941,19 +5973,29 @@ function dtRenderFoodCashInCard(){
   if(workers.length===0){
     list.innerHTML = '<p class="empty" style="margin:8px 0;">Worker edhuvum illa.</p>';
   } else {
-    list.innerHTML = '<div class="dtw-grid">' + workers.map(w=>{
+    list.innerHTML = workers.map(w=>{
+      const c = dtCalc(w);
       const loan = dtLoanOf(w.name);
-      const ded = dtDeductFor(w);
-      const loanLine = ded > 0 ? `<div class="dtw-loan">\u2212\u20b9${rupee(ded)} loan</div>` : (loan > 0 ? `<div class="dtw-loan">Loan \u20b9${rupee(loan)}</div>` : "");
+      const days = w.salaryRows.length;
       return `
-      <div class="dtw-item" data-wkey="${escapeHtml(w.name.trim().toLowerCase())}">
+      <div class="sal-row dtc" data-wkey="${escapeHtml(w.name.trim().toLowerCase())}">
         <span class="sal-avatar">&#128100;</span>
-        <div class="dtw-name">${escapeHtml(w.name.toUpperCase())}</div>
-        <div class="dtw-amt mono">\u20b9${rupee(dtCalc(w).calc)}</div>
-        ${loanLine}
+        <div>
+          <div class="sal-row-name">${escapeHtml(w.name.toUpperCase())}</div>
+          <div class="sal-row-date">${days ? days + " day" + (days>1?"s":"") + " \u00b7 " + dtKg(w.kg) + " KG" : "KG entry illa"}</div>
+        </div>
+        <div class="sal-row-bal"><small>Calculated</small><b class="dtc-calc">\u20b9${rupee(c.calc)}</b></div>
+        <span class="sal-chev">&rsaquo;</span>
+        <div class="sal-stats">
+          <div class="sal-stat"><small>KG \u20b9</small><b>${rupee(c.kg)}</b></div>
+          <div class="sal-stat"><small>Food</small><b>${rupee(c.food)}</b></div>
+          <div class="sal-stat"><small>Other</small><b>${rupee(c.noKg)}</b></div>
+          <div class="sal-stat"><small>${c.ded>0 ? "Loan \u2212" : "Loan bal"}</small><b class="${(c.ded>0||loan>0)?"red":""}">${c.ded>0 ? rupee(c.ded) : rupee(loan)}</b></div>
+        </div>
+        <div class="dtc-actual">${dtActualLine(c)}</div>
       </div>`;
-    }).join("") + '</div>';
-    list.querySelectorAll(".dtw-item").forEach(el=>{
+    }).join("");
+    list.querySelectorAll(".dtc").forEach(el=>{
       el.addEventListener("click", ()=>dtOpenWorkerModal(el.dataset.wkey));
     });
   }
@@ -5964,7 +6006,6 @@ function dtRenderFoodCashInCard(){
   document.getElementById("dtpFoodEveningTotal").textContent = "\u20b9"+rupee(ev);
   document.getElementById("dtpFoodGrandTotal").textContent = "\u20b9"+rupee(m+l+ev);
 
-  dtRenderEntryList(workers);
   dtRefreshNumbers(workers);
 }
 
