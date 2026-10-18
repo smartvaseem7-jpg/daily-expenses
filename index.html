@@ -1436,16 +1436,15 @@
                 <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total Salary</span><span class="dtp-top-stat-val mono" id="dtpTotalSalary">&#8377;0</span></div>
               </div>
 
-              <div class="dt-act-row no-print">
-                <button class="primary" id="dtpOpenDateBtn">&#10133; KG add</button>
-                <button class="alt" id="dtpOpenFoodBtn">&#127860; Food add</button>
+              <div class="dt-act-row no-print" style="justify-content:center;">
+                <button class="primary" id="dtpOpenAddMenuBtn" style="width:100%;max-width:360px;">&#10133; ADD</button>
               </div>
 
               <div id="dtpDaysList"></div>
 
               <div class="dt-wk-head">
                 <span class="dt-section-label" style="margin:0;">Workers</span>
-                <button class="fadd no-print" id="dtpAddWorkerBtn">+ Worker</button>
+                <button class="fadd no-print" id="dtpAddWorkerBtn">Manage Workers</button>
               </div>
               <div class="dt-hint no-print">Worker-a tap pannina: statement, Salary without KG, Actual paid, Loan ellaam varum.</div>
               <div id="dtpFoodList"></div>
@@ -1492,6 +1491,41 @@
             <div id="dtpRecordsList"></div>
           </div>
 
+        </div>
+      </div>
+
+      <div class="sal-modal-bg dt-sheet-bg no-print" id="dtAddMenu" style="display:none;">
+        <div class="wm" style="max-width:420px;">
+          <div class="wm-head">
+            <span class="sal-avatar">&#10133;</span>
+            <div><div class="wm-name">ADD ENTRY</div><div class="wm-date">Choose what to add</div></div>
+            <button class="wm-x" data-closeaddmenu>&#10005;</button>
+          </div>
+          <div class="wm-body" style="display:grid;gap:10px;">
+            <button class="primary" id="dtMenuFixed" style="width:100%;padding:14px;">&#128181; Fixed Salary</button>
+            <button class="primary" id="dtMenuKg" style="width:100%;padding:14px;">&#9878; KG Salary</button>
+            <button class="alt" id="dtMenuFood" style="width:100%;padding:14px;">&#127860; Food Cash</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sal-modal-bg dt-sheet-bg no-print" id="dtSheetFixed" style="display:none;">
+        <div class="wm" style="max-width:460px;">
+          <div class="wm-head">
+            <span class="sal-avatar">&#128181;</span>
+            <div><div class="wm-name">Fixed Salary</div><div class="wm-date">Date, workers and amount</div></div>
+            <button class="wm-x" data-closefixed>&#10005;</button>
+          </div>
+          <div class="wm-body">
+            <div class="dt-field-label" style="margin-top:0;">Working Date</div>
+            <input type="date" id="dtpFixedDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
+            <div class="dt-field-label">Salary amount (each worker)</div>
+            <input type="number" inputmode="numeric" min="1" placeholder="e.g. 1000" id="dtpFixedAmountInput" style="width:100%;padding:12px;border-radius:10px;border:1px solid #C9BC9C;" />
+            <div class="dt-field-label">Select worker(s)</div>
+            <div id="dtpFixedWorkerList" style="display:grid;gap:7px;margin:6px 0 12px;"></div>
+            <button class="btn-export no-print" id="dtpFixedSaveBtn" style="width:100%;font-size:15px;padding:13px 0;">&#10003; Save Fixed Salary</button>
+            <div class="save-note no-print" id="dtpFixedSaveNote"></div>
+          </div>
         </div>
       </div>
 
@@ -5348,20 +5382,73 @@ function dtOpenSheet(which){
   if(!di.value) di.value = fmtDate(new Date());
   document.getElementById(food ? "dtSheetFood" : "dtSheetDate").style.display = "flex";
 }
+function dtRenderFixedWorkerList(){
+  const wrap = document.getElementById("dtpFixedWorkerList");
+  const names = Array.from(new Set([...dtKnownWorkerNames, ...dtFormWorkers])).sort((a,b)=>a.localeCompare(b));
+  if(!names.length){
+    wrap.innerHTML = '<p class="empty" style="margin:0;">First KG Salary-la worker name add pannunga.</p>';
+    return;
+  }
+  wrap.innerHTML = names.map(name=>'<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #D6E3D0;border-radius:12px;background:#F4F8F0;"><input type="checkbox" class="dt-fixed-worker-check" value="'+escapeHtml(name).replace(/"/g,'&quot;')+'" style="width:18px;height:18px;accent-color:#2F6B3A;"><span style="font-weight:700;">'+escapeHtml(name)+'</span></label>').join("");
+}
 function dtCloseSheets(){
-  ["dtSheetDate","dtSheetFood"].forEach(id=>{ document.getElementById(id).style.display = "none"; });
+  ["dtSheetDate","dtSheetFood","dtSheetFixed","dtAddMenu"].forEach(id=>{ document.getElementById(id).style.display = "none"; });
   if(dtEditingFoodKey){   // forget a half-finished food edit
     dtEditingFoodKey = null;
     document.getElementById("dtpFoodAddBtn").textContent = "+ Add";
     ["dtpFoodWorkerSelect","dtpFoodDateInput","dtpFoodMorningInput","dtpFoodLunchInput","dtpFoodEveningInput"].forEach(id=>{ document.getElementById(id).value = ""; });
   }
 }
-document.getElementById("dtpOpenDateBtn").addEventListener("click", ()=>dtOpenSheet("date"));
-document.getElementById("dtpOpenFoodBtn").addEventListener("click", ()=>dtOpenSheet("food"));
-document.querySelectorAll("#dtSheetDate [data-closesheet], #dtSheetFood [data-closesheet]").forEach(btn=>btn.addEventListener("click", dtCloseSheets));
-["dtSheetDate","dtSheetFood"].forEach(id=>{
+document.getElementById("dtpOpenAddMenuBtn").addEventListener("click", ()=>{ document.getElementById("dtAddMenu").style.display="flex"; });
+document.querySelectorAll("#dtAddMenu [data-closeaddmenu]").forEach(btn=>btn.addEventListener("click", dtCloseSheets));
+document.getElementById("dtMenuKg").addEventListener("click", ()=>{ dtCloseSheets(); dtOpenSheet("date"); });
+document.getElementById("dtMenuFood").addEventListener("click", ()=>{ dtCloseSheets(); dtOpenSheet("food"); });
+document.getElementById("dtMenuFixed").addEventListener("click", ()=>{
+  dtCloseSheets();
+  const di=document.getElementById("dtpFixedDateInput");
+  if(!di.value) di.value=fmtDate(new Date());
+  document.getElementById("dtpFixedAmountInput").value="";
+  document.getElementById("dtpFixedSaveNote").textContent="";
+  dtRenderFixedWorkerList();
+  document.getElementById("dtSheetFixed").style.display="flex";
+});
+document.querySelectorAll("#dtSheetDate [data-closesheet], #dtSheetFood [data-closesheet], #dtSheetFixed [data-closefixed]").forEach(btn=>btn.addEventListener("click", dtCloseSheets));
+["dtSheetDate","dtSheetFood","dtSheetFixed","dtAddMenu"].forEach(id=>{
   const el = document.getElementById(id);
   el.addEventListener("click", (ev)=>{ if(ev.target===el) dtCloseSheets(); });
+});
+document.getElementById("dtpFixedSaveBtn").addEventListener("click", ()=>{
+  const note=document.getElementById("dtpFixedSaveNote");
+  const dateStr=document.getElementById("dtpFixedDateInput").value;
+  const amount=Math.round(Number(document.getElementById("dtpFixedAmountInput").value)||0);
+  const names=Array.from(document.querySelectorAll("#dtpFixedWorkerList .dt-fixed-worker-check:checked")).map(el=>el.value);
+  if(!dateStr){note.textContent="Working date select pannunga.";return;}
+  if(amount<=0){note.textContent="Salary amount enter pannunga.";return;}
+  if(!names.length){note.textContent="At least one worker select pannunga.";return;}
+  if(!dtCurrentPeriod){
+    note.textContent="First KG Salary-la oru date add panni current period create pannunga.";return;
+  }
+  note.textContent="Saving...";
+  const ref=db.collection("dryerPeriods").doc(dtCurrentPeriod.id);
+  ref.get().then(doc=>{
+    if(!doc.exists) throw new Error("Period not found");
+    const data=doc.data()||{};
+    const extras=Object.assign({},data.workerExtras||{});
+    const entries=Array.isArray(data.fixedSalaryEntries)?data.fixedSalaryEntries.slice():[];
+    names.forEach(name=>{
+      const key=dtExtraKey(name);
+      const old=extras[key]||{};
+      extras[key]=Object.assign({name:name,noKg:0,actual:null},old,{name:name,noKg:(Number(old.noKg)||0)+amount});
+      entries.push({id:"fs_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,7),date:dateStr,name:name,amount:amount});
+    });
+    return ref.update({workerExtras:extras,fixedSalaryEntries:entries});
+  }).then(()=>{
+    note.textContent="Saved!";
+    dtCloseSheets();
+    dtLoadPeriods();
+  }).catch(()=>{
+    note.textContent="Save aagala. Internet check pannunga.";
+  });
 });
 
 document.getElementById("dtpNewWorkerAddBtn").addEventListener("click", ()=>{
