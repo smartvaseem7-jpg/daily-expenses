@@ -382,6 +382,28 @@
   .mt-modal-sheet { background:#F4F8F0; }
   .mt-modal-title { color:#1F4A2B; }
   .mt-modal-close, .mt-modal-back { background:#DDEBD2; color:#1F4A2B; }
+  /* ---- Machine Team worker strip: avatar + Day / Salary / Food cash / Loan / Loan kalichadhu ---- */
+  .mtd { background:linear-gradient(180deg,#F4F9EF,#E8F1DF); border:2px solid #2F6B3A; border-radius:16px; box-shadow:inset 0 0 0 1.5px #D9BC5A; padding:8px 8px 8px; margin-bottom:10px; cursor:pointer; }
+  .mtd:active { background:#DDEBD2; }
+  .mtd-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:0 4px 6px; }
+  .mtd-name { font-family:'Fraunces',serif; font-weight:800; font-size:15px; color:#1F3D24; line-height:1.15; overflow-wrap:anywhere; }
+  .mtd-date { font-size:11.5px; font-weight:700; color:#5C7A55; white-space:nowrap; }
+  .mtd-strip { display:flex; align-items:flex-start; gap:5px; }
+  .mtd-av { width:50px; height:50px; flex:none; border-radius:50%; background:radial-gradient(circle at 35% 30%,#3F7F45,#1B4D2B); border:2px solid #fff; box-shadow:0 0 0 2px #D9BC5A; display:flex; align-items:center; justify-content:center; margin-right:2px; }
+  .mtd-av svg { width:28px; height:28px; }
+  .mtd-item { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .mtd-c { width:100%; max-width:56px; aspect-ratio:1/1; border-radius:50%; border:2px solid #4E8A4B; background:radial-gradient(circle at 50% 30%,#fff,#E6F0DD); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:11.5px; color:#1F3D24; white-space:nowrap; }
+  .mtd-c.loan { color:#8B2E2E; border-color:#C98A8A; }
+  .mtd-c.ded { color:#8B2E2E; }
+  .mtd-c.ded.on { background:#FBEAEA; border-color:#C98A8A; }
+  .mtd-l { font-size:8.5px; font-weight:800; color:#4F6B47; text-align:center; line-height:1.1; min-height:19px; letter-spacing:.1px; }
+  .mtd-item { cursor:pointer; }
+  .mtd-item:active .mtd-c { background:#DDEBD2; }
+  .mtd-av { cursor:pointer; }
+  .mtd-foot { display:flex; justify-content:flex-end; margin-top:6px; padding:0 4px; }
+  .mtd-bal { background:linear-gradient(90deg,#1B4D2B,#2F6B3A); color:#fff; border-radius:999px; box-shadow:inset 0 0 0 1.5px #D9BC5A; padding:4px 14px; font-size:11px; font-weight:800; letter-spacing:.4px; }
+  .mtd-bal b { font-family:'IBM Plex Mono',monospace; font-size:15px; margin-left:6px; }
+  @media (max-width:360px){ .mtd-av{width:42px;height:42px;} .mtd-av svg{width:24px;height:24px;} .mtd-c{font-size:10px;} .mtd-l{font-size:7.5px;letter-spacing:0;} }
   /* ---- Dryer: one clean page, popups for forms/details ---- */
   .dt-act-row { display:flex; gap:8px; margin:10px 0 12px; }
   .dt-act-row button { flex:1; padding:12px 8px; border-radius:12px; font-weight:800; font-size:14px; cursor:pointer; border:1.5px solid #2F6B3A; }
@@ -1373,25 +1395,18 @@
 
             <div class="sal-head"><span class="ttl">&#128181; Salary</span><span class="cnt" id="mtWorkersCountChip">0 Workers</span></div>
 
-            <div class="sal-hint">Balance = Salary &minus; Loan kalichadhu. Oru worker-a tap pannina full details varum.</div>
+            <div class="sal-hint">Balance = Salary + Food &minus; Loan kalichadhu. Circle tap pannina andha details, profile tap pannina total details varum.</div>
             <div id="mtSalaryList"></div>
             <div class="sal-days-bar">
               <span>&#128197; Total Working Days: <b id="mtTotalDaysVal">0</b></span>
               <button class="no-print" id="mtDayDetailsBtn">View Day Details</button>
             </div>
 
-            <div class="sal-food-box">
-              <div class="ttl">&#127860; Food Cash</div>
-              <div id="mtFoodList"></div>
-              <div class="sal-food-total"><span>Food Total</span><b>&#8377;<span id="mtFoodTotalVal">0</span></b></div>
-            </div>
-
             <div class="sal-payroll">
               <div class="ttl">&#128176; TOTAL PAYROLL</div>
               <div class="pr"><span>Salary</span><b id="mtSalaryTotalVal">&#8377;0</b></div>
-              <div class="pr" id="mtPrLoanRow" style="display:none;"><span>Loan kalichadhu</span><b id="mtLoanDeductTotalVal">&minus;&#8377;0</b></div>
-              <div class="pr" id="mtPrNetRow" style="display:none;"><span>Salary balance</span><b id="mtNetSalaryTotalVal">&#8377;0</b></div>
               <div class="pr"><span>Food Cash</span><b id="mtPayrollFoodVal">&#8377;0</b></div>
+              <div class="pr" id="mtPrLoanRow" style="display:none;"><span>Loan kalichadhu</span><b id="mtLoanDeductTotalVal">&minus;&#8377;0</b></div>
               <div class="pr grand"><span>GRAND TOTAL</span><b id="mtGrandTotalVal">&#8377;0</b></div>
             </div>
 
@@ -3809,12 +3824,16 @@ function mtUpdateSalaryTotals(){
   set("mtNetSalaryTotalVal", MT_R(net));
   const showLoan = ded > 0 ? "flex" : "none";
   const r1 = document.getElementById("mtPrLoanRow"); if(r1) r1.style.display = showLoan;
-  const r2 = document.getElementById("mtPrNetRow"); if(r2) r2.style.display = showLoan;
   set("mtPayrollFoodVal", MT_R(food));
-  set("mtGrandTotalVal", MT_R(net + food));
+  set("mtGrandTotalVal", MT_R(net + food));   // = salary + food - loan kalichadhu
   document.querySelectorAll("#mtSalaryList .sal-balance-val").forEach(el=>{
     const info = mtSalaryAggCache.map[el.dataset.name];
-    if(info) el.textContent = MT_R(info.totalSalary - mtDeductFor(el.dataset.name));
+    if(info) el.textContent = MT_R(info.totalSalary + mtFoodOf(el.dataset.name) - mtDeductFor(el.dataset.name));
+  });
+  document.querySelectorAll("#mtSalaryList .mtd-c.ded").forEach(el=>{
+    const d = mtDeductFor(el.dataset.name);
+    el.textContent = d>0 ? "\u2212" + rupee(d) : "0";
+    el.classList.toggle("on", d>0);
   });
   document.querySelectorAll("#mtSalaryList .sal-ded").forEach(el=>{
     const d = mtDeductFor(el.dataset.name);
@@ -3854,88 +3873,227 @@ function mtRenderSalaryCards(){
     const food = mtFoodOf(name);
     const nm = escapeHtml(name);
     const row = document.createElement("div");
-    row.className = "sal-row";
+    row.className = "mtd";
     row.dataset.name = name;
+    const person = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.2" fill="#fff"/><path d="M3.5 21c0-4.8 3.8-7.5 8.5-7.5s8.5 2.7 8.5 7.5z" fill="#fff"/></svg>';
+    const item = (kind, cls, value, label, extra)=>`<div class="mtd-item" data-k="${kind}"><span class="mtd-c ${cls}"${extra||""}>${value}</span><span class="mtd-l">${label}</span></div>`;
     row.innerHTML = `
-      <span class="sal-avatar">&#128100;</span>
-      <div>
-        <div class="sal-row-name">${escapeHtml(name.toUpperCase())}</div>
-        <div class="sal-row-date">${mtRangeText(info)}</div>
+      <div class="mtd-head">
+        <span class="mtd-name">${escapeHtml(name.toUpperCase())}</span>
+        <span class="mtd-date">${mtRangeText(info)} &rsaquo;</span>
       </div>
-      <div class="sal-row-bal"><small>Balance</small><b class="sal-balance-val" data-name="${nm}"></b></div>
-      <span class="sal-chev">&rsaquo;</span>
-      <div class="sal-stats">
-        <div class="sal-stat"><small>Days</small><b>${info.workingDays}</b></div>
-        <div class="sal-stat"><small>Salary</small><b>${MT_R(info.totalSalary)}</b></div>
-        <div class="sal-stat"><small>Food</small><b>${MT_R(food)}</b></div>
-        <div class="sal-stat"><small>Loan</small><b class="${loan>0?"red":""}">${MT_R(loan)}</b></div>
+      <div class="mtd-strip">
+        <span class="mtd-av">${person}</span>
+        ${item("day", "", info.workingDays, "DAY")}
+        ${item("salary", "", rupee(info.totalSalary), "SALARY")}
+        ${item("food", "", rupee(food), "FOOD CASH")}
+        ${item("loan", loan>0 ? "loan" : "", rupee(loan), "LOAN")}
+        ${item("ded", "ded", "0", "LOAN KALICHADHU", ' data-name="' + nm + '"')}
       </div>
-      <div class="sal-ded" data-name="${nm}"></div>`;
-    row.addEventListener("click", ()=>mtOpenWorkerModal(name));
+      <div class="mtd-foot"><span class="mtd-bal">BALANCE<b class="sal-balance-val" data-name="${nm}"></b></span></div>`;
+    row.addEventListener("click", (ev)=>{
+      const it = ev.target.closest(".mtd-item");
+      const kind = it ? it.dataset.k : "total";
+      if(kind==="day" || kind==="salary") mtOpenSalaryModal(name);
+      else if(kind==="food") mtOpenFoodModal(name);
+      else if(kind==="loan") mtOpenLoanModal(name);
+      else mtOpenWorkerModal(name);
+    });
     container.appendChild(row);
   });
   mtUpdateSalaryTotals();
 }
 
-function mtOpenWorkerModal(name){
-  const info = mtSalaryAggCache.map[name];
-  if(!info) return;
-  const loan = Number(mtLoanMap[nameKey(name)])||0;
-  const food = mtFoodOf(name);
+// merged food info for one worker (names are matched ignoring case/spaces)
+function mtFoodInfoFor(name){
+  const k = nameKey(name);
+  const out = {total:0, entries:[]};
+  Object.keys(mtFoodAggCache.map).forEach(n=>{
+    if(nameKey(n)===k){ out.total += mtFoodAggCache.map[n].total; out.entries = out.entries.concat(mtFoodAggCache.map[n].entries); }
+  });
+  out.entries.sort((a,b)=>a.docId.localeCompare(b.docId));
+  return out;
+}
+function mtDateCell(ds){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(ds))) return escapeHtml(String(ds));
+  return fmtCompact(ds) + "<small>" + ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(ds+"T00:00:00").getDay()] + "</small>";
+}
+
+// one popup shell used by every circle / the profile
+function mtSheet(name, subtitle, bodyHtml, onClose){
   const bg = document.createElement("div");
   bg.className = "sal-modal-bg";
   bg.innerHTML = `<div class="wm">
     <div class="wm-head">
       <span class="sal-avatar">&#128100;</span>
-      <div><div class="wm-name">${escapeHtml(name.toUpperCase())}</div><div class="wm-date">&#128197; ${mtRangeText(info)}</div></div>
-      <button class="wm-x" id="wmX">&#10005;</button>
+      <div><div class="wm-name">${escapeHtml(name.toUpperCase())}</div><div class="wm-date" id="mtsSub">${subtitle}</div></div>
+      <button class="wm-x" id="mtsX">&#10005;</button>
     </div>
-    <div class="wm-body">
-      <div class="wm-card two">
-        <div><small>Working Days</small><b class="v">${info.workingDays} day${info.workingDays>1?"s":""}</b></div>
-        <div><small>Salary</small><b class="v">${MT_R(info.totalSalary)}</b></div>
-      </div>
-      <div class="wm-card">
-        <small>Days</small>
-        ${info.days.map(d=>`<div class="wm-day"><span>${escapeHtml(String(d.niceDate))}</span><span class="mono">${MT_R(d.amount)}</span></div>`).join("")}
-      </div>
-      <div class="wm-card two">
-        <div><small>Food Cash</small><b class="v">${MT_R(food)}</b></div>
-        <div><small>Loan Balance</small><b class="v" style="color:${loan>0?"#B33A3A":"#6B8664"};">${MT_R(loan)}</b></div>
-      </div>
-      ${loan>0 ? `<div class="wm-card">
-        <small>Loan kalikka (salary-la irundhu)</small>
-        <div class="wm-ded"><input type="number" inputmode="decimal" id="wmDed" placeholder="0" value="${mtDeductFor(name)||""}" /><button id="wmFull">Full</button></div>
-        <div class="wm-net" id="wmNet"></div>
-      </div>` : ""}
-      <div class="wm-total">
-        <div class="r"><small>Balance Salary</small><b id="wmBal"></b></div>
-        <div class="r big"><small>Total (Salary + Food)</small><b id="wmTot"></b></div>
-      </div>
-      <button class="wm-close" id="wmClose">Close</button>
-    </div>
+    <div class="wm-body">${bodyHtml}<button class="wm-close" id="mtsClose">Close</button></div>
   </div>`;
+  const close = ()=>{ bg.remove(); if(onClose) onClose(); };
+  bg.addEventListener("click", (ev)=>{ if(ev.target===bg) close(); });
+  bg.querySelector("#mtsX").addEventListener("click", close);
+  bg.querySelector("#mtsClose").addEventListener("click", close);
+  document.body.appendChild(bg);
+  return {bg, close};
+}
+
+// SALARY / DAY circle -> salary details
+function mtOpenSalaryModal(name){
+  const info = mtSalaryAggCache.map[name];
+  if(!info) return;
+  const rows = info.days.map(d=>`<div class="wm-day"><span>${mtDateCell(d.date)}</span><span class="mono">${MT_R(d.amount)}</span></div>`).join("");
+  mtSheet(name, "Salary " + MT_R(info.totalSalary) + " &middot; " + info.workingDays + " day" + (info.workingDays>1?"s":""), `
+    <div class="wm-card two">
+      <div><small>Working Days</small><b class="v">${info.workingDays}</b></div>
+      <div><small>Salary</small><b class="v">${MT_R(info.totalSalary)}</b></div>
+    </div>
+    <div class="wm-card"><small>Naal-wise salary</small>${rows}
+      <div class="wm-day" style="font-weight:800;"><span>Total</span><span class="mono">${MT_R(info.totalSalary)}</span></div>
+    </div>`);
+}
+
+// FOOD circle -> food cash details (with delete)
+function mtOpenFoodModal(name){
+  const f = mtFoodInfoFor(name);
+  const rows = f.entries.length ? f.entries.map(e=>`
+    <div class="wm-day" style="align-items:flex-start;">
+      <span>${mtDateCell(e.docId)}<br><span style="font-size:11.5px;color:#6B8664;">Morning ${MT_R(e.morning)} &middot; Lunch ${MT_R(e.lunch)} &middot; Evening ${MT_R(e.evening)}</span></span>
+      <span style="text-align:right;white-space:nowrap;"><span class="mono">${MT_R(e.morning+e.lunch+e.evening)}</span><br>
+        <button class="dt-icon-btn danger no-print" data-fdoc="${e.docId}" data-fentry="${e.entryId}" title="Delete">&#128465;</button></span>
+    </div>`).join("") + `<div class="wm-day" style="font-weight:800;"><span>Food total</span><span class="mono">${MT_R(f.total)}</span></div>`
+    : `<div class="wm-day"><span style="color:#6B8664;">Food cash entry illa</span><span></span></div>`;
+  const {bg, close} = mtSheet(name, "Food cash " + MT_R(f.total), `<div class="wm-card"><small>Food cash details</small>${rows}</div>`);
+  bg.querySelectorAll("[data-fdoc]").forEach(btn=>btn.addEventListener("click", ()=>{
+    if(!confirm("Intha food cash entry mattum delete pannalama?")) return;
+    close();
+    deleteFoodCashEntry(btn.dataset.fdoc, btn.dataset.fentry, "mtSalarySaveNote", loadMachineTeamSalary);
+  }));
+}
+
+// everything the Loan page knows about one worker
+function loanHistoryFor(name){
+  const key = nameKey(name);
+  return Promise.allSettled([
+    db.collection("workerLoans").doc(key).get(),
+    db.collection("machineTeam").get(),
+    db.collection("dryerTeam").get(),
+    db.collection("dryerBatches").get(),
+    db.collection("loanEntries").get()
+  ]).then((rs)=>{
+    const ok = (i)=> rs[i].status==="fulfilled" ? rs[i].value : null;
+    const balDoc = ok(0);
+    const balance = (balDoc && balDoc.exists) ? (Number(balDoc.data().loanBalance)||0) : 0;
+    const txs = [];
+    const add = (nm, label, sortKey, team, taken, repaid, note)=>{
+      if(!nm || nameKey(String(nm)) !== key) return;
+      taken = Number(taken)||0; repaid = Number(repaid)||0;
+      if(!taken && !repaid) return;
+      txs.push({label, sortKey, team, taken, repaid, note: note||""});
+    };
+    [[1,"Machine Team"],[2,"Dryer Team"]].forEach(([i,team])=>{
+      const sn = ok(i); if(!sn) return;
+      sn.forEach(doc=>{
+        (Array.isArray(doc.data().workers) ? doc.data().workers : []).forEach(w=>add(w.name, fmtNice(doc.id), doc.id, team, w.loanTaken, w.loanRepaid));
+      });
+    });
+    const bs = ok(3);
+    if(bs) bs.forEach(doc=>{
+      const d = doc.data();
+      (Array.isArray(d.workers) ? d.workers : []).forEach(w=>add(w.name, d.label || doc.id, (Array.isArray(d.days)&&d.days[0]) || doc.id, "Dryer Team", w.loanTaken, w.loanRepaid));
+    });
+    const es = ok(4);
+    if(es) es.forEach(doc=>{
+      const e = doc.data();
+      add(e.name, fmtNice(e.date || doc.id), (e.date||"") + "~" + (e.createdAt||""),
+        e.source==="salary" ? "Salary-la kalichadhu" : "Loan page",
+        e.type==="given" ? e.amount : 0, e.type==="repaid" ? e.amount : 0, e.note);
+    });
+    txs.sort((a,b)=>b.sortKey.localeCompare(a.sortKey));
+    return {balance, txs, failed: rs.every(r=>r.status==="rejected")};
+  });
+}
+
+// LOAN circle -> same information as the Loan page
+function mtOpenLoanModal(name){
+  const {bg, close} = mtSheet(name, "Loan balance " + MT_R(Number(mtLoanMap[nameKey(name)])||0), `
+    <div class="wm-card"><small>Loan page thagaval</small><div id="mtLoanBody"><p class="empty" style="margin:8px 0;">Loading...</p></div></div>
+    <button class="wm-close" id="mtGoLoanPage" style="background:#fff;color:#1F4A2B;border:1.5px solid #2F6B3A;margin-bottom:8px;">Loan page-ku po</button>`);
+  bg.querySelector("#mtGoLoanPage").addEventListener("click", ()=>{ close(); showScreen("loanSection"); loadLoanPage(); });
+  loanHistoryFor(name).then((h)=>{
+    const body = bg.querySelector("#mtLoanBody");
+    if(!body) return;
+    if(h.failed){ body.innerHTML = '<p class="empty" style="margin:8px 0;">Load aagala. Internet check pannunga.</p>'; return; }
+    const rows = h.txs.length ? h.txs.map(t=>`
+      <div class="wm-day" style="align-items:flex-start;">
+        <span>${t.label}<br><span style="font-size:11.5px;color:#6B8664;">${escapeHtml(t.team)}${t.note ? " &middot; " + escapeHtml(t.note) : ""}</span></span>
+        <span class="mono" style="text-align:right;">${t.taken>0 ? `<span style="color:#B33A3A;">+${rupee(t.taken)}</span>` : ""}${t.repaid>0 ? `<span style="color:#2F6B3A;">&minus;${rupee(t.repaid)}</span>` : ""}</span>
+      </div>`).join("") : `<div class="wm-day"><span style="color:#6B8664;">Loan entry edhuvum illa</span><span></span></div>`;
+    body.innerHTML = `<div class="wm-day" style="font-weight:800;"><span>Ippo loan balance</span><span class="mono" style="color:${h.balance>0?"#B33A3A":"#2F6B3A"};">${MT_R(h.balance)}</span></div>${rows}`;
+  }).catch(()=>{
+    const body = bg.querySelector("#mtLoanBody");
+    if(body) body.innerHTML = '<p class="empty" style="margin:8px 0;">Load aagala.</p>';
+  });
+}
+
+// PROFILE (or "loan kalichadhu" circle) -> everything together
+function mtOpenWorkerModal(name){
+  const info = mtSalaryAggCache.map[name];
+  if(!info) return;
+  const loan = Number(mtLoanMap[nameKey(name)])||0;
+  const f = mtFoodInfoFor(name);
+  const food = f.total;
+
+  const byDate = {};
+  info.days.forEach(d=>{ (byDate[d.date] = byDate[d.date] || {sal:0, food:0}).sal += d.amount; });
+  f.entries.forEach(e=>{ (byDate[e.docId] = byDate[e.docId] || {sal:0, food:0}).food += e.morning+e.lunch+e.evening; });
+  const dates = Object.keys(byDate).sort();
+  const dash = "\u2013";
+  const tbody = dates.map(ds=>{
+    const r = byDate[ds];
+    return `<tr><td class="date">${mtDateCell(ds)}</td><td>${r.sal ? rupee(r.sal) : dash}</td><td>${r.food ? rupee(r.food) : dash}</td><td class="b">${rupee(r.sal + r.food)}</td></tr>`;
+  }).join("");
+  const table = `<div class="stmt-wrap"><table class="stmt">
+    <thead><tr><th>Date</th><th>Salary</th><th>Food</th><th>Total</th></tr></thead>
+    <tbody>${tbody}</tbody>
+    <tfoot><tr><td>TOTAL</td><td>${rupee(info.totalSalary)}</td><td>${rupee(food)}</td><td>${rupee(info.totalSalary + food)}</td></tr></tfoot>
+  </table></div>`;
+
+  const loanCard = loan > 0 ? `<div class="wm-card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;"><small>Loan balance</small><b class="v" style="color:#B33A3A;">${MT_R(loan)}</b></div>
+      <small style="margin-top:8px;">Loan kalikka (salary-la irundhu)</small>
+      <div class="wm-ded"><input type="number" inputmode="decimal" id="wmDed" placeholder="0" value="${mtDeductFor(name)||""}" /><button id="wmFull">Full</button></div>
+      <div class="wm-net" id="wmNet"></div>
+    </div>` : "";
+
+  const {bg} = mtSheet(name, "", `
+    <div class="wm-card"><small>Salary &amp; Food statement</small>${table}</div>
+    ${loanCard}
+    <div class="wm-total">
+      <div class="r"><small>Salary</small><b>${MT_R(info.totalSalary)}</b></div>
+      <div class="r"><small>Food Cash</small><b>${MT_R(food)}</b></div>
+      <div class="r" id="wmLoanRow" style="display:none;"><small>Loan kalichadhu</small><b id="wmLoanVal" style="color:#B33A3A;"></b></div>
+      <div class="r big"><small>Total (Balance)</small><b id="wmTot"></b></div>
+    </div>`, ()=>mtRenderSalaryCards());
   const refresh = ()=>{
     const d = mtDeductFor(name);
-    const bal = info.totalSalary - d;
-    bg.querySelector("#wmBal").textContent = MT_R(bal);
-    bg.querySelector("#wmTot").textContent = MT_R(bal + food);
+    const total = info.totalSalary + food - d;
+    bg.querySelector("#wmTot").textContent = MT_R(total);
+    bg.querySelector("#mtsSub").textContent = "Total " + MT_R(total);
+    bg.querySelector("#wmLoanRow").style.display = d > 0 ? "flex" : "none";
+    bg.querySelector("#wmLoanVal").textContent = "\u2212" + MT_R(d);
     const net = bg.querySelector("#wmNet");
-    if(net) net.innerHTML = "Salary " + MT_R(info.totalSalary) + " &minus; Loan " + MT_R(d) + " = <b>" + MT_R(bal) + "</b> &middot; Loan baaki " + MT_R(loan - d);
+    if(net) net.innerHTML = "Salary " + MT_R(info.totalSalary) + " &minus; Loan " + MT_R(d) + " = <b>" + MT_R(info.totalSalary - d) + "</b> &middot; Loan baaki " + MT_R(loan - d);
     mtUpdateSalaryTotals();
     mtSaveDeductDraft();
   };
-  const close = ()=>{ bg.remove(); mtRenderSalaryCards(); };
-  bg.addEventListener("click", (ev)=>{ if(ev.target===bg) close(); });
-  bg.querySelector("#wmX").addEventListener("click", close);
-  bg.querySelector("#wmClose").addEventListener("click", close);
   const inp = bg.querySelector("#wmDed");
   if(inp){
     inp.addEventListener("input", ()=>{ mtLoanDeduct[name] = Number(inp.value)||0; refresh(); });
     inp.addEventListener("change", ()=>{ const d = mtDeductFor(name); mtLoanDeduct[name] = d; inp.value = d || ""; refresh(); });
     bg.querySelector("#wmFull").addEventListener("click", ()=>{ mtLoanDeduct[name] = Math.min(loan, info.totalSalary); inp.value = mtLoanDeduct[name] || ""; refresh(); });
   }
-  document.body.appendChild(bg);
   refresh();
 }
 
@@ -3990,7 +4148,6 @@ function loadMachineTeamSalary(){
     mtSalaryAggCache = computeSalaryAccumulation(mtSnap, "salary");
     mtFoodAggCache = computeFoodCashAccumulation(fcSnap, "onlyMachine");
     mtApplyDeductDraft(results[3]);
-    renderFoodCashTable("mtFoodList","mtFoodTotalVal", mtFoodAggCache.map, "mtSalarySaveNote", loadMachineTeamSalary);
     mtRenderSalaryCards();
   }).catch(()=>{
     document.getElementById("mtSalaryList").innerHTML = '<p class="empty">Couldn\u2019t load. Check internet and try again.</p>';
@@ -4016,7 +4173,7 @@ document.getElementById("mtPaySalaryBtn").addEventListener("click", ()=>{
     salaryNames.forEach(nm=>{ g += mtSalaryAggCache.map[nm].totalSalary; dd += mtDeductFor(nm); });
     const fd = Object.values(mtFoodAggCache.map).reduce((s,i)=>s+i.total,0);
     const msg = "Salary pay pannalama?\n\nSalary: \u20b9" + rupee(g) +
-      (dd>0 ? ("\nLoan kalichadhu: \u20b9" + rupee(dd) + "\nSalary balance: \u20b9" + rupee(g-dd)) : "") +
+      (dd>0 ? ("\nLoan kalichadhu: \u2212\u20b9" + rupee(dd)) : "") +
       "\nFood cash: \u20b9" + rupee(fd) +
       "\n\nGrand total: \u20b9" + rupee(g - dd + fd);
     if(!confirm(msg)) return;
