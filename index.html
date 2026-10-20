@@ -382,28 +382,36 @@
   .mt-modal-sheet { background:#F4F8F0; }
   .mt-modal-title { color:#1F4A2B; }
   .mt-modal-close, .mt-modal-back { background:#DDEBD2; color:#1F4A2B; }
-  /* ---- Machine Team worker strip: avatar + Day / Salary / Food cash / Loan / Loan kalichadhu ---- */
-  .mtd { background:linear-gradient(180deg,#F4F9EF,#E8F1DF); border:2px solid #2F6B3A; border-radius:16px; box-shadow:inset 0 0 0 1.5px #D9BC5A; padding:8px 8px 8px; margin-bottom:10px; cursor:pointer; }
-  .mtd:active { background:#DDEBD2; }
-  .mtd-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:0 4px 6px; }
-  .mtd-name { font-family:'Fraunces',serif; font-weight:800; font-size:15px; color:#1F3D24; line-height:1.15; overflow-wrap:anywhere; }
-  .mtd-date { font-size:11.5px; font-weight:700; color:#5C7A55; white-space:nowrap; }
-  .mtd-strip { display:flex; align-items:flex-start; gap:5px; }
-  .mtd-av { width:50px; height:50px; flex:none; border-radius:50%; background:radial-gradient(circle at 35% 30%,#3F7F45,#1B4D2B); border:2px solid #fff; box-shadow:0 0 0 2px #D9BC5A; display:flex; align-items:center; justify-content:center; margin-right:2px; }
-  .mtd-av svg { width:28px; height:28px; }
-  .mtd-item { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px; }
-  .mtd-c { width:100%; max-width:56px; aspect-ratio:1/1; border-radius:50%; border:2px solid #4E8A4B; background:radial-gradient(circle at 50% 30%,#fff,#E6F0DD); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:11.5px; color:#1F3D24; white-space:nowrap; }
-  .mtd-c.loan { color:#8B2E2E; border-color:#C98A8A; }
-  .mtd-c.ded { color:#8B2E2E; }
-  .mtd-c.ded.on { background:#FBEAEA; border-color:#C98A8A; }
-  .mtd-l { font-size:8.5px; font-weight:800; color:#4F6B47; text-align:center; line-height:1.1; min-height:19px; letter-spacing:.1px; }
-  .mtd-item { cursor:pointer; }
-  .mtd-item:active .mtd-c { background:#DDEBD2; }
-  .mtd-av { cursor:pointer; }
-  .mtd-foot { display:flex; justify-content:flex-end; margin-top:6px; padding:0 4px; }
-  .mtd-bal { background:linear-gradient(90deg,#1B4D2B,#2F6B3A); color:#fff; border-radius:999px; box-shadow:inset 0 0 0 1.5px #D9BC5A; padding:4px 14px; font-size:11px; font-weight:800; letter-spacing:.4px; }
-  .mtd-bal b { font-family:'IBM Plex Mono',monospace; font-size:15px; margin-left:6px; }
-  @media (max-width:360px){ .mtd-av{width:42px;height:42px;} .mtd-av svg{width:24px;height:24px;} .mtd-c{font-size:10px;} .mtd-l{font-size:7.5px;letter-spacing:0;} }
+  /* ---- Machine Team worker card: dark header (avatar, name, balance) + colour-coded circles ---- */
+  .mtd { position:relative; background:#fff; border:1px solid #CFE2C4; border-radius:20px; box-shadow:0 10px 22px rgba(27,77,43,.16), 0 2px 4px rgba(27,77,43,.08); margin-bottom:14px; overflow:hidden; cursor:pointer; transition:transform .12s; }
+  .mtd:active { transform:scale(.985); }
+  .mtd-band { position:relative; display:flex; align-items:center; gap:12px; padding:13px 14px; background:linear-gradient(115deg,#0F3320 0%,#1D5A30 55%,#2F7D43 100%); color:#fff; overflow:hidden; }
+  .mtd-band::before { content:""; position:absolute; right:-34px; top:-40px; width:140px; height:140px; border-radius:50%; background:radial-gradient(circle,rgba(212,255,94,.26),transparent 66%); }
+  .mtd-band::after { content:""; position:absolute; left:-30px; bottom:-60px; width:130px; height:130px; border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,.10),transparent 68%); }
+  .mtd-av { position:relative; z-index:1; width:54px; height:54px; flex:none; border-radius:50%; background:linear-gradient(145deg,#52A05C,#1B4D2B); border:2px solid #E9CB6C; box-shadow:0 0 0 3px rgba(233,203,108,.28), 0 5px 12px rgba(0,0,0,.28); display:flex; align-items:center; justify-content:center; }
+  .mtd-av svg { width:30px; height:30px; }
+  .mtd-who { position:relative; z-index:1; flex:1; min-width:0; }
+  .mtd-name { display:block; font-family:'Fraunces',serif; font-weight:800; font-size:17px; line-height:1.1; letter-spacing:.3px; overflow-wrap:anywhere; text-shadow:0 1px 2px rgba(0,0,0,.25); }
+  .mtd-date { display:inline-block; margin-top:6px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.26); border-radius:999px; padding:2px 10px; font-size:11px; font-weight:700; color:#E8F6DE; letter-spacing:.2px; }
+  .mtd-balbox { position:relative; z-index:1; flex:none; text-align:right; padding-left:10px; border-left:1px solid rgba(255,255,255,.2); }
+  .mtd-balbox small { display:block; font-size:9.5px; font-weight:800; letter-spacing:1.2px; color:#BFE3B2; }
+  .mtd-balbox b { display:block; font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:700; color:#D8FF63; line-height:1.15; text-shadow:0 2px 4px rgba(0,0,0,.3); }
+  .mtd-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; padding:14px 10px 11px; background:linear-gradient(180deg,#F8FCF4,#ECF5E4); }
+  .mtd-item { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; }
+  .mtd-c { --rc:#2F6B3A; --bg:#E3F1DA; --tx:#1F4A2B; --glow:rgba(47,107,58,.14);
+    width:100%; max-width:58px; aspect-ratio:1/1; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    border:2.5px solid var(--rc); background:radial-gradient(circle at 50% 22%,#fff,var(--bg)); color:var(--tx);
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:11px; letter-spacing:-.2px; white-space:nowrap;
+    box-shadow:0 0 0 3.5px var(--glow), 0 4px 9px rgba(20,60,30,.14); }
+  .mtd-c svg { width:15px; height:15px; color:var(--rc); flex:none; }
+  .mtd-c.t-day { --rc:#A7BDA2; --bg:#F3F7F0; --tx:#51704B; --glow:transparent; border-style:dashed; box-shadow:none; }
+  .mtd-c.t-food { --rc:#D68A2A; --bg:#FFF1DC; --tx:#7D4609; --glow:rgba(214,138,42,.16); }
+  .mtd-c.t-loan { --rc:#8FB08A; --bg:#F1F7EE; --tx:#3F6B3A; --glow:rgba(143,176,138,.2); }
+  .mtd-c.t-loan.has { --rc:#C45A5A; --bg:#FCE9E9; --tx:#8B2E2E; --glow:rgba(196,90,90,.18); }
+  .mtd-c.t-ded { --rc:#C9D6C5; --bg:#F6F9F4; --tx:#7B8F76; --glow:transparent; box-shadow:0 2px 5px rgba(20,60,30,.08); }
+  .mtd-c.t-ded.on { --rc:#C45A5A; --bg:#FBDDDD; --tx:#8B2E2E; --glow:rgba(196,90,90,.22); box-shadow:0 0 0 3.5px var(--glow), 0 4px 9px rgba(160,50,50,.2); }
+  .mtd-l { font-size:8.5px; font-weight:800; color:#4F6B47; text-align:center; line-height:1.15; min-height:20px; letter-spacing:.3px; }
+  @media (max-width:360px){ .mtd-name{font-size:15px;} .mtd-balbox b{font-size:19px;} .mtd-c{font-size:10px;} .mtd-c svg{width:13px;height:13px;} .mtd-l{font-size:7.5px;letter-spacing:0;} .mtd-av{width:46px;height:46px;} .mtd-av svg{width:26px;height:26px;} }
   /* ---- Dryer: one clean page, popups for forms/details ---- */
   .dt-act-row { display:flex; gap:8px; margin:10px 0 12px; }
   .dt-act-row button { flex:1; padding:12px 8px; border-radius:12px; font-weight:800; font-size:14px; cursor:pointer; border:1.5px solid #2F6B3A; }
@@ -3830,9 +3838,9 @@ function mtUpdateSalaryTotals(){
     const info = mtSalaryAggCache.map[el.dataset.name];
     if(info) el.textContent = MT_R(info.totalSalary + mtFoodOf(el.dataset.name) - mtDeductFor(el.dataset.name));
   });
-  document.querySelectorAll("#mtSalaryList .mtd-c.ded").forEach(el=>{
+  document.querySelectorAll("#mtSalaryList .mtd-c.t-ded").forEach(el=>{
     const d = mtDeductFor(el.dataset.name);
-    el.textContent = d>0 ? "\u2212" + rupee(d) : "0";
+    el.querySelector(".v").textContent = d>0 ? "\u2212" + rupee(d) : "0";
     el.classList.toggle("on", d>0);
   });
   document.querySelectorAll("#mtSalaryList .sal-ded").forEach(el=>{
@@ -3876,25 +3884,35 @@ function mtRenderSalaryCards(){
     row.className = "mtd";
     row.dataset.name = name;
     const person = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.2" fill="#fff"/><path d="M3.5 21c0-4.8 3.8-7.5 8.5-7.5s8.5 2.7 8.5 7.5z" fill="#fff"/></svg>';
-    const item = (kind, cls, value, label, extra)=>`<div class="mtd-item" data-k="${kind}"><span class="mtd-c ${cls}"${extra||""}>${value}</span><span class="mtd-l">${label}</span></div>`;
+    const IC = {
+      day: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="2.2"/><path d="M4 10.2h16M8.2 3.5v4M15.8 3.5v4"/></svg>',
+      salary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l-1.6 3h-2.8z"/><path d="M8.5 7.5C5.5 10 4.5 13 5.5 16.5 6.2 19 8.5 21 12 21s5.8-2 6.5-4.5c1-3.5 0-6.5-3-9z"/><text x="12" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none">\u20b9</text></svg>',
+      food: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v6a2 2 0 0 0 2 2v10"/><path d="M9 3v6a2 2 0 0 1-2 2"/><path d="M17 3c-2.2 1.6-2.8 4.6-1.2 7 .6.9 1.2 1.3 1.2 2.4V21"/></svg>',
+      loan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M12 5.2v3.6M10.6 6.2h2.8"/><path d="M3 16c2-1.5 4-1.7 6-.7l3 1.2h2.2a1.3 1.3 0 0 1 0 2.6H11"/><path d="M11 19.1l5-1.8 4.2-2.4"/></svg>',
+      ded: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 12h8"/></svg>'
+    };
+    const item = (kind, cls, value, label, extra)=>`<div class="mtd-item" data-k="${kind}"><span class="mtd-c t-${kind} ${cls}"${extra||""}>${IC[kind]}<span class="v">${value}</span></span><span class="mtd-l">${label}</span></div>`;
     row.innerHTML = `
-      <div class="mtd-head">
-        <span class="mtd-name">${escapeHtml(name.toUpperCase())}</span>
-        <span class="mtd-date">${mtRangeText(info)} &rsaquo;</span>
+      <div class="mtd-band">
+        <span class="mtd-av">${person}</span>
+        <div class="mtd-who">
+          <span class="mtd-name">${escapeHtml(name.toUpperCase())}</span>
+          <span class="mtd-date">${mtRangeText(info)}</span>
+        </div>
+        <div class="mtd-balbox"><small>BALANCE</small><b class="sal-balance-val" data-name="${nm}"></b></div>
       </div>
       <div class="mtd-strip">
-        <span class="mtd-av">${person}</span>
         ${item("day", "", info.workingDays, "DAY")}
         ${item("salary", "", rupee(info.totalSalary), "SALARY")}
         ${item("food", "", rupee(food), "FOOD CASH")}
-        ${item("loan", loan>0 ? "loan" : "", rupee(loan), "LOAN")}
-        ${item("ded", "ded", "0", "LOAN KALICHADHU", ' data-name="' + nm + '"')}
-      </div>
-      <div class="mtd-foot"><span class="mtd-bal">BALANCE<b class="sal-balance-val" data-name="${nm}"></b></span></div>`;
+        ${item("loan", loan>0 ? "has" : "", rupee(loan), "LOAN")}
+        ${item("ded", "", "0", "LOAN KALICHADHU", ' data-name="' + nm + '"')}
+      </div>`;
     row.addEventListener("click", (ev)=>{
       const it = ev.target.closest(".mtd-item");
       const kind = it ? it.dataset.k : "total";
-      if(kind==="day" || kind==="salary") mtOpenSalaryModal(name);
+      if(kind==="day") return;                       // Day is just a number, no popup
+      else if(kind==="salary") mtOpenSalaryModal(name);
       else if(kind==="food") mtOpenFoodModal(name);
       else if(kind==="loan") mtOpenLoanModal(name);
       else mtOpenWorkerModal(name);
