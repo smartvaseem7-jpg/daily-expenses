@@ -827,6 +827,88 @@
   .mt-page-tab { flex:1; text-align:center; padding:8px 0; border-radius:999px; background:#EFE6C8; color:#8A7A5E; font-weight:700; font-size:11.5px; letter-spacing:0.04em; cursor:pointer; border:none; }
   .mt-page-tab.active { background:#2E5233; color:#fff; }
   .swipe-hint { text-align:center; font-size:11px; opacity:0.7; margin-top:10px; }
+
+  /* ===== DRYER BOOK (day cards like the notebook) ===== */
+  body:has(#dryerSection[style*="block"]) { background:#FCF5E8; }
+  .wrap:has(#dryerSection[style*="block"]) .card { background:transparent; border:none; padding:6px 4px; overflow:visible; }
+  .wrap:has(#dryerSection[style*="block"]) .leaf-corner { display:none; }
+  #dtSwipeViewport { overflow:hidden; overflow:clip; }
+  #dtpCard { scroll-margin-top:84px; }
+  .db-top { margin-bottom:2px; }
+  .db-title { font-family:'Fraunces',serif; font-weight:900; font-size:30px; color:#17402A; margin:4px 4px 0; line-height:1.1; }
+  .db-sub { font-size:14px; color:#5C7A55; margin:4px 4px 8px; font-weight:500; }
+  .db-actions { position:sticky; top:0; z-index:30; display:flex; gap:10px; padding:8px 2px 12px; background:#FCF5E8; }
+  .db-actions button { flex:1; padding:16px 8px; border-radius:16px; font-weight:800; font-size:17px; cursor:pointer; font-family:'Inter',sans-serif; }
+  .db-btn-primary { background:linear-gradient(135deg,#1F5A33,#2E7D45); color:#fff; border:none; box-shadow:0 6px 14px rgba(31,90,51,.35); }
+  .db-btn-ghost { background:#fff; color:#1F5A33; border:2px solid #2E6B3F; }
+  .db-day { background:#fff; border-radius:22px; overflow:hidden; margin:0 2px 16px; box-shadow:0 4px 14px rgba(23,64,42,.14); border:1px solid #D5E4CB; }
+  .db-day-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:18px 14px 18px 16px; background:linear-gradient(135deg,#10331F,#2E7D45); color:#fff; }
+  .db-date { font-family:'Fraunces',serif; font-weight:800; font-size:22px; }
+  .db-wd { display:inline-block; margin-left:8px; font-size:13.5px; font-weight:700; padding:3px 12px; border-radius:999px; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); vertical-align:middle; }
+  .db-kg { margin-left:auto; text-align:right; }
+  .db-kg small { display:block; font-size:12px; font-weight:800; letter-spacing:.06em; color:#CFE5C4; }
+  .db-kg b { font-family:'IBM Plex Mono',monospace; font-size:30px; font-weight:700; color:#C8FF5A; line-height:1.05; }
+  .db-edit { background:none; border:none; color:#CFE5C4; font-size:20px; cursor:pointer; padding:4px; }
+  .db-grid { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(0,.9fr) minmax(0,1.8fr) minmax(0,.95fr) minmax(0,.95fr); column-gap:4px; align-items:center; padding:0 12px; }
+  .db-th { background:#EDF4E4; padding-top:13px; padding-bottom:13px; font-size:11.5px; font-weight:800; letter-spacing:.05em; color:#5C7A55; }
+  .db-tr { padding-top:14px; padding-bottom:14px; border-top:1px solid #E4EDDC; }
+  .db-nm { font-weight:800; font-size:14.5px; color:#17301F; }
+  .db-num { font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; color:#1F3D24; text-align:right; }
+  .db-strong { font-weight:700; font-size:15px; }
+  .db-food { display:flex; align-items:center; justify-content:flex-end; gap:3px; }
+  .db-food .db-num { margin-left:4px; min-width:30px; }
+  .db-chip { width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; background:#EEF1EA; color:#A9B5A3; }
+  .db-chip.on { background:#FFDDB0; color:#8A4B0B; }
+  .db-total { background:#E4EFDB; border-top:3px solid #2E7D45; font-weight:800; }
+  .db-total .db-nm { font-size:15.5px; }
+  .db-total .db-right { grid-column:3; }
+  .db-none { padding-left:14px; color:#8A9A84; font-size:13px; }
+  .db-empty { background:#fff; border:1.5px dashed #B5CBA8; border-radius:18px; padding:26px 16px; text-align:center; color:#5C7A55; margin:0 2px 16px; }
+  .db-salary-head { font-weight:900; font-size:20px; color:#1F4A2B; margin:0 0 10px; }
+  .db-fab { position:fixed; right:16px; bottom:calc(18px + env(safe-area-inset-bottom,0px)); z-index:60; padding:16px 26px; border-radius:999px; border:none; background:linear-gradient(135deg,#2E7D45,#17402A); color:#fff; font-weight:800; font-size:17px; font-family:'Inter',sans-serif; cursor:pointer; box-shadow:0 0 0 6px rgba(200,255,90,.28), 0 8px 20px rgba(23,64,42,.4); }
+  .db-sheet-bg { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.45); display:none; align-items:flex-end; }
+  .db-sheet { width:100%; max-width:640px; margin:0 auto; height:94vh; height:94dvh; background:#F7FAF4; border-radius:26px 26px 0 0; display:flex; flex-direction:column; overflow:hidden; }
+  .db-sh-head { display:flex; align-items:center; gap:14px; padding:18px; background:linear-gradient(135deg,#10331F,#2E7D45); color:#fff; }
+  .db-sh-ic { width:50px; height:50px; border-radius:50%; border:3px solid #E7C95A; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.12); font-size:20px; flex-shrink:0; }
+  .db-sh-title { font-weight:800; font-size:26px; line-height:1.1; }
+  .db-sh-sub { font-size:13.5px; opacity:.85; margin-top:2px; }
+  .db-sh-x { width:44px; height:44px; border-radius:50%; border:2px solid rgba(255,255,255,.7); background:none; color:#fff; font-size:18px; cursor:pointer; flex-shrink:0; }
+  .db-sh-body { flex:1; overflow-y:auto; padding:18px 14px 24px; }
+  .db-lbl { font-size:12.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#4F7A52; margin:18px 2px 6px; }
+  .db-lbl small { font-weight:600; text-transform:none; letter-spacing:0; color:#7C9A78; margin-left:6px; }
+  .db-datebox { position:relative; }
+  #dbDate { width:100%; padding:16px; border-radius:16px; border:1.5px solid #B5CBA8; background:#fff; font-size:19px; font-weight:700; color:#17301F; font-family:'Inter',sans-serif; }
+  .db-wd-chip { position:absolute; right:52px; top:50%; transform:translateY(-50%); background:#DDEBD2; color:#1F4A2B; font-weight:800; font-size:14px; padding:4px 12px; border-radius:999px; pointer-events:none; }
+  .db-kg-in { width:100%; padding:16px; border-radius:16px; border:1.5px solid #B5CBA8; background:#fff; font-family:'IBM Plex Mono',monospace; font-size:44px; font-weight:700; text-align:center; color:#1F4A2B; }
+  .db-hint { font-size:13px; color:#7C8F6E; margin:6px 2px 0; }
+  .db-prices { margin-bottom:10px; }
+  .db-price { padding:7px 14px; border-radius:999px; background:#FFE7C4; color:#8A4B0B; font-weight:800; font-size:15px; margin-right:8px; border:none; cursor:pointer; }
+  .db-wr { display:flex; align-items:center; gap:6px; background:#fff; border:1.5px solid #D5E4CB; border-radius:18px; padding:10px; margin-bottom:10px; }
+  .db-wr.off { background:#F3F7EF; }
+  .db-wr.off .db-wn { color:#A9B5A3; }
+  .db-ck { width:38px; height:38px; border-radius:11px; border:2px solid #C9D9C0; background:#fff; color:#fff; font-size:20px; font-weight:800; cursor:pointer; padding:0; flex-shrink:0; }
+  .db-ck.on { background:#2F6B3A; border-color:#2F6B3A; }
+  .db-wn { flex:1; min-width:0; font-weight:800; font-size:17px; color:#17301F; overflow:hidden; text-overflow:ellipsis; }
+  .db-mt { width:44px; height:42px; border-radius:13px; border:1.5px solid #C9D9C0; background:#EEF3EA; color:#8DA386; font-weight:800; font-size:15px; cursor:pointer; padding:0; flex-shrink:0; }
+  .db-mt.on { background:#FFE2B8; border-color:#E8A94C; color:#8A4B0B; }
+  .db-wa { min-width:52px; text-align:right; font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:16px; color:#1F3D24; }
+  .db-rm { background:#E9DCDC; color:#8A2F2F; border:none; border-radius:50%; width:26px; height:26px; font-size:15px; cursor:pointer; padding:0; }
+  .db-addw { display:flex; gap:10px; margin-top:4px; }
+  .db-addw input { flex:1; min-width:0; padding:15px 16px; border-radius:16px; border:1.5px solid #B5CBA8; background:#fff; font-size:16px; }
+  .db-addw button { padding:0 22px; border-radius:16px; border:none; background:#2F6B3A; color:#fff; font-weight:800; font-size:16px; cursor:pointer; }
+  .db-sum { background:#E4EFDB; border:1.5px solid #B5CBA8; border-radius:18px; padding:16px; margin-top:16px; }
+  .db-s1 { font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:19px; color:#17402A; }
+  .db-s2 { font-size:14.5px; color:#3E5C3A; margin:3px 0 10px; }
+  .db-s3, .db-s4 { display:flex; justify-content:space-between; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:15px; color:#1F3D24; padding:4px 0; }
+  .db-s3 b, .db-s4 b { font-weight:700; }
+  .db-s4 { border-top:2px dashed #B5CBA8; margin-top:8px; padding-top:10px; font-weight:800; font-size:16px; }
+  .db-del { display:none; width:100%; margin-top:14px; padding:12px; background:none; border:1.5px solid #E2BDBD; border-radius:14px; color:#B33A3A; font-weight:700; font-size:14px; cursor:pointer; }
+  .db-note { min-height:18px; text-align:center; font-size:13.5px; color:#B33A3A; margin-top:10px; }
+  .db-sh-foot { display:flex; gap:12px; padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px)); background:#F7FAF4; border-top:1px solid #DCE8D3; }
+  .db-cancel { flex:1; padding:17px 0; border-radius:16px; border:2px solid #B5CBA8; background:#fff; color:#1F5A33; font-weight:800; font-size:18px; cursor:pointer; }
+  .db-save { flex:1.5; padding:17px 0; border-radius:16px; border:none; background:linear-gradient(135deg,#1F5A33,#3F8A4C); color:#fff; font-weight:800; font-size:18px; cursor:pointer; box-shadow:0 6px 14px rgba(31,90,51,.3); }
+  .db-save:disabled { opacity:.6; }
+  @media print { .db-fab, .db-sheet-bg, .db-actions { display:none !important; } }
 </style>
 </head>
 <body>
@@ -1445,26 +1527,19 @@
         <div class="mt-swipe-track" id="dtSwipeTrack">
 
           <div class="mt-swipe-page" id="dtSwipePage1">
-            <div class="section-header">
-              <button class="back-btn no-print" data-home>&#8592; Home</button>
-              <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
-              <h2 class="section-title">DRYER TEAM</h2>
+            <div class="db-top no-print">
+              <button class="back-btn" data-home>&#8592; Home</button>
             </div>
+            <h2 class="db-title">Dryer Book</h2>
+            <div class="db-sub" id="dtpRange">Current period</div>
+            <div class="db-actions no-print">
+              <button class="db-btn-primary" id="dtpOpenDateBtn">&#10133; Day add</button>
+              <button class="db-btn-ghost" id="dbSalaryBtn">Salary Day &rsaquo;</button>
+            </div>
+            <div id="dtpDaysList"></div>
 
             <div class="mt-card" id="dtpCard">
-              <div class="mt-card-head"><span class="sec-name display">Current Period</span></div>
-              <div class="dtp-range" id="dtpRange">No active period yet</div>
-              <div class="dtp-top-stats">
-                <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total KG</span><span class="dtp-top-stat-val mono" id="dtpTotalKg">0</span></div>
-                <div class="dtp-top-stat"><span class="dtp-top-stat-label">Total Salary</span><span class="dtp-top-stat-val mono" id="dtpTotalSalary">&#8377;0</span></div>
-              </div>
-
-              <div class="dt-act-row no-print">
-                <button class="primary" id="dtpOpenDateBtn">&#10133; KG add</button>
-                <button class="alt" id="dtpOpenFoodBtn">&#127860; Food add</button>
-              </div>
-
-              <div id="dtpDaysList"></div>
+              <div class="db-salary-head display">Salary Day</div>
 
               <div class="dt-wk-head">
                 <span class="dt-section-label" style="margin:0;">Workers</span>
@@ -1518,59 +1593,38 @@
         </div>
       </div>
 
-      <div class="sal-modal-bg dt-sheet-bg no-print" id="dtSheetDate" style="display:none;">
-        <div class="wm">
-          <div class="wm-head">
-            <span class="sal-avatar">&#128197;</span>
-            <div><div class="wm-name">KG add pannu</div><div class="wm-date">Date, KG, worker select</div></div>
-            <button class="wm-x" data-closesheet>&#10005;</button>
+      <button class="db-fab no-print" id="dbFab">&#10010; Day add</button>
+
+      <div class="db-sheet-bg no-print" id="dbSheet">
+        <div class="db-sheet">
+          <div class="db-sh-head">
+            <span class="db-sh-ic">&#10133;</span>
+            <div style="flex:1;min-width:0;"><div class="db-sh-title display" id="dbTitle">Day add</div><div class="db-sh-sub">Date &middot; KG &middot; yaar vandhaanga &middot; food</div></div>
+            <button class="db-sh-x" id="dbX" type="button">&#10005;</button>
           </div>
-          <div class="wm-body">
-              <div class="dt-field-label" style="margin-top:0;">Date</div>
-              <input type="date" id="dtpDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
+          <div class="db-sh-body">
+            <div class="db-lbl" style="margin-top:0;">Date</div>
+            <div class="db-datebox"><input type="date" id="dbDate" /><span class="db-wd-chip" id="dbWd"></span></div>
 
-              <div class="dt-field-label">Total KG (this date)</div>
-              <input type="number" inputmode="decimal" placeholder="0" id="dtpKgInput" class="dt-kg-input no-print" />
+            <div class="db-lbl">Total KG <small>(andha naal)</small></div>
+            <input type="number" inputmode="decimal" id="dbKg" class="db-kg-in" placeholder="0" />
+            <div class="db-hint">KG innum theriyala-na kaaliya vidunga, pinnaadi add pannalam.</div>
 
-              <div class="dt-field-label">Workers (tap to select)</div>
-              <div id="dtpWorkerChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
-              <div class="form-row no-print">
-                <input type="text" placeholder="New worker name" id="dtpNewWorkerInput" style="flex:1;" />
-                <button class="fadd" id="dtpNewWorkerAddBtn">+ Add name</button>
-              </div>
+            <div class="db-lbl">Workers &amp; Food <small>tap pannunga</small></div>
+            <div id="dbPrices" class="db-prices"></div>
+            <div id="dbRows"></div>
+            <div class="db-addw">
+              <input type="text" id="dbNewWorker" placeholder="Pudhu worker peyar" />
+              <button type="button" id="dbAddWorker">+ Add</button>
+            </div>
 
-              <div class="dt-calc-box">
-                <div class="dt-calc-line hero" id="dtpCalcLine1"></div>
-                <div class="dt-calc-line" id="dtpCalcLine2"></div>
-                <div class="dt-calc-line" id="dtpCalcLine3"></div>
-              </div>
-
-              <button class="btn-export no-print" id="dtpAddDateBtn" style="width:100%;font-size:15px;padding:13px 0;">&#10003; Add This Date</button>
-              <div class="save-note no-print" id="dtpSaveNote"></div>
-
+            <div class="db-sum" id="dbSummary"></div>
+            <button type="button" class="db-del" id="dbDelete">&#128465; Intha naal-a delete pannu</button>
+            <div class="db-note" id="dbNote"></div>
           </div>
-        </div>
-      </div>
-
-      <div class="sal-modal-bg dt-sheet-bg no-print" id="dtSheetFood" style="display:none;">
-        <div class="wm">
-          <div class="wm-head">
-            <span class="sal-avatar">&#127860;</span>
-            <div><div class="wm-name">Food cash add pannu</div><div class="wm-date">Worker, date, morning / lunch / evening</div></div>
-            <button class="wm-x" data-closesheet>&#10005;</button>
-          </div>
-          <div class="wm-body">
-              <div class="dt-field-label" style="margin-top:0;">Worker</div>
-              <select id="dtpFoodWorkerSelect" class="no-print" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;background:#fff;"><option value="">Select worker</option></select>
-              <div class="dt-field-label">Date</div>
-              <input type="date" id="dtpFoodDateInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid #C9BC9C;font-family:'IBM Plex Mono',monospace;" />
-              <div class="form-row no-print" style="margin-top:8px;">
-                <input type="number" inputmode="decimal" placeholder="Morning" id="dtpFoodMorningInput" style="flex:1;min-width:80px;" />
-                <input type="number" inputmode="decimal" placeholder="Lunch" id="dtpFoodLunchInput" style="flex:1;min-width:80px;" />
-                <input type="number" inputmode="decimal" placeholder="Evening" id="dtpFoodEveningInput" style="flex:1;min-width:80px;" />
-              </div>
-              <button class="fadd no-print" id="dtpFoodAddBtn" style="width:100%;margin-top:8px;">+ Add</button>
-              <div class="save-note no-print" id="dtpFoodSaveNote"></div>
+          <div class="db-sh-foot">
+            <button type="button" class="db-cancel" id="dbCancel">Cancel</button>
+            <button type="button" class="db-save" id="dbSave">&#10003; Save day</button>
           </div>
         </div>
       </div>
@@ -4339,6 +4393,7 @@ document.getElementById("mtSalaryClearBtn").addEventListener("click", ()=>{
     dtSwipePage = page;
     track.style.transition = animate===false ? "none" : "";
     track.style.transform = `translateX(${page===0 ? "0%" : "-50%"})`;
+    const fab = document.getElementById("dbFab"); if(fab) fab.style.display = page===0 ? "" : "none";
   }
 
   viewport.addEventListener("touchstart", (e)=>{
@@ -5466,284 +5521,272 @@ function dtLoadKnownWorkerNames(){
   }).catch(()=>{});
 }
 
-function dtRenderFoodWorkerSelect(){
-  const select = document.getElementById("dtpFoodWorkerSelect");
-  const current = select.value;
-  select.innerHTML = '<option value="">Select worker</option>' + dtKnownWorkerNames.map(nm=>`<option value="${escapeHtml(nm)}">${escapeHtml(nm)}</option>`).join("");
-  if(dtKnownWorkerNames.includes(current)) select.value = current;
-}
+// ===== Dryer Book: ONE "Day add" sheet (date + KG + who came + food) =====
+const DB_PRICE_LS = "dbMealPrice";
+let dbPrice = {M:120, L:300, E:50};
+try{ const s = JSON.parse(localStorage.getItem(DB_PRICE_LS)||"null"); if(s){ ["M","L","E"].forEach(k=>{ const v = Number(s[k]); if(v>0) dbPrice[k] = v; }); } }catch(_){}
+const dbMealKey = {M:"m", L:"l", E:"e"};
+let dbRows = []; // {name,on,m,l,e}
+const dbEl = (id)=>document.getElementById(id);
 
-function dtRenderWorkerChips(){
-  const wrap = document.getElementById("dtpWorkerChips");
-  const allNames = Array.from(new Set([...dtKnownWorkerNames, ...dtFormWorkers]));
-  if(allNames.length===0){
-    wrap.innerHTML = '<p class="empty" style="margin:0;">Keela "New worker name" box-la type panni add pannunga.</p>';
-    return;
-  }
-  wrap.innerHTML = "";
-  allNames.forEach(name=>{
-    const isSel = dtFormWorkers.includes(name);
-    const chipWrap = document.createElement("span");
-    chipWrap.className = "dt-worker-chip-wrap";
-    const chip = document.createElement("button");
-    chip.className = "no-print dt-worker-chip" + (isSel?" selected":"");
-    chip.type = "button";
-    chip.textContent = name;
-    chip.addEventListener("click", ()=>{
-      if(dtFormWorkers.includes(name)) dtFormWorkers = dtFormWorkers.filter(n=>n!==name);
-      else dtFormWorkers.push(name);
-      dtRenderWorkerChips();
-      dtUpdatePreview();
-    });
-    const delBtn = document.createElement("button");
-    delBtn.type = "button";
-    delBtn.className = "no-print dt-worker-chip-del";
-    delBtn.innerHTML = "&times;";
-    delBtn.title = "Remove " + name + " from worker list";
-    delBtn.addEventListener("click", (ev)=>{
-      ev.stopPropagation();
-      if(!confirm(`"${name}" ah worker list-la irundhu eppodhaikkumaa remove pannalama? (Pazhaiya saved records touch aagaadhu)`)) return;
-      dtKnownWorkerNames = dtKnownWorkerNames.filter(n=>n!==name);
-      dtFormWorkers = dtFormWorkers.filter(n=>n!==name);
-      db.collection("dryerWorkerNames").doc(nameKey(name)).delete().catch(()=>{});
-      dtRenderWorkerChips();
-      dtRenderFoodWorkerSelect();
-      dtUpdatePreview();
-    });
-    chipWrap.appendChild(chip);
-    chipWrap.appendChild(delBtn);
-    wrap.appendChild(chipWrap);
+// kept so older calls (name list loading, page open) still work
+function dtRenderFoodWorkerSelect(){}
+function dtRenderWorkerChips(){ if(dbEl("dbSheet").style.display==="flex"){ dbSyncKnown(); dbRenderRows(); } }
+function dtUpdatePreview(){ dbUpdateSummary(); }
+
+function dbSyncKnown(){
+  dtKnownWorkerNames.forEach(nm=>{
+    if(!dbRows.some(r=>r.name.toLowerCase()===nm.toLowerCase())) dbRows.push({name:nm,on:false,m:0,l:0,e:0});
   });
 }
-
-// ---- Forms open as popups (sheets) ----
-function dtOpenSheet(which){
-  const food = which === "food";
-  const di = document.getElementById(food ? "dtpFoodDateInput" : "dtpDateInput");
-  if(!di.value) di.value = fmtDate(new Date());
-  document.getElementById(food ? "dtSheetFood" : "dtSheetDate").style.display = "flex";
+function dbRenderPrices(){
+  dbEl("dbPrices").innerHTML = ["M","L","E"].map(k=>`<button type="button" class="db-price" data-pk="${k}">${k} &#8377;${dbPrice[k]}</button>`).join("");
+  dbEl("dbPrices").querySelectorAll("[data-pk]").forEach(b=>b.addEventListener("click", ()=>{
+    const k = b.dataset.pk;
+    const v = Number(prompt(k + " food price (\u20b9):", dbPrice[k]));
+    if(v>0){ dbPrice[k] = v; try{ localStorage.setItem(DB_PRICE_LS, JSON.stringify(dbPrice)); }catch(_){} dbRenderPrices(); }
+  }));
 }
-function dtCloseSheets(){
-  ["dtSheetDate","dtSheetFood"].forEach(id=>{ document.getElementById(id).style.display = "none"; });
-  if(dtEditingFoodKey){   // forget a half-finished food edit
-    dtEditingFoodKey = null;
-    document.getElementById("dtpFoodAddBtn").textContent = "+ Add";
-    ["dtpFoodWorkerSelect","dtpFoodDateInput","dtpFoodMorningInput","dtpFoodLunchInput","dtpFoodEveningInput"].forEach(id=>{ document.getElementById(id).value = ""; });
-  }
-}
-document.getElementById("dtpOpenDateBtn").addEventListener("click", ()=>dtOpenSheet("date"));
-document.getElementById("dtpOpenFoodBtn").addEventListener("click", ()=>dtOpenSheet("food"));
-document.querySelectorAll("#dtSheetDate [data-closesheet], #dtSheetFood [data-closesheet]").forEach(btn=>btn.addEventListener("click", dtCloseSheets));
-["dtSheetDate","dtSheetFood"].forEach(id=>{
-  const el = document.getElementById(id);
-  el.addEventListener("click", (ev)=>{ if(ev.target===el) dtCloseSheets(); });
-});
-
-document.getElementById("dtpNewWorkerAddBtn").addEventListener("click", ()=>{
-  const input = document.getElementById("dtpNewWorkerInput");
-  const name = input.value.trim();
-  if(!name) return;
-  if(!dtKnownWorkerNames.includes(name)) dtKnownWorkerNames.push(name);
-  if(!dtFormWorkers.includes(name)) dtFormWorkers.push(name);
-  db.collection("dryerWorkerNames").doc(nameKey(name)).set({name}, {merge:true}).catch(()=>{});
-  input.value = "";
-  dtRenderWorkerChips();
-  dtRenderFoodWorkerSelect();
-  dtUpdatePreview();
-});
-
-// ----- Add Date form (KG + workers for one date) -----
-function dtUpdatePreview(){
-  const kg = Number(document.getElementById("dtpKgInput").value)||0;
-  const total = kg*RATE_PER_KG;
-  document.getElementById("dtpCalcLine1").innerHTML = `<span>${kg||0} KG \u00d7 \u20b9${RATE_PER_KG}</span><span>= \u20b9${rupee(total)}</span>`;
-  document.getElementById("dtpCalcLine2").textContent = dtFormWorkers.length>0
-    ? `${dtFormWorkers.length} worker${dtFormWorkers.length>1?"s":""} selected`
-    : "Thaniya workers select pannunga";
-  document.getElementById("dtpCalcLine3").textContent = dtFormWorkers.length>0
-    ? `\u20b9${rupee(total/dtFormWorkers.length)} per worker`
-    : "";
-}
-document.getElementById("dtpKgInput").addEventListener("input", dtUpdatePreview);
-
-document.getElementById("dtpAddDateBtn").addEventListener("click", ()=>{
-  const note = document.getElementById("dtpSaveNote");
-  const dateStr = document.getElementById("dtpDateInput").value;
-  const kg = Number(document.getElementById("dtpKgInput").value)||0;
-  if(!dateStr){ note.textContent = "Date pick pannunga."; return; }
-  if(kg<=0){ note.textContent = "Total KG podunga."; return; }
-  if(dtFormWorkers.length===0){ note.textContent = "Kammikkalum oru worker select pannunga."; return; }
-  note.textContent = "Saving...";
-
-  // Always re-fetch fresh from Firestore right before deciding which period this date
-  // belongs to — never trust the in-memory cache, so a quick add right after opening
-  // the page can never miss the previous day and wrongly start a new period.
-  db.collection("dryerPeriods").get().then((snap)=>{
-    const freshPeriods = [];
-    snap.forEach(doc=>{ freshPeriods.push({id:doc.id, ...doc.data(), days: doc.data().days||{}}); });
-    const openPeriods = freshPeriods.filter(p=>p.status==="open");
-    openPeriods.sort((a,b)=> (b.periodStart||"").localeCompare(a.periodStart||""));
-    const latestOpen = openPeriods[0] || null;
-
-    let targetPeriod = null;
-    if(latestOpen){
-      // Always keep adding into the one open (unpaid) period, no matter the date
-      // gap — it only stops being "current" once it's explicitly paid.
-      targetPeriod = latestOpen;
-    }
-
-    const dayEntry = { kg, workers: Array.from(dtFormWorkers) };
-
-    if(targetPeriod){
-      const updatedDays = {...targetPeriod.days, [dateStr]: dayEntry};
-      return db.collection("dryerPeriods").doc(targetPeriod.id).update({ days: updatedDays });
-    }
-    return db.collection("dryerPeriods").add({
-      periodStart: dateStr,
-      status: "open",
-      days: { [dateStr]: dayEntry },
-      createdAt: Date.now()
-    });
-  }).then(()=>{
-    note.textContent = "Added";
-    setTimeout(()=>{ note.textContent=""; }, 1200);
-    dtCloseSheets();
-    document.getElementById("dtpDateInput").value = "";
-    document.getElementById("dtpKgInput").value = "";
-    dtFormWorkers = [];
-    dtRenderWorkerChips();
-    dtUpdatePreview();
-    dtLoadPeriods();
-  }).catch(()=>{
-    note.textContent = "Couldn't save. Check internet.";
-  });
-});
-
-function dtEditDay(dateStr){
-  if(!dtCurrentPeriod) return;
-  const d = dtCurrentPeriod.days[dateStr];
-  if(!d) return;
-  document.getElementById("dtpDateInput").value = dateStr;
-  document.getElementById("dtpKgInput").value = d.kg;
-  dtFormWorkers = Array.from(d.workers);
-  dtRenderWorkerChips();
-  dtUpdatePreview();
-  dtOpenSheet("date");
-}
-
-function dtDeleteDay(dateStr){
-  if(!dtCurrentPeriod) return;
-  if(!confirm(`${fmtNice(dateStr)} oda entry delete pannalama?`)) return;
-  const updatedDays = {...dtCurrentPeriod.days};
-  delete updatedDays[dateStr];
-  const remaining = Object.keys(updatedDays);
-  const ref = db.collection("dryerPeriods").doc(dtCurrentPeriod.id);
-  const action = remaining.length===0 ? ref.delete() : ref.update({days: updatedDays});
-  action.then(dtLoadPeriods).catch(()=>{ alert("Couldn't delete. Check internet."); });
-}
-
-// ----- Food cash: a simple pending pool (not restricted to a period's exact dates,
-// so an entry never appears "missing" just because its date isn't in the KG list yet) -----
-
-document.getElementById("dtpFoodAddBtn").addEventListener("click", ()=>{
-  const name = document.getElementById("dtpFoodWorkerSelect").value;
-  const dateStr = document.getElementById("dtpFoodDateInput").value;
-  const morning = Number(document.getElementById("dtpFoodMorningInput").value)||0;
-  const lunch = Number(document.getElementById("dtpFoodLunchInput").value)||0;
-  const evening = Number(document.getElementById("dtpFoodEveningInput").value)||0;
-  const note = document.getElementById("dtpFoodSaveNote");
-  if(!name){ note.textContent = "Worker select pannunga."; return; }
-  if(!dateStr){ note.textContent = "Date pick pannunga."; return; }
-  if(morning<=0 && lunch<=0 && evening<=0){ note.textContent = "Amount podunga."; return; }
-  note.textContent = "Saving...";
-
-  const finish = ()=>{
-    note.textContent = "Saved";
-    setTimeout(()=>{ note.textContent=""; }, 1200);
-    document.getElementById("dtpFoodWorkerSelect").value = "";
-    document.getElementById("dtpFoodDateInput").value = "";
-    document.getElementById("dtpFoodMorningInput").value = "";
-    document.getElementById("dtpFoodLunchInput").value = "";
-    document.getElementById("dtpFoodEveningInput").value = "";
-    dtEditingFoodKey = null;
-    document.getElementById("dtpFoodAddBtn").textContent = "+ Add";
-    dtCloseSheets();
-    dtLoadPeriods();
+function dbBuildRows(ds){
+  const day = dtCurrentPeriod && dtCurrentPeriod.days[ds];
+  const foods = dtFoodCashCache.filter(e=>e.date===ds);
+  const rows = [];
+  const add = (nm)=>{
+    let r = rows.find(x=>x.name.trim().toLowerCase()===nm.trim().toLowerCase());
+    if(!r){ r = {name:nm.trim(),on:false,m:0,l:0,e:0}; rows.push(r); }
+    return r;
   };
-  const doAdd = ()=> addFoodCashEntry(dateStr, name, morning, lunch, evening, "Dryer Team");
+  dtKnownWorkerNames.forEach(add);
+  if(day) day.workers.forEach(nm=>{ add(nm).on = true; });
+  foods.forEach(f=>{ const r = add(f.name); r.on = true; r.m += f.morning; r.l += f.lunch; r.e += f.evening; });
+  dbRows = rows;
+  dbEl("dbKg").value = day ? day.kg : "";
+  return !!(day || foods.length);
+}
+function dbLoadDate(ds){
+  const has = dbBuildRows(ds);
+  dbEl("dbDelete").style.display = has ? "block" : "none";
+  dbEl("dbTitle").textContent = has ? "Day edit" : "Day add";
+  dbEl("dbWd").textContent = ds ? dtWd(ds) : "";
+  dbRenderRows();
+}
+function dbOpen(ds){
+  dbRenderPrices();
+  const date = ds || fmtDate(new Date());
+  dbEl("dbDate").value = date;
+  dbEl("dbNote").textContent = "";
+  dbLoadDate(date);
+  dbEl("dbSheet").style.display = "flex";
+}
+function dbClose(){ dbEl("dbSheet").style.display = "none"; }
 
-  if(dtEditingFoodKey){
-    const [oldDate, oldEntryId] = dtEditingFoodKey.split("::");
-    dtRemoveFoodEntry(oldDate, oldEntryId).then(doAdd).then(finish).catch(()=>{ note.textContent = "Couldn't save. Check internet."; });
+function dbRenderRows(){
+  const wrap = dbEl("dbRows");
+  wrap.innerHTML = dbRows.map((r,i)=>{
+    const amt = r.m + r.l + r.e;
+    const tg = ["M","L","E"].map(k=>`<button type="button" class="db-mt${r[dbMealKey[k]]>0?" on":""}" data-i="${i}" data-k="${k}">${k}</button>`).join("");
+    const right = r.on ? (amt>0 ? "&#8377;"+rupee(amt) : "&ndash;") : `<button type="button" class="db-rm" data-rm="${i}" title="List-la irundhu remove">&times;</button>`;
+    return `<div class="db-wr${r.on?"":" off"}"><button type="button" class="db-ck${r.on?" on":""}" data-ck="${i}">${r.on?"&#10003;":""}</button><span class="db-wn">${escapeHtml(r.name)}</span>${tg}<span class="db-wa">${right}</span></div>`;
+  }).join("");
+  wrap.querySelectorAll("[data-ck]").forEach(b=>b.addEventListener("click", ()=>{
+    const r = dbRows[+b.dataset.ck]; r.on = !r.on; if(!r.on){ r.m = r.l = r.e = 0; }
+    dbRenderRows();
+  }));
+  wrap.querySelectorAll(".db-mt").forEach(b=>b.addEventListener("click", ()=>{
+    const r = dbRows[+b.dataset.i]; const key = dbMealKey[b.dataset.k];
+    r.on = true;
+    r[key] = r[key]>0 ? 0 : dbPrice[b.dataset.k];
+    dbRenderRows();
+  }));
+  wrap.querySelectorAll("[data-rm]").forEach(b=>b.addEventListener("click", ()=>{
+    const r = dbRows[+b.dataset.rm];
+    if(!confirm(`"${r.name}" ah worker list-la irundhu remove pannalama? (Pazhaiya records touch aagaadhu)`)) return;
+    dtKnownWorkerNames = dtKnownWorkerNames.filter(n=>n.toLowerCase()!==r.name.toLowerCase());
+    db.collection("dryerWorkerNames").doc(nameKey(r.name)).delete().catch(()=>{});
+    dbRows.splice(+b.dataset.rm, 1);
+    dbRenderRows();
+  }));
+  dbUpdateSummary();
+}
+
+function dbUpdateSummary(){
+  const kg = Number(dbEl("dbKg").value)||0;
+  const on = dbRows.filter(r=>r.on);
+  const n = on.length;
+  const share = (kg>0 && n>0) ? kg/n : 0;
+  const sal = share*RATE_PER_KG;
+  let html = "";
+  if(kg>0){
+    html += `<div class="db-s1">${dtKg(kg)} KG &times; &#8377;${RATE_PER_KG} = &#8377;${rupee(kg*RATE_PER_KG)}</div>`;
+    html += n>0 ? `<div class="db-s2">${n} worker${n>1?"s":""} &rarr; ovvoruthar-kum ${dtKg(share)} KG = &#8377;${rupee(sal)}</div>` : `<div class="db-s2">Worker select pannunga</div>`;
   } else {
-    doAdd().then(finish).catch(()=>{ note.textContent = "Couldn't save. Check internet."; });
+    html += `<div class="db-s2">KG innum illa &mdash; food mattum save aagum</div>`;
   }
+  let foodTotal = 0, grand = 0;
+  on.forEach(r=>{
+    const f = r.m + r.l + r.e; foodTotal += f;
+    const t = sal + f; grand += t;
+    const label = kg>0 ? ("&#8377;"+rupee(sal) + (f>0 ? " + &#8377;"+rupee(f) : "")) : ("food &#8377;"+rupee(f));
+    html += `<div class="db-s3"><span>${escapeHtml(r.name)} ${label}</span><b>&#8377;${rupee(t)}</b></div>`;
+  });
+  html += `<div class="db-s4"><span>Food total &#8377;${rupee(foodTotal)}</span><b>&#8377;${rupee(grand)}</b></div>`;
+  dbEl("dbSummary").innerHTML = html;
+}
+
+// food for one date: replace all pending dryer food of that date with what the sheet says
+function dbSaveFood(ds, list){
+  const ref = db.collection("foodCash").doc(ds);
+  return ref.get().then(doc=>{
+    const old = doc.exists && Array.isArray(doc.data().entries) ? doc.data().entries : [];
+    const keep = old.filter(e=>{
+      const pendingDryer = !e.paid && e.team!=="Machine Team" && e.name && String(e.name).trim() &&
+        ((Number(e.morning)||0)>0 || (Number(e.lunch)||0)>0 || (Number(e.evening)||0)>0);
+      return !pendingDryer;
+    });
+    if(!doc.exists && list.length===0) return;
+    const stamp = Date.now().toString(36);
+    const added = list.map((r,i)=>({id:stamp+i, name:r.name, morning:r.m, lunch:r.l, evening:r.e, paid:false, team:"Dryer Team"}));
+    return ref.set({date:ds, month:monthKey(ds), entries:keep.concat(added)});
+  });
+}
+// KG for one date inside the open salary period (kg<=0 removes that date's KG)
+function dbSaveKg(ds, kg, workers){
+  return db.collection("dryerPeriods").get().then(snap=>{
+    const open = [];
+    snap.forEach(doc=>{ const d = doc.data(); if(d.status==="open") open.push({id:doc.id, periodStart:d.periodStart||"", days:d.days||{}}); });
+    open.sort((a,b)=>(b.periodStart||"").localeCompare(a.periodStart||""));
+    const target = open[0] || null;
+    if(kg>0){
+      const entry = {kg, workers};
+      if(target) return db.collection("dryerPeriods").doc(target.id).update({days:{...target.days, [ds]:entry}});
+      return db.collection("dryerPeriods").add({periodStart:ds, status:"open", days:{[ds]:entry}, createdAt:Date.now()});
+    }
+    const holder = open.find(p=>p.days[ds]);
+    if(!holder) return;
+    const days = {...holder.days}; delete days[ds];
+    const ref = db.collection("dryerPeriods").doc(holder.id);
+    return Object.keys(days).length===0 ? ref.delete() : ref.update({days});
+  });
+}
+
+dbEl("dtpOpenDateBtn").addEventListener("click", ()=>dbOpen());
+dbEl("dbFab").addEventListener("click", ()=>dbOpen());
+dbEl("dbSalaryBtn").addEventListener("click", ()=>dbEl("dtpCard").scrollIntoView({behavior:"smooth", block:"start"}));
+dbEl("dbX").addEventListener("click", dbClose);
+dbEl("dbCancel").addEventListener("click", dbClose);
+dbEl("dbSheet").addEventListener("click", (ev)=>{ if(ev.target===dbEl("dbSheet")) dbClose(); });
+dbEl("dbKg").addEventListener("input", dbUpdateSummary);
+dbEl("dbDate").addEventListener("change", ()=>{ const ds = dbEl("dbDate").value; if(ds) dbLoadDate(ds); });
+dbEl("dbAddWorker").addEventListener("click", ()=>{
+  const inp = dbEl("dbNewWorker");
+  const name = inp.value.trim();
+  if(!name) return;
+  if(!dtKnownWorkerNames.some(n=>n.toLowerCase()===name.toLowerCase())) dtKnownWorkerNames.push(name);
+  db.collection("dryerWorkerNames").doc(nameKey(name)).set({name}, {merge:true}).catch(()=>{});
+  let r = dbRows.find(x=>x.name.toLowerCase()===name.toLowerCase());
+  if(!r){ r = {name,on:true,m:0,l:0,e:0}; dbRows.push(r); } else r.on = true;
+  inp.value = "";
+  dbRenderRows();
+});
+dbEl("dbSave").addEventListener("click", ()=>{
+  const note = dbEl("dbNote");
+  const ds = dbEl("dbDate").value;
+  const kg = Number(dbEl("dbKg").value)||0;
+  const on = dbRows.filter(r=>r.on);
+  const food = on.filter(r=>r.m+r.l+r.e>0);
+  const existing = !!(dtCurrentPeriod && dtCurrentPeriod.days[ds]) || dtFoodCashCache.some(e=>e.date===ds);
+  if(!ds){ note.textContent = "Date pick pannunga."; return; }
+  if(kg<=0 && food.length===0 && !existing){ note.textContent = "KG illa-na, food aavadhu podunga."; return; }
+  if(kg>0 && on.length===0){ note.textContent = "Oru worker select pannunga."; return; }
+  const btn = dbEl("dbSave"); btn.disabled = true;
+  note.textContent = "Saving...";
+  dbSaveFood(ds, food).then(()=>dbSaveKg(ds, kg, on.map(r=>r.name))).then(()=>{
+    btn.disabled = false; note.textContent = "";
+    dbClose(); dtLoadPeriods();
+  }).catch(()=>{ btn.disabled = false; note.textContent = "Couldn't save. Check internet."; });
+});
+dbEl("dbDelete").addEventListener("click", ()=>{
+  const ds = dbEl("dbDate").value;
+  if(!ds || !confirm(`${fmtNice(ds)} oda KG + food ellaam delete pannalama?`)) return;
+  dbSaveFood(ds, []).then(()=>dbSaveKg(ds, 0, [])).then(()=>{ dbClose(); dtLoadPeriods(); })
+    .catch(()=>{ alert("Couldn't delete. Check internet."); });
 });
 
 function dtRemoveFoodEntry(dateStr, entryId){
   return db.collection("foodCash").doc(dateStr).get().then(doc=>{
     if(!doc.exists) return;
     const arr = Array.isArray(doc.data().entries) ? doc.data().entries : [];
-    const updated = arr.filter(e=>e.id!==entryId);
-    return db.collection("foodCash").doc(dateStr).update({entries:updated});
+    return db.collection("foodCash").doc(dateStr).update({entries:arr.filter(e=>e.id!==entryId)});
   });
 }
-
 function dtDeleteFoodEntry(dateStr, entryId){
   if(!confirm("Intha food cash entry delete pannalama?")) return;
   dtRemoveFoodEntry(dateStr, entryId).then(dtLoadPeriods).catch(()=>{ alert("Couldn't delete. Check internet."); });
 }
-
-function dtEditFoodEntry(dateStr, entryId){
-  const e = dtFoodCashCache.find(x=>x.date===dateStr && x.entryId===entryId);
-  if(!e) return;
-  document.getElementById("dtpFoodWorkerSelect").value = e.name;
-  document.getElementById("dtpFoodDateInput").value = e.date;
-  document.getElementById("dtpFoodMorningInput").value = e.morning || "";
-  document.getElementById("dtpFoodLunchInput").value = e.lunch || "";
-  document.getElementById("dtpFoodEveningInput").value = e.evening || "";
-  dtEditingFoodKey = dateStr + "::" + entryId;
-  document.getElementById("dtpFoodAddBtn").textContent = "Update";
-  dtOpenSheet("food");
-}
+function dtEditFoodEntry(dateStr){ dbOpen(dateStr); }
 
 // ----- Rendering: the active Salary Period card -----
 function dtRenderPeriodCard(){
-  const rangeEl = document.getElementById("dtpRange");
-  const daysListEl = document.getElementById("dtpDaysList");
   const p = dtCurrentPeriod;
+  const days = p ? p.days : {};
+  const foodByDate = {};
+  dtFoodCashCache.forEach(e=>{ (foodByDate[e.date] = foodByDate[e.date] || []).push(e); });
+  const dates = Array.from(new Set([...Object.keys(days), ...Object.keys(foodByDate)])).sort();
+  const rangeEl = document.getElementById("dtpRange");
+  const listEl = document.getElementById("dtpDaysList");
 
-  if(!p || Object.keys(p.days).length===0){
-    rangeEl.textContent = "No active period yet \u2014 add a date below to start one";
-    document.getElementById("dtpTotalKg").textContent = "0";
-    document.getElementById("dtpTotalSalary").textContent = "\u20b90";
-    daysListEl.innerHTML = "";
-  } else {
-    const days = Object.keys(p.days).sort();
-    rangeEl.textContent = days.length===1 ? fmtCompactDay(days[0]) : `${fmtCompactDay(days[0])} \u2013 ${fmtCompactDay(days[days.length-1])}`;
-    let totalKg = 0;
-    days.forEach(ds=>{ totalKg += Number(p.days[ds].kg)||0; });
-    document.getElementById("dtpTotalKg").textContent = totalKg;
-    document.getElementById("dtpTotalSalary").textContent = "\u20b9" + rupee(totalKg*RATE_PER_KG);
+  if(dates.length===0){
+    rangeEl.textContent = "Current period \u00b7 \u20b9" + RATE_PER_KG + " / KG";
+    listEl.innerHTML = '<div class="db-empty">Innum entry illa. <b>Day add</b> tap pannunga.</div>';
+    dtRenderFoodCashInCard();
+    return;
+  }
+  const last = dates[dates.length-1];
+  rangeEl.textContent = `Current period \u00b7 ${fmtCompact(dates[0])} \u2192 ${fmtCompact(last)} \u00b7 \u20b9${RATE_PER_KG} / KG`;
 
-    daysListEl.innerHTML = days.map(ds=>{
-      const d = p.days[ds];
-      const dTotal = (Number(d.kg)||0)*RATE_PER_KG;
-      return `<div class="dtp-day-row">
-        <div class="dtp-day-row-head">
-          <span class="dtp-day-row-date">${fmtCompactDay(ds)}</span>
-          <span class="dtp-day-row-actions no-print">
-            <button class="dt-icon-btn" data-editday="${ds}" title="Edit">&#9998;</button>
-            <button class="dt-icon-btn danger" data-delday="${ds}" title="Delete">&#128465;</button>
-          </span>
-        </div>
-        <div class="dtp-day-row-kg">${d.kg} KG \u00d7 \u20b9${RATE_PER_KG} = \u20b9${rupee(dTotal)} \u00f7 ${d.workers.length} worker${d.workers.length>1?"s":""}</div>
+  listEl.innerHTML = dates.map(ds=>{
+    const d = days[ds];
+    const kg = d ? (Number(d.kg)||0) : 0;
+    const workers = d ? d.workers.slice() : [];
+    const foods = foodByDate[ds] || [];
+    const names = workers.slice();
+    foods.map(f=>f.name).sort((a,b)=>a.localeCompare(b)).forEach(nm=>{
+      if(!names.some(x=>x.trim().toLowerCase()===nm.trim().toLowerCase())) names.push(nm);
+    });
+    let tKg = 0, tFood = 0, tSal = 0, tAll = 0;
+    const rows = names.map(nm=>{
+      const key = nm.trim().toLowerCase();
+      let m = 0, l = 0, e = 0;
+      foods.filter(f=>f.name.trim().toLowerCase()===key).forEach(f=>{ m += f.morning; l += f.lunch; e += f.evening; });
+      const food = m + l + e;
+      const inDay = workers.some(w=>w.trim().toLowerCase()===key);
+      const kgShare = (inDay && kg>0) ? kg/workers.length : null;
+      const sal = kgShare===null ? null : kgShare*RATE_PER_KG;
+      const total = (sal||0) + food;
+      tKg += kgShare||0; tFood += food; tSal += sal||0; tAll += total;
+      const chip = (c,v)=>`<span class="db-chip${v>0?" on":""}">${c}</span>`;
+      return `<div class="db-grid db-tr">
+        <span class="db-nm">${escapeHtml(nm)}</span>
+        <span class="db-num">${kgShare===null ? "&ndash;" : dtKg(kgShare)}</span>
+        <span class="db-food">${chip("M",m)}${chip("L",l)}${chip("E",e)}<span class="db-num">${food>0 ? rupee(food) : "&ndash;"}</span></span>
+        <span class="db-num">${sal===null ? "&ndash;" : rupee(sal)}</span>
+        <span class="db-num db-strong">${rupee(total)}</span>
       </div>`;
     }).join("");
-
-    daysListEl.querySelectorAll("[data-editday]").forEach(btn=>btn.addEventListener("click", ()=>dtEditDay(btn.dataset.editday)));
-    daysListEl.querySelectorAll("[data-delday]").forEach(btn=>btn.addEventListener("click", ()=>dtDeleteDay(btn.dataset.delday)));
-  }
+    const kgHead = kg>0 ? dtKg(kg) : (ds===last ? "?" : "&ndash;");
+    const totalRow = kg>0 ? `<div class="db-grid db-tr db-total"><span class="db-nm">TOTAL</span><span class="db-num">${dtKg(tKg)}</span><span class="db-num db-right">${rupee(tFood)}</span><span class="db-num">${rupee(tSal)}</span><span class="db-num db-strong">${rupee(tAll)}</span></div>` : "";
+    return `<div class="db-day">
+      <div class="db-day-head">
+        <div><span class="db-date">${fmtCompact(ds)}</span><span class="db-wd">${dtWd(ds)}</span></div>
+        <div class="db-kg"><small>TOTAL KG</small><b>${kgHead}</b></div>
+        <button class="db-edit no-print" data-dbedit="${ds}" title="Edit">&#9998;</button>
+      </div>
+      <div class="db-grid db-th"><span>NAME</span><span class="db-num">KG</span><span class="db-num">FOOD</span><span class="db-num">SALARY</span><span class="db-num">TOTAL</span></div>
+      ${rows || '<div class="db-tr db-none">Worker illa</div>'}
+      ${totalRow}
+    </div>`;
+  }).join("");
+  listEl.querySelectorAll("[data-dbedit]").forEach(b=>b.addEventListener("click", ()=>dbOpen(b.dataset.dbedit)));
 
   dtRenderFoodCashInCard();
 }
