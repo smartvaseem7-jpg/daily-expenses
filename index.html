@@ -1500,8 +1500,6 @@
             <p class="empty swipe-hint no-print">&#8594; swipe pannina Workers-ku thirumba varalam</p>
 
             <div class="sal-head"><span class="ttl">&#128181; Salary</span><span class="cnt" id="mtWorkersCountChip">0 Workers</span></div>
-
-            <div class="sal-hint">Balance = Salary + Food &minus; Loan kalichadhu. Circle tap pannina andha details, profile tap pannina total details varum.</div>
             <div id="mtSalaryList"></div>
             <div class="sal-days-bar">
               <span>&#128197; Total Working Days: <b id="mtTotalDaysVal">0</b></span>
@@ -1567,8 +1565,6 @@
             <p class="empty swipe-hint no-print">&#8594; swipe pannina Dryer Book-ku thirumba varalam</p>
 
             <div class="sal-head"><span class="ttl">&#128181; Salary</span><span style="display:flex;align-items:center;gap:8px;"><span class="cnt" id="dtpWorkersCountChip">0 Workers</span><button class="fadd no-print" id="dtpAddWorkerBtn">+ Worker</button></span></div>
-
-            <div class="sal-hint">Balance = KG Salary + Food + Other &minus; Loan kalichadhu. Worker-a tap pannina statement, Salary without KG, Actual paid, Loan ellaam varum.</div>
             <div id="dtpFoodList"></div>
             <div class="sal-days-bar">
               <span>&#128197; Total Working Days: <b id="dtpTotalDaysVal">0</b></span>
@@ -5950,7 +5946,8 @@ function dtDeductFor(w){
   return Math.max(0, Math.min(want, dtLoanOf(w.name), Math.floor(w.salary + (w.noKg||0))));
 }
 
-function dtOpenWorkerModal(key){
+function dtOpenWorkerModal(key, mode){
+  mode = mode || "statement"; // statement | food | extra | loan
   const w = dtWorkerDetails().find(x=>x.name.trim().toLowerCase()===key);
   if(!w) return;
   const loan = dtLoanOf(w.name);
@@ -5982,8 +5979,7 @@ function dtOpenWorkerModal(key){
       <thead><tr><th>Date</th><th>KG</th><th>Ppl</th><th>Share</th><th>Salary</th><th>Food</th><th>Total</th></tr></thead>
       <tbody>${rowsHtml}</tbody>
       <tfoot><tr><td>TOTAL</td><td>${dtKg(tKg)}</td><td></td><td>${dtKg(tShare)}</td><td>${rupee(tSal)}</td><td>${rupee(tFood)}</td><td>${rupee(tSal + tFood)}</td></tr></tfoot>
-    </table></div>
-    <div class="stmt-legend">KG = andha naal moththam KG &middot; Ppl = ethana peru velai &middot; Share = ivar KG (KG &divide; Ppl) &middot; Salary = Share &times; \u20b9${RATE_PER_KG} &middot; Amounts \u20b9-la</div>`
+    </table></div>`
     : `<p class="empty" style="margin:6px 0;">Entry edhuvum illa.</p>`;
 
   const foodEntriesHtml = w.foodRows.length ? `<div class="wm-card"><small>Food entries (edit / delete)</small>` +
@@ -6010,18 +6006,17 @@ function dtOpenWorkerModal(key){
       <button class="wm-x" id="dtwX">&#10005;</button>
     </div>
     <div class="wm-body">
-      <div class="wm-card"><small>Salary &amp; Food statement</small>${tableHtml}</div>
-      ${foodEntriesHtml}
-      ${loanHtml}
-      ${dtCurrentPeriod ? `<div class="wm-card">
+      ${mode==="statement" ? `<div class="wm-card"><small>Salary &amp; Food statement</small>${tableHtml}</div>` : ""}
+      ${mode==="food" ? (foodEntriesHtml || `<div class="wm-card"><p class="empty" style="margin:6px 0;">Food entry illa.</p></div>`) : ""}
+      ${mode==="loan" ? (loanHtml || `<div class="wm-card"><p class="empty" style="margin:6px 0;">Loan illa.</p></div>`) : ""}
+      ${(mode==="extra" && dtCurrentPeriod) ? `<div class="wm-card">
         <small>Extra &amp; Actual (pathivu pannunga)</small>
         <div class="dte-grid">
           <label>Salary without KG (Rs.)<input type="number" inputmode="decimal" id="dtwNoKg" placeholder="0" value="${w.noKg||""}" /></label>
           <label>Actual Salary Paid (Rs.)<input type="number" inputmode="decimal" id="dtwActual" placeholder="calculated" value="${(w.actual===null||w.actual===undefined)?"":w.actual}" /></label>
         </div>
-        <div class="stmt-legend">Actual blank-na calculated-a eduthukkum.</div>
       </div>` : ""}
-      <div class="wm-total">
+      <div class="wm-total" style="${(mode==="extra"||mode==="loan") ? "" : "display:none;"}">
         <div class="r"><small>KG Salary</small><b id="dtwSalaryVal"></b></div>
         <div class="r"><small>Food Cash</small><b id="dtwFoodVal"></b></div>
         <div class="r" id="dtwNoKgRow" style="display:none;"><small>Salary without KG</small><b id="dtwNoKgVal"></b></div>
@@ -6242,7 +6237,12 @@ function dtRenderFoodCashInCard(){
       </div>`;
     }).join("");
     list.querySelectorAll(".dtc").forEach(el=>{
-      el.addEventListener("click", ()=>dtOpenWorkerModal(el.dataset.wkey));
+      el.addEventListener("click", (ev)=>{
+        const it = ev.target.closest(".mtd-item");
+        const k = it ? it.dataset.k : "";
+        const mode = k==="salary" ? "extra" : (k==="food" ? "food" : ((k==="loan"||k==="ded") ? "loan" : "statement"));
+        dtOpenWorkerModal(el.dataset.wkey, mode);
+      });
     });
   }
   let m=0,l=0,ev=0;
