@@ -1538,16 +1538,17 @@
             </div>
             <div id="dtpDaysList"></div>
 
-            <div class="mt-card" id="dtpCard">
-              <div class="db-salary-head display">Salary Day</div>
+            <p class="empty swipe-hint no-print">Salary Day paakanumna &#8592; swipe pannunga</p>
+          </div>
 
-              <div class="dt-wk-head">
-                <span class="dt-section-label" style="margin:0;">Workers</span>
-                <button class="fadd no-print" id="dtpAddWorkerBtn">+ Worker</button>
-              </div>
-              <div class="dt-hint no-print">Worker-a tap pannina: statement, Salary without KG, Actual paid, Loan ellaam varum.</div>
-              <div id="dtpFoodList"></div>
+          <div class="mt-swipe-page" id="dtSwipePage2">
+            <div class="db-top no-print">
+              <button class="back-btn" id="dbBackBook" type="button">&#8592; Dryer Book</button>
+            </div>
+            <h2 class="db-title">Salary Day</h2>
+            <div class="db-sub">Dryer Team total</div>
 
+            <div id="dtpCard">
               <div class="sal-payroll">
                 <div class="ttl">DRYER TEAM TOTAL</div>
                 <div class="pr"><span>KG Amount</span><b id="dttKg">&#8377;0</b></div>
@@ -1560,6 +1561,17 @@
                 </div>
                 <div class="pr grand"><span>Total Difference</span><b id="dttDiff">&#8377;0</b></div>
               </div>
+              
+              <!-- Hidden for now (still wired up, so nothing breaks): workers list, food split, copy, Pay Salary, print, previous records.
+                   Remove style="display:none" below to bring them back when you style this page. -->
+              <div id="dbSalaryHidden" style="display:none;">
+              <div class="dt-wk-head">
+                <span class="dt-section-label" style="margin:0;">Workers</span>
+                <button class="fadd no-print" id="dtpAddWorkerBtn">+ Worker</button>
+              </div>
+              <div class="dt-hint no-print">Worker-a tap pannina: statement, Salary without KG, Actual paid, Loan ellaam varum.</div>
+              <div id="dtpFoodList"></div>
+
               <div class="dtt-food-split">Food: Morning <b id="dtpFoodMorningTotal">&#8377;0</b> &middot; Lunch <b id="dtpFoodLunchTotal">&#8377;0</b> &middot; Evening <b id="dtpFoodEveningTotal">&#8377;0</b><span id="dtpFoodGrandTotal" style="display:none;"></span></div>
               <button class="btn-export no-print" id="dtpCopyBtn" style="width:100%; margin-bottom:6px;">&#128203; Copy Dryer Salary Details</button>
               <div class="save-note no-print" id="dtpCopyNote"></div>
@@ -1569,25 +1581,16 @@
               <div class="actions no-print">
                 <button class="btn-export" id="dtpPrintBtn" style="flex:1;">&#128424; Print</button>
               </div>
-            </div>
-
-            <p class="empty swipe-hint no-print">Salary paakanumna &#8592; swipe pannunga</p>
-          </div>
-
-          <div class="mt-swipe-page" id="dtSwipePage2">
-            <div class="section-header">
-              <button class="back-btn no-print" data-home>&#8592; Home</button>
-              <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
-              <h2 class="section-title">DRYER TEAM SALARY</h2>
-            </div>
-            <p class="empty swipe-hint no-print">&#8594; swipe pannina Dryer Team-ku thirumba varalam</p>
-
-            <div class="actions no-print">
+            
+              <div class="actions no-print">
               <button class="btn-export" id="dtpRecordsPrintBtn" style="flex:1;">&#128424; Print</button>
             </div>
 
             <h3 class="sub-title display" style="margin-top:20px;">Previous Records</h3>
             <div id="dtpRecordsList"></div>
+          
+              </div>
+            </div>
           </div>
 
         </div>
@@ -4395,6 +4398,7 @@ document.getElementById("mtSalaryClearBtn").addEventListener("click", ()=>{
     track.style.transform = `translateX(${page===0 ? "0%" : "-50%"})`;
     const fab = document.getElementById("dbFab"); if(fab) fab.style.display = page===0 ? "" : "none";
   }
+  window.dtGoPage = (pg)=>{ setPage(pg); window.scrollTo(0,0); };
 
   viewport.addEventListener("touchstart", (e)=>{
     if(e.touches.length!==1) return;
@@ -5671,7 +5675,8 @@ function dbSaveKg(ds, kg, workers){
 
 dbEl("dtpOpenDateBtn").addEventListener("click", ()=>dbOpen());
 dbEl("dbFab").addEventListener("click", ()=>dbOpen());
-dbEl("dbSalaryBtn").addEventListener("click", ()=>dbEl("dtpCard").scrollIntoView({behavior:"smooth", block:"start"}));
+dbEl("dbSalaryBtn").addEventListener("click", ()=>window.dtGoPage && window.dtGoPage(1));
+dbEl("dbBackBook").addEventListener("click", ()=>window.dtGoPage && window.dtGoPage(0));
 dbEl("dbX").addEventListener("click", dbClose);
 dbEl("dbCancel").addEventListener("click", dbClose);
 dbEl("dbSheet").addEventListener("click", (ev)=>{ if(ev.target===dbEl("dbSheet")) dbClose(); });
