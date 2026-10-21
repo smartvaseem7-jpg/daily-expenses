@@ -909,6 +909,20 @@
   .db-save { flex:1.5; padding:17px 0; border-radius:16px; border:none; background:linear-gradient(135deg,#1F5A33,#3F8A4C); color:#fff; font-weight:800; font-size:18px; cursor:pointer; box-shadow:0 6px 14px rgba(31,90,51,.3); }
   .db-save:disabled { opacity:.6; }
   @media print { .db-fab, .db-sheet-bg, .db-actions { display:none !important; } }
+
+  /* spacing + food amount under M L E */
+  .db-grid { grid-template-columns:minmax(0,1.3fr) minmax(0,.95fr) minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr); column-gap:10px; padding:0 10px; }
+  .db-nm { font-size:14px; }
+  .db-food { display:flex; flex-direction:column; align-items:center; gap:5px; justify-content:center; }
+  .db-chips { display:flex; gap:4px; }
+  .db-food .db-num, .db-famt { margin:0; min-width:0; text-align:center; }
+  .db-fcenter { text-align:center; }
+  .db-total .db-famt { grid-column:3; }
+  .db-tr { padding-top:12px; padding-bottom:12px; }
+  .sal-payroll .pr.sub { font-size:13px; }
+  .sal-payroll .pr.sub b { font-size:14px; }
+  .sal-payroll .pr:last-child { border-bottom:none; }
+  .db-th { padding-top:13px; padding-bottom:13px; }
 </style>
 </head>
 <body>
@@ -1542,55 +1556,49 @@
           </div>
 
           <div class="mt-swipe-page" id="dtSwipePage2">
-            <div class="db-top no-print">
-              <button class="back-btn" id="dbBackBook" type="button">&#8592; Dryer Book</button>
+            <div class="section-header">
+              <button class="back-btn no-print" data-home>&#8592; Home</button>
+              <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
+              <h2 class="section-title">SALARY DAY</h2>
             </div>
-            <h2 class="db-title">Salary Day</h2>
-            <div class="db-sub">Dryer Team total</div>
 
-            <div id="dtpCard">
-              <div class="sal-payroll">
-                <div class="ttl">DRYER TEAM TOTAL</div>
-                <div class="pr"><span>KG Amount</span><b id="dttKg">&#8377;0</b></div>
-                <div class="pr"><span>Food Cash</span><b id="dttFood">&#8377;0</b></div>
-                <div class="pr"><span>Salary without KG</span><b id="dttNoKg">&#8377;0</b></div>
-                <div class="pr"><span>Loan Deduction</span><b id="dttLoan">&minus;&#8377;0</b></div>
-                <div class="dtt-two">
-                  <div><small>Calculated Total</small><b id="dttCalc">&#8377;0</b></div>
-                  <div><small>Actual Total Paid</small><b id="dttActual">&#8377;0</b></div>
-                </div>
-                <div class="pr grand"><span>Total Difference</span><b id="dttDiff">&#8377;0</b></div>
-              </div>
-              
-              <!-- Hidden for now (still wired up, so nothing breaks): workers list, food split, copy, Pay Salary, print, previous records.
-                   Remove style="display:none" below to bring them back when you style this page. -->
-              <div id="dbSalaryHidden" style="display:none;">
-              <div class="dt-wk-head">
-                <span class="dt-section-label" style="margin:0;">Workers</span>
-                <button class="fadd no-print" id="dtpAddWorkerBtn">+ Worker</button>
-              </div>
-              <div class="dt-hint no-print">Worker-a tap pannina: statement, Salary without KG, Actual paid, Loan ellaam varum.</div>
-              <div id="dtpFoodList"></div>
+            <p class="empty swipe-hint no-print">&#8594; swipe pannina Dryer Book-ku thirumba varalam</p>
 
-              <div class="dtt-food-split">Food: Morning <b id="dtpFoodMorningTotal">&#8377;0</b> &middot; Lunch <b id="dtpFoodLunchTotal">&#8377;0</b> &middot; Evening <b id="dtpFoodEveningTotal">&#8377;0</b><span id="dtpFoodGrandTotal" style="display:none;"></span></div>
-              <button class="btn-export no-print" id="dtpCopyBtn" style="width:100%; margin-bottom:6px;">&#128203; Copy Dryer Salary Details</button>
-              <div class="save-note no-print" id="dtpCopyNote"></div>
+            <div class="sal-head"><span class="ttl">&#128181; Salary</span><span style="display:flex;align-items:center;gap:8px;"><span class="cnt" id="dtpWorkersCountChip">0 Workers</span><button class="fadd no-print" id="dtpAddWorkerBtn">+ Worker</button></span></div>
 
-              <button class="dt-week-done-btn no-print" id="dtpPaySalaryBtn">&#9989; Pay Salary</button>
-              <div class="save-note no-print" id="dtpPayNote"></div>
-              <div class="actions no-print">
-                <button class="btn-export" id="dtpPrintBtn" style="flex:1;">&#128424; Print</button>
-              </div>
-            
-              <div class="actions no-print">
-              <button class="btn-export" id="dtpRecordsPrintBtn" style="flex:1;">&#128424; Print</button>
+            <div class="sal-hint">Balance = KG Salary + Food + Other &minus; Loan kalichadhu. Worker-a tap pannina statement, Salary without KG, Actual paid, Loan ellaam varum.</div>
+            <div id="dtpFoodList"></div>
+            <div class="sal-days-bar">
+              <span>&#128197; Total Working Days: <b id="dtpTotalDaysVal">0</b></span>
+            </div>
+
+            <div class="sal-payroll">
+              <div class="ttl">&#128176; TOTAL PAYROLL</div>
+              <div class="pr"><span>KG Amount</span><b id="dttKg">&#8377;0</b></div>
+              <div class="pr"><span>Food Cash</span><b id="dttFood">&#8377;0</b></div>
+              <div class="pr"><span>Salary without KG</span><b id="dttNoKg">&#8377;0</b></div>
+              <div class="pr" id="dttLoanRow" style="display:none;"><span>Loan kalichadhu</span><b id="dttLoan">&minus;&#8377;0</b></div>
+              <div class="pr grand"><span>GRAND TOTAL</span><b id="dttCalc">&#8377;0</b></div>
+              <div class="pr sub"><span>Actual Total Paid</span><b id="dttActual">&#8377;0</b></div>
+              <div class="pr sub"><span>Total Difference</span><b id="dttDiff">&#8377;0</b></div>
+            </div>
+            <div class="dtt-food-split">Food: Morning <b id="dtpFoodMorningTotal">&#8377;0</b> &middot; Lunch <b id="dtpFoodLunchTotal">&#8377;0</b> &middot; Evening <b id="dtpFoodEveningTotal">&#8377;0</b><span id="dtpFoodGrandTotal" style="display:none;"></span></div>
+
+            <button class="btn-export no-print" id="dtpCopyBtn" style="width:100%; margin-bottom:6px;">&#128203; Copy Dryer Salary Details</button>
+            <div class="save-note no-print" id="dtpCopyNote"></div>
+            <div class="save-note no-print" id="dtpPayNote"></div>
+            <div class="actions no-print">
+              <button class="btn-export" id="dtpPaySalaryBtn" style="flex:2;">&#128737; Pay Salary (Mark as Paid)</button>
+            </div>
+            <div class="actions no-print">
+              <button class="btn-export" id="dtpPrintBtn" style="flex:1;">&#128424; Print</button>
             </div>
 
             <h3 class="sub-title display" style="margin-top:20px;">Previous Records</h3>
-            <div id="dtpRecordsList"></div>
-          
-              </div>
+            <div class="actions no-print">
+              <button class="btn-export" id="dtpRecordsPrintBtn" style="flex:1;">&#128424; Print Records</button>
             </div>
+            <div id="dtpRecordsList"></div>
           </div>
 
         </div>
@@ -5676,7 +5684,6 @@ function dbSaveKg(ds, kg, workers){
 dbEl("dtpOpenDateBtn").addEventListener("click", ()=>dbOpen());
 dbEl("dbFab").addEventListener("click", ()=>dbOpen());
 dbEl("dbSalaryBtn").addEventListener("click", ()=>window.dtGoPage && window.dtGoPage(1));
-dbEl("dbBackBook").addEventListener("click", ()=>window.dtGoPage && window.dtGoPage(0));
 dbEl("dbX").addEventListener("click", dbClose);
 dbEl("dbCancel").addEventListener("click", dbClose);
 dbEl("dbSheet").addEventListener("click", (ev)=>{ if(ev.target===dbEl("dbSheet")) dbClose(); });
@@ -5773,20 +5780,20 @@ function dtRenderPeriodCard(){
       return `<div class="db-grid db-tr">
         <span class="db-nm">${escapeHtml(nm)}</span>
         <span class="db-num">${kgShare===null ? "&ndash;" : dtKg(kgShare)}</span>
-        <span class="db-food">${chip("M",m)}${chip("L",l)}${chip("E",e)}<span class="db-num">${food>0 ? rupee(food) : "&ndash;"}</span></span>
+        <span class="db-food"><span class="db-chips">${chip("M",m)}${chip("L",l)}${chip("E",e)}</span><span class="db-num db-famt">${food>0 ? rupee(food) : "&ndash;"}</span></span>
         <span class="db-num">${sal===null ? "&ndash;" : rupee(sal)}</span>
         <span class="db-num db-strong">${rupee(total)}</span>
       </div>`;
     }).join("");
     const kgHead = kg>0 ? dtKg(kg) : (ds===last ? "?" : "&ndash;");
-    const totalRow = kg>0 ? `<div class="db-grid db-tr db-total"><span class="db-nm">TOTAL</span><span class="db-num">${dtKg(tKg)}</span><span class="db-num db-right">${rupee(tFood)}</span><span class="db-num">${rupee(tSal)}</span><span class="db-num db-strong">${rupee(tAll)}</span></div>` : "";
+    const totalRow = kg>0 ? `<div class="db-grid db-tr db-total"><span class="db-nm">TOTAL</span><span class="db-num">${dtKg(tKg)}</span><span class="db-num db-famt">${rupee(tFood)}</span><span class="db-num">${rupee(tSal)}</span><span class="db-num db-strong">${rupee(tAll)}</span></div>` : "";
     return `<div class="db-day">
       <div class="db-day-head">
         <div><span class="db-date">${fmtCompact(ds)}</span><span class="db-wd">${dtWd(ds)}</span></div>
         <div class="db-kg"><small>TOTAL KG</small><b>${kgHead}</b></div>
         <button class="db-edit no-print" data-dbedit="${ds}" title="Edit">&#9998;</button>
       </div>
-      <div class="db-grid db-th"><span>NAME</span><span class="db-num">KG</span><span class="db-num">FOOD</span><span class="db-num">SALARY</span><span class="db-num">TOTAL</span></div>
+      <div class="db-grid db-th"><span>NAME</span><span class="db-num">KG</span><span class="db-num db-fcenter">FOOD</span><span class="db-num">SALARY</span><span class="db-num">TOTAL</span></div>
       ${rows || '<div class="db-tr db-none">Worker illa</div>'}
       ${totalRow}
     </div>`;
@@ -6138,6 +6145,9 @@ function dtRefreshNumbers(workers){
   set("dttCalc", "\u20b9" + rupee(t.calc));
   set("dttActual", "\u20b9" + rupee(t.actual));
   set("dttDiff", dtSigned(t.actual - t.calc));
+  const lr = document.getElementById("dttLoanRow"); if(lr) lr.style.display = t.ded>0 ? "" : "none";
+  set("dtpWorkersCountChip", workers.length + " Worker" + (workers.length===1 ? "" : "s"));
+  set("dtpTotalDaysVal", String(dtCurrentPeriod ? Object.keys(dtCurrentPeriod.days||{}).length : 0));
   return t;
 }
 
