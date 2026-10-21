@@ -923,6 +923,8 @@
   .sal-payroll .pr.sub b { font-size:14px; }
   .sal-payroll .pr:last-child { border-bottom:none; }
   .db-th { padding-top:13px; padding-bottom:13px; }
+  .dtc-foot { background:#ECF5E4; padding:0 12px 12px; text-align:center; font-size:12px; color:#4F6B47; font-weight:600; }
+  .dtc-foot .dtc-other { font-weight:800; color:#1F4A2B; }
 </style>
 </head>
 <body>
@@ -6210,22 +6212,33 @@ function dtRenderFoodCashInCard(){
       const c = dtCalc(w);
       const loan = dtLoanOf(w.name);
       const days = w.salaryRows.length;
+      const person = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.2" fill="#fff"/><path d="M3.5 21c0-4.8 3.8-7.5 8.5-7.5s8.5 2.7 8.5 7.5z" fill="#fff"/></svg>';
+      const IC = {
+        day: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="2.2"/><path d="M4 10.2h16M8.2 3.5v4M15.8 3.5v4"/></svg>',
+        salary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l-1.6 3h-2.8z"/><path d="M8.5 7.5C5.5 10 4.5 13 5.5 16.5 6.2 19 8.5 21 12 21s5.8-2 6.5-4.5c1-3.5 0-6.5-3-9z"/><text x="12" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none">\u20b9</text></svg>',
+        food: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v6a2 2 0 0 0 2 2v10"/><path d="M9 3v6a2 2 0 0 1-2 2"/><path d="M17 3c-2.2 1.6-2.8 4.6-1.2 7 .6.9 1.2 1.3 1.2 2.4V21"/></svg>',
+        loan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M12 5.2v3.6M10.6 6.2h2.8"/><path d="M3 16c2-1.5 4-1.7 6-.7l3 1.2h2.2a1.3 1.3 0 0 1 0 2.6H11"/><path d="M11 19.1l5-1.8 4.2-2.4"/></svg>',
+        ded: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 12h8"/></svg>'
+      };
+      const item = (kind, cls, value, label, extra)=>`<div class="mtd-item" data-k="${kind}"><span class="mtd-c t-${kind} ${cls}"${extra||""}>${IC[kind]}<span class="v">${value}</span></span><span class="mtd-l">${label}</span></div>`;
       return `
-      <div class="sal-row dtc" data-wkey="${escapeHtml(w.name.trim().toLowerCase())}">
-        <span class="sal-avatar">&#128100;</span>
-        <div>
-          <div class="sal-row-name">${escapeHtml(w.name.toUpperCase())}</div>
-          <div class="sal-row-date">${days ? days + " day" + (days>1?"s":"") + " \u00b7 " + dtKg(w.kg) + " KG" : "KG entry illa"}</div>
+      <div class="mtd dtc" data-wkey="${escapeHtml(w.name.trim().toLowerCase())}">
+        <div class="mtd-band">
+          <span class="mtd-av">${person}</span>
+          <div class="mtd-who">
+            <span class="mtd-name">${escapeHtml(w.name.toUpperCase())}</span>
+            <span class="mtd-date">${days ? dtKg(w.kg) + " KG" : "KG entry illa"}</span>
+          </div>
+          <div class="mtd-balbox"><small>BALANCE</small><b class="dtc-calc">\u20b9${rupee(c.calc)}</b></div>
         </div>
-        <div class="sal-row-bal"><small>Calculated</small><b class="dtc-calc">\u20b9${rupee(c.calc)}</b></div>
-        <span class="sal-chev">&rsaquo;</span>
-        <div class="sal-stats">
-          <div class="sal-stat"><small>KG \u20b9</small><b>${rupee(c.kg)}</b></div>
-          <div class="sal-stat"><small>Food</small><b>${rupee(c.food)}</b></div>
-          <div class="sal-stat"><small>Other</small><b>${rupee(c.noKg)}</b></div>
-          <div class="sal-stat"><small>${c.ded>0 ? "Loan \u2212" : "Loan bal"}</small><b class="${(c.ded>0||loan>0)?"red":""}">${c.ded>0 ? rupee(c.ded) : rupee(loan)}</b></div>
+        <div class="mtd-strip">
+          ${item("day", "", days, "DAY")}
+          ${item("salary", "", rupee(c.kg), "SALARY")}
+          ${item("food", "", rupee(c.food), "FOOD CASH")}
+          ${item("loan", loan>0 ? "has" : "", rupee(loan), "LOAN")}
+          ${item("ded", c.ded>0 ? "on" : "", rupee(c.ded), "LOAN KALICHADHU")}
         </div>
-        <div class="dtc-actual">${dtActualLine(c)}</div>
+        <div class="dtc-foot"><span class="dtc-other">${c.noKg>0 ? "Other \u20b9" + rupee(c.noKg) + " &middot; " : ""}</span><span class="dtc-actual">${dtActualLine(c)}</span></div>
       </div>`;
     }).join("");
     list.querySelectorAll(".dtc").forEach(el=>{
