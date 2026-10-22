@@ -1574,11 +1574,8 @@
               <div class="ttl">&#128176; TOTAL PAYROLL</div>
               <div class="pr"><span>KG Amount</span><b id="dttKg">&#8377;0</b></div>
               <div class="pr"><span>Food Cash</span><b id="dttFood">&#8377;0</b></div>
-              <div class="pr"><span>Salary without KG</span><b id="dttNoKg">&#8377;0</b></div>
               <div class="pr" id="dttLoanRow" style="display:none;"><span>Loan kalichadhu</span><b id="dttLoan">&minus;&#8377;0</b></div>
               <div class="pr grand"><span>GRAND TOTAL</span><b id="dttCalc">&#8377;0</b></div>
-              <div class="pr sub"><span>Actual Total Paid</span><b id="dttActual">&#8377;0</b></div>
-              <div class="pr sub"><span>Total Difference</span><b id="dttDiff">&#8377;0</b></div>
             </div>
             <div class="dtt-food-split">Food: Morning <b id="dtpFoodMorningTotal">&#8377;0</b> &middot; Lunch <b id="dtpFoodLunchTotal">&#8377;0</b> &middot; Evening <b id="dtpFoodEveningTotal">&#8377;0</b><span id="dtpFoodGrandTotal" style="display:none;"></span></div>
 
@@ -5982,13 +5979,25 @@ function dtOpenWorkerModal(key, mode){
     </table></div>`
     : `<p class="empty" style="margin:6px 0;">Entry edhuvum illa.</p>`;
 
+  // salary only (no food): date, day KG, people, share, salary
+  let sKg = 0, sShare = 0, sAmt = 0;
+  const salRows = dates.filter(ds=>byDate[ds].sal).map(ds=>{
+    const r = byDate[ds].sal; sKg += r.dayKg; sShare += r.kg; sAmt += r.amount;
+    return `<tr><td class="date">${fmtCompact(ds)}<small>${dtWd(ds)}</small></td><td>${dtKg(r.dayKg)}</td><td>${r.count}</td><td>${dtKg(r.kg)}</td><td class="b">${rupee(r.amount)}</td></tr>`;
+  }).join("");
+  const salaryTableHtml = salRows ? `<div class="stmt-wrap"><table class="stmt">
+      <thead><tr><th>Date</th><th>KG</th><th>Ppl</th><th>Share</th><th>Salary</th></tr></thead>
+      <tbody>${salRows}</tbody>
+      <tfoot><tr><td>TOTAL</td><td>${dtKg(sKg)}</td><td></td><td>${dtKg(sShare)}</td><td>${rupee(sAmt)}</td></tr></tfoot>
+    </table></div>` : `<p class="empty" style="margin:6px 0;">KG entry illa.</p>`;
+
   const foodEntriesHtml = w.foodRows.length ? `<div class="wm-card"><small>Food entries (edit / delete)</small>` +
     w.foodRows.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>
     `<div class="wm-day" style="align-items:flex-start;">
       <span>${fmtCompactDay(e.date)}<br><span style="font-size:11.5px;color:#6B8664;">Morning \u20b9${rupee(e.morning)} &middot; Lunch \u20b9${rupee(e.lunch)} &middot; Evening \u20b9${rupee(e.evening)}</span></span>
       <span style="text-align:right;white-space:nowrap;"><span class="mono">\u20b9${rupee(e.total)}</span><br>
         <span class="no-print"><button class="dt-icon-btn" data-editfood="${e.date}::${e.entryId}" title="Edit">&#9998;</button> <button class="dt-icon-btn danger" data-delfood="${e.date}::${e.entryId}" title="Delete">&#128465;</button></span></span>
-    </div>`).join("") + `</div>` : "";
+    </div>`).join("") + `<div class="wm-day" style="border-top:2px solid #2F6B3A;margin-top:6px;padding-top:10px;"><b>Total Food Cash</b><b class="mono">\u20b9${rupee(w.foodRows.reduce((a,e)=>a+e.total,0))}</b></div></div>` : "";
 
   const loanHtml = loan > 0 ? `<div class="wm-card">
       <div style="display:flex;justify-content:space-between;align-items:baseline;"><small>Loan balance</small><b class="v" style="color:#B33A3A;">\u20b9${rupee(loan)}</b></div>
@@ -6009,14 +6018,8 @@ function dtOpenWorkerModal(key, mode){
       ${mode==="statement" ? `<div class="wm-card"><small>Salary &amp; Food statement</small>${tableHtml}</div>` : ""}
       ${mode==="food" ? (foodEntriesHtml || `<div class="wm-card"><p class="empty" style="margin:6px 0;">Food entry illa.</p></div>`) : ""}
       ${mode==="loan" ? (loanHtml || `<div class="wm-card"><p class="empty" style="margin:6px 0;">Loan illa.</p></div>`) : ""}
-      ${(mode==="extra" && dtCurrentPeriod) ? `<div class="wm-card">
-        <small>Extra &amp; Actual (pathivu pannunga)</small>
-        <div class="dte-grid">
-          <label>Salary without KG (Rs.)<input type="number" inputmode="decimal" id="dtwNoKg" placeholder="0" value="${w.noKg||""}" /></label>
-          <label>Actual Salary Paid (Rs.)<input type="number" inputmode="decimal" id="dtwActual" placeholder="calculated" value="${(w.actual===null||w.actual===undefined)?"":w.actual}" /></label>
-        </div>
-      </div>` : ""}
-      <div class="wm-total" style="${(mode==="extra"||mode==="loan") ? "" : "display:none;"}">
+      ${mode==="salary" ? `<div class="wm-card"><small>KG Salary statement</small>${salaryTableHtml}</div>` : ""}
+      <div class="wm-total" style="${mode==="loan" ? "" : "display:none;"}">
         <div class="r"><small>KG Salary</small><b id="dtwSalaryVal"></b></div>
         <div class="r"><small>Food Cash</small><b id="dtwFoodVal"></b></div>
         <div class="r" id="dtwNoKgRow" style="display:none;"><small>Salary without KG</small><b id="dtwNoKgVal"></b></div>
@@ -6131,7 +6134,6 @@ function dtRefreshNumbers(workers){
     document.querySelectorAll("#dtpFoodList .dtc").forEach(el=>{
       if(el.dataset.wkey !== w.name.trim().toLowerCase()) return;
       el.querySelector(".dtc-calc").textContent = "\u20b9" + rupee(c.calc);
-      el.querySelector(".dtc-actual").innerHTML = dtActualLine(c);
     });
   });
   const set = (id, txt)=>{ const el = document.getElementById(id); if(el) el.textContent = txt; };
@@ -6158,11 +6160,11 @@ function dtCopyDetails(){
   const lines = workers.map(w=>{
     const c = dtCalc(w);
     t.kg+=c.kg; t.food+=c.food; t.noKg+=c.noKg; t.ded+=c.ded; t.calc+=c.calc; t.actual+=c.actual;
-    return `${w.name.toUpperCase()}: KG ${R(c.kg)} + Food ${R(c.food)} + Without KG ${R(c.noKg)} - Loan ${R(c.ded)} = ${R(c.calc)} | Actual ${R(c.actual)} | Diff ${c.diff>0?"+":""}${c.diff}`;
+    return `${w.name.toUpperCase()}: KG ${R(c.kg)} + Food ${R(c.food)} - Loan ${R(c.ded)} = ${R(c.calc)}`;
   });
   return `Dryer Team Salary${range ? " (" + range + ")" : ""}\n\n` + lines.join("\n") +
-    `\n\nKG Amount: ${R(t.kg)}\nFood Cash: ${R(t.food)}\nSalary without KG: ${R(t.noKg)}\nLoan Deduction: ${R(t.ded)}\n` +
-    `Calculated Total: ${R(t.calc)}\nActual Total Paid: ${R(t.actual)}\nTotal Difference: ${t.actual-t.calc>0?"+":""}${t.actual-t.calc}`;
+    `\n\nKG Amount: ${R(t.kg)}\nFood Cash: ${R(t.food)}\nLoan Deduction: ${R(t.ded)}\n` +
+    `Grand Total: ${R(t.calc)}`;
 }
 function dtCopyToClipboard(text){
   if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
@@ -6233,14 +6235,13 @@ function dtRenderFoodCashInCard(){
           ${item("loan", loan>0 ? "has" : "", rupee(loan), "LOAN")}
           ${item("ded", c.ded>0 ? "on" : "", rupee(c.ded), "LOAN KALICHADHU")}
         </div>
-        <div class="dtc-foot"><span class="dtc-other">${c.noKg>0 ? "Other \u20b9" + rupee(c.noKg) + " &middot; " : ""}</span><span class="dtc-actual">${dtActualLine(c)}</span></div>
       </div>`;
     }).join("");
     list.querySelectorAll(".dtc").forEach(el=>{
       el.addEventListener("click", (ev)=>{
         const it = ev.target.closest(".mtd-item");
         const k = it ? it.dataset.k : "";
-        const mode = k==="salary" ? "extra" : (k==="food" ? "food" : ((k==="loan"||k==="ded") ? "loan" : "statement"));
+        const mode = k==="salary" ? "salary" : (k==="food" ? "food" : ((k==="loan"||k==="ded") ? "loan" : "statement"));
         dtOpenWorkerModal(el.dataset.wkey, mode);
       });
     });
