@@ -3898,6 +3898,11 @@ function mtUpdateSalaryTotals(){
     const info = mtSalaryAggCache.map[el.dataset.name];
     if(info) el.textContent = MT_R(info.totalSalary + mtFoodOf(el.dataset.name) - mtDeductFor(el.dataset.name));
   });
+  document.querySelectorAll("#mtSalaryList .mtd-c.t-salary").forEach(el=>{
+    const info = mtSalaryAggCache.map[el.dataset.name];
+    if(!info) return;
+    el.querySelector(".v").textContent = rupee(info.totalSalary - mtDeductFor(el.dataset.name));
+  });
   document.querySelectorAll("#mtSalaryList .mtd-c.t-ded").forEach(el=>{
     const d = mtDeductFor(el.dataset.name);
     el.querySelector(".v").textContent = d>0 ? "\u2212" + rupee(d) : "0";
@@ -3963,7 +3968,7 @@ function mtRenderSalaryCards(){
       </div>
       <div class="mtd-strip">
         ${item("day", "", info.workingDays, "DAY")}
-        ${item("salary", "", rupee(info.totalSalary), "SALARY")}
+        ${item("salary", "", rupee(info.totalSalary), "SALARY", ' data-name="' + nm + '"')}
         ${item("food", "", rupee(food), "FOOD CASH")}
         ${item("loan", loan>0 ? "has" : "", rupee(loan), "LOAN")}
         ${item("ded", "", "0", "LOAN KALICHADHU", ' data-name="' + nm + '"')}
@@ -4021,14 +4026,19 @@ function mtSheet(name, subtitle, bodyHtml, onClose){
 function mtOpenSalaryModal(name){
   const info = mtSalaryAggCache.map[name];
   if(!info) return;
+  const ded = mtDeductFor(name);
+  const net = info.totalSalary - ded;
   const rows = info.days.map(d=>`<div class="wm-day"><span>${mtDateCell(d.date)}</span><span class="mono">${MT_R(d.amount)}</span></div>`).join("");
-  mtSheet(name, "Salary " + MT_R(info.totalSalary) + " &middot; " + info.workingDays + " day" + (info.workingDays>1?"s":""), `
+  const dedRows = ded>0 ? `
+      <div class="wm-day" style="color:#B33A3A;font-weight:700;"><span>Loan kalichadhu</span><span class="mono">&minus;${MT_R(ded)}</span></div>
+      <div class="wm-day" style="font-weight:800;border-top:2px solid #2F6B3A;padding-top:10px;"><span>Salary (loan kalicha pinnadi)</span><span class="mono">${MT_R(net)}</span></div>` : "";
+  mtSheet(name, "Salary " + MT_R(net) + " &middot; " + info.workingDays + " day" + (info.workingDays>1?"s":""), `
     <div class="wm-card two">
       <div><small>Working Days</small><b class="v">${info.workingDays}</b></div>
-      <div><small>Salary</small><b class="v">${MT_R(info.totalSalary)}</b></div>
+      <div><small>Salary</small><b class="v">${MT_R(net)}</b></div>
     </div>
     <div class="wm-card"><small>Naal-wise salary</small>${rows}
-      <div class="wm-day" style="font-weight:800;"><span>Total</span><span class="mono">${MT_R(info.totalSalary)}</span></div>
+      <div class="wm-day" style="font-weight:800;"><span>Total</span><span class="mono">${MT_R(info.totalSalary)}</span></div>${dedRows}
     </div>`);
 }
 
