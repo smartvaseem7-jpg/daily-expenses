@@ -2676,8 +2676,16 @@ function wcBuildMachine(){
     const k = nameKey(nm), info = mtSalaryAggCache.map[nm];
     const o = out[k] || (out[k] = {days:0, salary:0, ded:0, food:foodBy[k]||0, loan:Number(mtLoanMap[k])||0, range:""});
     o.days += info.workingDays; o.salary += info.totalSalary; o.ded += mtDeductFor(nm); o.range = mtRangeText(info);
+    o.salaryDays = (o.salaryDays || []).concat(info.days.map(d=>({date:d.date, amount:d.amount})));
   });
-  Object.keys(foodBy).forEach(k=>{ if(!out[k]) out[k] = {days:0, salary:0, ded:0, food:foodBy[k], loan:Number(mtLoanMap[k])||0, range:""}; });
+  Object.keys(mtFoodAggCache.map).forEach(n=>{
+    const k = nameKey(n); if(!out[k]) return;
+    out[k].foodDays = (out[k].foodDays || []).concat((mtFoodAggCache.map[n].entries||[]).map(e=>({date:e.docId, m:e.morning, l:e.lunch, e:e.evening})));
+  });
+  Object.keys(foodBy).forEach(k=>{ if(!out[k]){
+    out[k] = {days:0, salary:0, ded:0, food:foodBy[k], loan:Number(mtLoanMap[k])||0, range:"", salaryDays:[], foodDays:[]};
+    Object.keys(mtFoodAggCache.map).forEach(n=>{ if(nameKey(n)===k) out[k].foodDays = out[k].foodDays.concat((mtFoodAggCache.map[n].entries||[]).map(e=>({date:e.docId, m:e.morning, l:e.lunch, e:e.evening}))); });
+  } });
   Object.keys(out).forEach(k=>{ out[k].balance = out[k].salary - out[k].ded + out[k].food; });
   return out;
 }
@@ -2685,14 +2693,53 @@ function wcBuildDryer(workers){
   const out = {};
   workers.forEach(w=>{
     const c = dtCalc(w), k = nameKey(w.name);
-    out[k] = {days:w.salaryRows.length, salary:c.kg, ded:c.ded, food:c.food, loan:dtLoanOf(w.name), range:(w.salaryRows.length ? dtKg(w.kg) + " KG" : ""), balance:c.calc};
+    out[k] = {days:w.salaryRows.length, salary:c.kg, ded:c.ded, food:c.food, loan:dtLoanOf(w.name), range:(w.salaryRows.length ? dtKg(w.kg) + " KG" : ""), balance:c.calc,
+      salaryDays: w.salaryRows.map(r=>({date:r.date, dayKg:r.dayKg, count:r.count, share:r.kg, amount:r.amount})),
+      foodDays: w.foodRows.map(e=>({date:e.date, m:e.morning, l:e.lunch, e:e.evening}))};
   });
   return out;
 }
 
 // ---------- Worker: login + own card (read only) ----------
-let wvKey = "";
-function wvTeamCard(title, d){
+let wvKey = "", wvData = null;
+function wvOpenDetail(team, kind){
+  const t = wvData && wvData[team]; if(!t) return;
+  const name = document.getElementById("wvName").textContent;
+  const R = (n)=>"\u20b9" + rupee(n);
+  const sal = t.salaryDays || [], food = t.foodDays || [], ded = Number(t.ded)||0, net = (Number(t.salary)||0) - ded;
+  const foodAmt = (e)=>(Number(e.m)||0) + (Number(e.l)||0) + (Number(e.e)||0);
+  const salRows = sal.length ? sal.map(r=>`<div class="wm-day"><span>${mtDateCell(r.date)}${team==="dryer" ? `<br><span style="font-size:11.5px;color:#6B8664;">${dtKg(r.dayKg)} KG &divide; ${r.count} = ${dtKg(r.share)} KG</span>` : ""}</span><span class="mono">${R(r.amount)}</span></div>`).join("") : `<div class="wm-day"><span style="color:#6B8664;">Salary entry illa</span><span></span></div>`;
+  const salTotal = `<div class="wm-day" style="font-weight:800;"><span>Total</span><span class="mono">${R(t.salary)}</span></div>` + (ded>0 ? `
+      <div class="wm-day" style="color:#B33A3A;font-weight:700;"><span>Loan kalichadhu</span><span class="mono">&minus;${R(ded)}</span></div>
+      <div class="wm-day" style="font-weight:800;border-top:2px solid #2F6B3A;padding-top:10px;"><span>Salary (loan kalicha pinnadi)</span><span class="mono">${R(net)}</span></div>` : "");
+  const foodRows = food.length ? food.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(e=>`<div class="wm-day" style="align-items:flex-start;"><span>${mtDateCell(e.date)}<br><span style="font-size:11.5px;color:#6B8664;">Morning ${R(e.m)} &middot; Lunch ${R(e.l)} &middot; Evening ${R(e.e)}</span></span><span class="mono">${R(foodAmt(e))}</span></div>`).join("") + `<div class="wm-day" style="font-weight:800;"><span>Food total</span><span class="mono">${R(t.food)}</span></div>` : `<div class="wm-day"><span style="color:#6B8664;">Food cash entry illa</span><span></span></div>`;
+  if(kind==="salary"){
+    mtSheet(name, "Salary " + R(net), `<div class="wm-card"><small>Naal-wise salary</small>${salRows}${salTotal}</div>`);
+  } else if(kind==="food"){
+    mtSheet(name, "Food cash " + R(t.food), `<div class="wm-card"><small>Food cash details</small>${foodRows}</div>`);
+  } else if(kind==="loan" || kind==="ded"){
+    mtSheet(name, "Loan balance " + R(t.loan), `<div class="wm-card"><div class="wm-day" style="font-weight:800;"><span>Ippo loan balance</span><span class="mono" style="color:${t.loan>0 ? "#B33A3A" : "#2F6B3A"};">${R(t.loan)}</span></div>
+      <div class="wm-day"><span>Intha salary-la kalichadhu</span><span class="mono">${ded>0 ? "&minus;" + R(ded) : R(0)}</span></div></div>`);
+  } else if(kind==="day"){
+    return;
+  } else {
+    // card tap -> salary + food together, day by day
+    const by = {};
+    sal.forEach(r=>{ (by[r.date] = by[r.date] || {s:0, f:0}).s += Number(r.amount)||0; });
+    food.forEach(e=>{ (by[e.date] = by[e.date] || {s:0, f:0}).f += foodAmt(e); });
+    const dates = Object.keys(by).sort(), dash = "\u2013";
+    const tb = dates.map(ds=>`<tr><td class="date">${mtDateCell(ds)}</td><td>${by[ds].s ? rupee(by[ds].s) : dash}</td><td>${by[ds].f ? rupee(by[ds].f) : dash}</td><td class="b">${rupee(by[ds].s + by[ds].f)}</td></tr>`).join("");
+    const table = dates.length ? `<div class="stmt-wrap"><table class="stmt"><thead><tr><th>Date</th><th>Salary</th><th>Food</th><th>Total</th></tr></thead><tbody>${tb}</tbody>
+      <tfoot><tr><td>TOTAL</td><td>${rupee(t.salary)}</td><td>${rupee(t.food)}</td><td>${rupee((Number(t.salary)||0) + (Number(t.food)||0))}</td></tr></tfoot></table></div>` : `<p class="empty" style="margin:6px 0;">Entry illa.</p>`;
+    mtSheet(name, "Balance " + R(t.balance), `<div class="wm-card"><small>Salary &amp; Food statement</small>${table}</div>` + (ded>0 ? `<div class="wm-card"><div class="wm-day" style="color:#B33A3A;font-weight:700;"><span>Loan kalichadhu</span><span class="mono">&minus;${R(ded)}</span></div><div class="wm-day" style="font-weight:800;"><span>Balance</span><span class="mono">${R(t.balance)}</span></div></div>` : ""));
+  }
+}
+document.getElementById("wvBody").addEventListener("click", (ev)=>{
+  const card = ev.target.closest(".mtd"); if(!card) return;
+  const it = ev.target.closest(".mtd-item");
+  wvOpenDetail(card.dataset.team, it ? it.dataset.k : "total");
+});
+function wvTeamCard(title, d, team){
   const nm = document.getElementById("wvName").textContent;
   const person = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.2" fill="#fff"/><path d="M3.5 21c0-4.8 3.8-7.5 8.5-7.5s8.5 2.7 8.5 7.5z" fill="#fff"/></svg>';
   const IC = {
@@ -2704,7 +2751,7 @@ function wvTeamCard(title, d){
   };
   const item = (kind, cls, value, label, extra)=>`<div class="mtd-item" data-k="${kind}"><span class="mtd-c t-${kind} ${cls}"${extra||""}>${IC[kind]}<span class="v">${value}</span></span><span class="mtd-l">${label}</span></div>`;
   return `<div class="wv-team">${escapeHtml(title)}</div>
-  <div class="mtd">
+  <div class="mtd" data-team="${team}">
     <div class="mtd-band">
       <span class="mtd-av">${person}</span>
       <div class="mtd-who"><span class="mtd-name">${escapeHtml(nm.toUpperCase())}</span><span class="mtd-date">${escapeHtml(d.range || "")}</span></div>
@@ -2724,8 +2771,9 @@ function wvLoad(){
   db.collection("workerCards").doc(wvKey).get().then(doc=>{
     const d = doc.exists ? doc.data() : null;
     const parts = [];
-    if(d && d.machine) parts.push(wvTeamCard("Machine Team", d.machine));
-    if(d && d.dryer) parts.push(wvTeamCard("Dryer Team", d.dryer));
+    if(d && d.machine) parts.push(wvTeamCard("Machine Team", d.machine, "machine"));
+    if(d && d.dryer) parts.push(wvTeamCard("Dryer Team", d.dryer, "dryer"));
+    wvData = d;
     body.innerHTML = parts.length ? parts.join("") : '<p class="empty">Ippo unpaid salary illa.</p>';
     document.getElementById("wvUpdated").textContent = (d && d.updatedAt) ? "Last update: " + new Date(d.updatedAt).toLocaleString("en-IN") : "";
   }).catch(()=>{ body.innerHTML = '<p class="empty">Load aagala. Internet check pannunga.</p>'; });
