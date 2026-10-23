@@ -925,6 +925,24 @@
   .db-th { padding-top:13px; padding-bottom:13px; }
   .dtc-foot { background:#ECF5E4; padding:0 12px 12px; text-align:center; font-size:12px; color:#4F6B47; font-weight:600; }
   .dtc-foot .dtc-other { font-weight:800; color:#1F4A2B; }
+
+  /* ===== worker logins ===== */
+  .wa-add { display:flex; gap:10px; margin:6px 0 12px; }
+  .wa-add input { flex:1; min-width:0; padding:13px 14px; border-radius:14px; border:1.5px solid #B5CBA8; background:#fff; font-size:16px; }
+  .wa-add button { padding:0 20px; border-radius:14px; border:none; background:#2F6B3A; color:#fff; font-weight:800; font-size:15px; }
+  .wa-row { display:flex; align-items:center; gap:8px; background:#fff; border:1.5px solid #D5E4CB; border-radius:16px; padding:12px; margin-bottom:10px; }
+  .wa-name { flex:1; min-width:0; font-weight:800; font-size:16px; color:#17301F; }
+  .wa-name small { display:block; font-weight:600; font-size:12px; color:#7C9A78; margin-top:2px; }
+  .wa-btn { padding:10px 14px; border-radius:12px; border:1.5px solid #2F6B3A; background:#fff; color:#1F5A33; font-weight:800; font-size:13.5px; }
+  .wa-btn.danger { border-color:#E2BDBD; color:#B33A3A; padding:10px 13px; }
+  #workerViewScreen { display:none; position:fixed; inset:0; z-index:90; background:#FCF5E8; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  #workerViewScreen .sup-header { display:flex; align-items:center; gap:10px; padding:14px 12px; background:linear-gradient(135deg,#10331F,#2E7D45); color:#fff; }
+  #workerViewScreen .sup-header h2 { margin:0; font-size:18px; flex:1; font-family:'Fraunces',serif; }
+  #workerViewScreen .sup-user { font-size:13px; font-weight:700; }
+  #wvLogoutBtn { background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.4); color:#fff; border-radius:10px; padding:8px 12px; font-weight:700; }
+  .wv-team { font-family:'Fraunces',serif; font-weight:900; font-size:20px; color:#17402A; margin:14px 4px 8px; }
+  .wv-updated { text-align:center; font-size:12px; color:#7C9A78; margin-top:14px; }
+  .wv-refresh { display:block; margin:10px auto 0; padding:12px 22px; border-radius:14px; border:1.5px solid #2F6B3A; background:#fff; color:#1F5A33; font-weight:800; }
 </style>
 </head>
 <body>
@@ -940,16 +958,40 @@
       <p style="font-size:18px;margin:0 0 14px;color:#1F3D24 !important;font-weight:800;">Login</p>
       <button class="choose-btn admin" id="chooseAdminBtn"><span>&#128100; Admin Login</span><small>Full Access (All Pages)</small></button>
       <button class="choose-btn supplier" id="chooseSupplierBtn"><span>&#128101; Supplier Login</span><small>Limited Access (A &ndash; E Only)</small></button>
+      <button class="choose-btn supplier" id="chooseWorkerBtn" style="background:#6B8E4E;"><span>&#128119; Worker Login</span><small>Unga salary &amp; loan paaka</small></button>
       <p style="font-size:12px;margin:2px 0 0;color:#8A7A5E !important;">Select your login type</p>
     </div>
 
     <!-- Step 2a: Admin — the existing PIN -->
     <div class="pin-panel" id="adminPinPanel" style="display:flex;">
-      <p style="font-size:12.5px;margin:0 0 10px;color:#4A3B28 !important;font-weight:600;">Enter PIN to view</p>
-      <input type="password" inputmode="numeric" maxlength="6" id="pinInput" placeholder="&bull;&bull;&bull;&bull;" />
-      <div class="lock-error" id="lockError"></div>
-      <button id="pinSubmit">Unlock</button>
+      <p style="font-size:16px;margin:0 0 10px;color:#1F3D24 !important;font-weight:800;">Admin Login</p>
+      <div id="adminEmailBox" style="width:100%;">
+        <input class="sup-input" type="email" id="adminEmailInput" placeholder="Email" autocomplete="username" autocapitalize="none" spellcheck="false" />
+        <input class="sup-input" type="password" id="adminPasswordInput" placeholder="Password" autocomplete="current-password" style="margin-top:8px;" />
+        <div class="lock-error" id="adminEmailError"></div>
+        <button id="adminEmailBtn">Login</button>
+        <button class="link-btn" id="adminOldPinLink" type="button">Old PIN use pannu</button>
+      </div>
+      <div id="adminOldPinBox" style="display:none;width:100%;">
+        <p style="font-size:12.5px;margin:0 0 10px;color:#4A3B28 !important;font-weight:600;">Enter PIN to view</p>
+        <input type="password" inputmode="numeric" maxlength="6" id="pinInput" placeholder="&bull;&bull;&bull;&bull;" />
+        <div class="lock-error" id="lockError"></div>
+        <button id="pinSubmit">Unlock</button>
+      </div>
       <button class="link-btn" data-login-back>&#8592; Back</button>
+    </div>
+
+    <!-- Step 2c: Worker - own name + 6-digit PIN -->
+    <div class="pin-panel" id="workerLoginPanel" style="display:none;">
+      <div class="sup-avatar">&#128119;</div>
+      <p style="font-size:16px;margin:0 0 12px;color:#1F3D24 !important;font-weight:800;">Worker Login</p>
+      <label class="sup-label" for="workerNameInput">Peyar</label>
+      <input class="sup-input" type="text" id="workerNameInput" autocomplete="off" />
+      <label class="sup-label" for="workerPinInput">PIN (6 number)</label>
+      <input class="sup-input" type="password" inputmode="numeric" maxlength="6" id="workerPinInput" autocomplete="current-password" />
+      <div class="lock-error" id="workerLoginError"></div>
+      <button id="workerLoginBtn">Login</button>
+      <button class="link-btn" data-login-back>Back to Home</button>
     </div>
 
     <!-- Step 2b: Supplier — own username + password -->
@@ -967,6 +1009,20 @@
       <button id="supplierLoginBtn">Login</button>
       <button class="link-btn" data-login-back>Back to Home</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== WORKER PANEL: a worker only ever sees his own card ===== -->
+<div id="workerViewScreen">
+  <div class="sup-header">
+    <h2 id="wvTitle">En Salary</h2>
+    <span class="sup-user">&#128100; <span id="wvName"></span></span>
+    <button id="wvLogoutBtn">Logout</button>
+  </div>
+  <div style="padding:14px 12px 40px;">
+    <div id="wvBody"></div>
+    <div class="wv-updated" id="wvUpdated"></div>
+    <button class="wv-refresh" id="wvRefreshBtn" type="button">&#128260; Refresh</button>
   </div>
 </div>
 
@@ -1139,6 +1195,11 @@
           <span class="home-card-title">Month Report</span>
           <span class="home-card-desc">Monthly report &amp; summary</span>
         </button>
+        <button class="home-card" id="goWorkers">
+          <span class="home-card-icon">&#128119;</span>
+          <span class="home-card-title">Worker Logins</span>
+          <span class="home-card-desc">Worker PIN set pannu</span>
+        </button>
         <button class="home-card" id="goDashboard">
           <span class="home-card-icon">&#128202;</span>
           <span class="home-card-title">Dashboard</span>
@@ -1175,6 +1236,7 @@
             <button class="hd-nav-item" data-nav-target="loan"><span class="ico">&#128176;</span>Loan</button>
             <button class="hd-nav-item" data-nav-target="salary"><span class="ico">&#128181;</span>Salary</button>
             <button class="hd-nav-item" data-nav-target="monthreport"><span class="ico">&#128197;</span>Month Report</button>
+            <button class="hd-nav-item" data-nav-target="workers"><span class="ico">&#128119;</span>Worker Logins</button>
             <button class="hd-nav-item" data-nav-target="dashboard"><span class="ico">&#128202;</span>Dashboard</button>
           </nav>
           <div class="hd-sidebar-footer">Quality Products,<br/>Trusted by Nature &#127811;</div>
@@ -1279,6 +1341,12 @@
                 <div class="hd-quick-icon">&#128197;</div>
                 <div class="hd-quick-title">Month Report</div>
                 <div class="hd-quick-desc">Monthly report &amp; summary</div>
+                <button class="hd-quick-arrow">&#8594;</button>
+              </div>
+              <div class="hd-quick-card" data-nav-target="workers">
+                <div class="hd-quick-icon">&#128119;</div>
+                <div class="hd-quick-title">Worker Logins</div>
+                <div class="hd-quick-desc">Worker PIN set pannu, avanga card paakka</div>
                 <button class="hd-quick-arrow">&#8594;</button>
               </div>
               <div class="hd-quick-card" data-nav-target="dashboard">
@@ -1679,6 +1747,20 @@
     </div>
 
     <!-- ===== LOAN ===== -->
+    <div id="workerAccessSection" style="display:none;">
+      <div class="section-header">
+        <button class="back-btn no-print" data-home>&#8592; Home</button>
+        <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
+        <h2 class="section-title">WORKER LOGINS</h2>
+      </div>
+      <div class="wa-add no-print">
+        <input type="text" id="waNewName" placeholder="Pudhu worker peyar" autocomplete="off" />
+        <button id="waAddBtn" type="button">+ Add</button>
+      </div>
+      <div id="waList"></div>
+      <div class="save-note" id="waNote"></div>
+    </div>
+
     <div id="loanSection" style="display:none;">
       <div class="section-header">
         <button class="back-btn no-print" data-home>&#8592; Home</button>
@@ -1981,7 +2063,7 @@ document.getElementById("lockAgainBtn").addEventListener("click", ()=>{
 function showApp(){
   document.getElementById("lockScreen").style.display="none";
   document.getElementById("appRoot").style.display="block";
-  auth.signInAnonymously().then(()=>{
+  ensureAnon().then(()=>{
     showScreen("homeScreen");
     loadWorkerNamesList();
     loadMachineWorkerNamesList();
@@ -2029,10 +2111,11 @@ function loadMachineWorkerNamesList(){
 const IS_SUPPLIER_LINK = new URLSearchParams(window.location.search).get("supplier") === "1";
 let supplierUsername = "", supplierName = "", supplierCurrentSec = null;
 
-function showLoginPanel(which){ // "chooser" | "admin" | "supplier"
+function showLoginPanel(which){ // "chooser" | "admin" | "supplier" | "worker"
   document.getElementById("loginChooser").style.display = which==="chooser" ? "flex" : "none";
   document.getElementById("adminPinPanel").style.display = which==="admin" ? "flex" : "none";
   document.getElementById("supplierLoginPanel").style.display = which==="supplier" ? "flex" : "none";
+  document.getElementById("workerLoginPanel").style.display = which==="worker" ? "flex" : "none";
   document.getElementById("lockError").textContent = "";
   document.getElementById("supplierLoginError").textContent = "";
 }
@@ -2054,7 +2137,7 @@ function supplierTryLogin(){
   const errEl = document.getElementById("supplierLoginError");
   if(!u || !p){ errEl.textContent = "Enter username and password."; return; }
   errEl.textContent = "Checking...";
-  auth.signInAnonymously().then(()=>db.collection("supplierAccounts").doc(u).get()).then((doc)=>{
+  ensureAnon().then(()=>db.collection("supplierAccounts").doc(u).get()).then((doc)=>{
     if(!doc.exists || doc.data().password !== p){
       errEl.textContent = "Wrong username or password.";
       return;
@@ -2091,7 +2174,7 @@ function enterSupplierPortal(u, n){
   document.getElementById("supplierHeaderName").textContent = supplierName;
   supplierShowLocations();
   // If the admin deleted this supplier's login, don't keep them signed in.
-  auth.signInAnonymously().then(()=>db.collection("supplierAccounts").doc(u).get()).then((doc)=>{
+  ensureAnon().then(()=>db.collection("supplierAccounts").doc(u).get()).then((doc)=>{
     if(!doc.exists) supplierLogout();
   }).catch(()=>{});
 }
@@ -2450,12 +2533,262 @@ document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
   });
 });
 
+// ===================== AUTH: admin email login + worker logins =====================
+const WORKER_EMAIL_DOMAIN = "workers.sham-coco.app";
+const authReady = new Promise(res=>{ const un = auth.onAuthStateChanged(u=>{ un(); res(u); }); });
+function isWorkerUser(u){ return !!(u && !u.isAnonymous && String(u.email||"").endsWith("@" + WORKER_EMAIL_DOMAIN)); }
+async function ensureAnon(){
+  await authReady;
+  const u = auth.currentUser;
+  if(u && !isWorkerUser(u)) return u;          // admin (email) or anonymous stays as is
+  if(u) await auth.signOut();                   // a worker session must never open the admin app
+  const c = await auth.signInAnonymously();
+  return c.user;
+}
+document.getElementById("lockAgainBtn").addEventListener("click", ()=>{ auth.signOut().catch(()=>{}); });
+
+document.getElementById("adminOldPinLink").addEventListener("click", ()=>{
+  document.getElementById("adminEmailBox").style.display = "none";
+  document.getElementById("adminOldPinBox").style.display = "block";
+});
+function adminEmailLogin(){
+  const email = document.getElementById("adminEmailInput").value.trim();
+  const pw = document.getElementById("adminPasswordInput").value;
+  const err = document.getElementById("adminEmailError");
+  if(!email || !pw){ err.textContent = "Email and password podunga."; return; }
+  if(email.toLowerCase().endsWith("@" + WORKER_EMAIL_DOMAIN)){ err.textContent = "Wrong email or password."; return; }
+  err.textContent = "Checking...";
+  auth.signInWithEmailAndPassword(email, pw).then(()=>{
+    err.textContent = "";
+    document.getElementById("adminPasswordInput").value = "";
+    localStorage.setItem("sham-unlocked","true");
+    localStorage.removeItem("supplierUser"); localStorage.removeItem("supplierName"); localStorage.removeItem("workerSession");
+    showApp();
+  }).catch((e)=>{
+    const bad = ["auth/wrong-password","auth/user-not-found","auth/invalid-credential","auth/invalid-email","auth/invalid-login-credentials"];
+    err.textContent = (e && e.code==="auth/too-many-requests") ? "Romba dhadava thappu. Konjam neram kazhichu try pannunga."
+      : (e && bad.includes(e.code)) ? "Wrong email or password." : "Login aagala. Internet check pannunga.";
+  });
+}
+document.getElementById("adminEmailBtn").addEventListener("click", adminEmailLogin);
+document.getElementById("adminPasswordInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") adminEmailLogin(); });
+
+// ---------- Admin: set / change / remove a worker's PIN ----------
+function waHash(str){ let h = 5381; for(let i=0;i<str.length;i++){ h = ((h<<5) + h + str.charCodeAt(i)) | 0; } return Math.abs(h).toString(36); }
+function waEmail(key, ver){
+  const san = key.replace(/[^a-z0-9]/g, "").slice(0, 20) || "w";
+  return san + "-" + waHash(key) + "-v" + ver + "@" + WORKER_EMAIL_DOMAIN;
+}
+async function waSetPin(name, pin){
+  const key = nameKey(name);
+  const dirRef = db.collection("workerDirectory").doc(key);
+  const dir = await dirRef.get();
+  const old = dir.exists ? dir.data() : null;
+  const ver = old ? ((Number(old.ver)||1) + 1) : 1;
+  // second Firebase app, so creating the worker's account doesn't sign the admin out
+  const sec = firebase.apps.find(a=>a.name==="wsec") || firebase.initializeApp(firebaseConfig, "wsec");
+  const cred = await sec.auth().createUserWithEmailAndPassword(waEmail(key, ver), pin);
+  const uid = cred.user.uid;
+  await sec.auth().signOut();
+  await db.collection("workerAccess").doc(uid).set({workerKey:key, name, ver, createdAt:Date.now()});
+  await dirRef.set({name, ver, uid});
+  if(old && old.uid) await db.collection("workerAccess").doc(old.uid).delete().catch(()=>{});
+}
+async function waRemove(name){
+  const key = nameKey(name);
+  const dirRef = db.collection("workerDirectory").doc(key);
+  const dir = await dirRef.get();
+  if(dir.exists && dir.data().uid) await db.collection("workerAccess").doc(dir.data().uid).delete().catch(()=>{});
+  await dirRef.delete();
+  await db.collection("workerCards").doc(key).delete().catch(()=>{});
+}
+let waExtraNames = [];
+async function waLoad(){
+  const list = document.getElementById("waList");
+  list.innerHTML = '<p class="empty">Loading...</p>';
+  const names = {};
+  const add = (n)=>{ n = String(n||"").trim(); if(n) names[nameKey(n)] = names[nameKey(n)] || n; };
+  waExtraNames.forEach(add);
+  const rs = await Promise.allSettled(["dryerWorkerNames","machineWorkerNames","workerLoans","workerDirectory"].map(c=>db.collection(c).get()));
+  const dirs = {};
+  rs.forEach((r,i)=>{ if(r.status!=="fulfilled") return; r.value.forEach(doc=>{
+    if(i===3){ dirs[doc.id] = doc.data(); add(doc.data().name); } else add(doc.data().name || "");
+  }); });
+  const keys = Object.keys(names).sort();
+  if(!keys.length){ list.innerHTML = '<p class="empty">Worker illa. Mela peyar add pannunga.</p>'; return; }
+  list.innerHTML = keys.map(k=>{
+    const d = dirs[k];
+    return `<div class="wa-row"><div class="wa-name">${escapeHtml(names[k])}<small>${d ? "Login on" : "Login illa"}</small></div>
+      <button class="wa-btn" data-wa-set="${escapeHtml(names[k])}">${d ? "Change PIN" : "Set PIN"}</button>
+      ${d ? `<button class="wa-btn danger" data-wa-del="${escapeHtml(names[k])}">&times;</button>` : ""}</div>`;
+  }).join("");
+  const note = document.getElementById("waNote");
+  list.querySelectorAll("[data-wa-set]").forEach(b=>b.addEventListener("click", async ()=>{
+    const nm = b.dataset.waSet;
+    const pin = (prompt(nm + " - pudhu 6-digit PIN:") || "").trim();
+    if(!pin) return;
+    if(!/^\d{6}$/.test(pin)){ alert("PIN 6 numbers-a irukkanum."); return; }
+    note.textContent = "Saving...";
+    try{ await waSetPin(nm, pin); note.textContent = nm + " - PIN set aachu."; }
+    catch(e){ note.textContent = "Aagala: " + ((e && e.code) || "check internet / Email-Password enable pannirukkaanu paarunga."); }
+    waLoad();
+  }));
+  list.querySelectorAll("[data-wa-del]").forEach(b=>b.addEventListener("click", async ()=>{
+    const nm = b.dataset.waDel;
+    if(!confirm(nm + " - worker login remove pannalama?")) return;
+    try{ await waRemove(nm); note.textContent = nm + " login remove aachu."; }catch(e){ note.textContent = "Aagala."; }
+    waLoad();
+  }));
+}
+document.getElementById("goWorkers").addEventListener("click", ()=>{ showScreen("workerAccessSection"); waLoad(); });
+document.getElementById("waAddBtn").addEventListener("click", ()=>{
+  const inp = document.getElementById("waNewName"); const n = inp.value.trim();
+  if(!n) return; waExtraNames.push(n); inp.value = ""; waLoad();
+});
+
+// ---------- Admin app publishes each worker's own card (only for workers who have a login) ----------
+const wcLast = {}, wcTimer = {};
+function wcPublish(team, build){
+  clearTimeout(wcTimer[team]);
+  wcTimer[team] = setTimeout(async ()=>{
+    try{
+      const u = auth.currentUser;
+      if(!u || u.isAnonymous || isWorkerUser(u)) return;      // only a signed-in admin publishes
+      const dirSnap = await db.collection("workerDirectory").get();
+      if(dirSnap.empty) return;
+      const data = build();
+      const batch = db.batch(); let any = false;
+      dirSnap.forEach(doc=>{
+        const k = doc.id, payload = data[k] || null, sig = JSON.stringify(payload);
+        if(wcLast[team + ":" + k] === sig) return;
+        wcLast[team + ":" + k] = sig;
+        batch.set(db.collection("workerCards").doc(k), {name: doc.data().name, [team]: payload, updatedAt: Date.now()}, {merge:true});
+        any = true;
+      });
+      if(any) await batch.commit();
+    }catch(_){}
+  }, 1500);
+}
+function wcBuildMachine(){
+  const out = {}, foodBy = {};
+  Object.keys(mtFoodAggCache.map).forEach(n=>{ const k = nameKey(n); foodBy[k] = (foodBy[k]||0) + mtFoodAggCache.map[n].total; });
+  Object.keys(mtSalaryAggCache.map).forEach(nm=>{
+    const k = nameKey(nm), info = mtSalaryAggCache.map[nm];
+    const o = out[k] || (out[k] = {days:0, salary:0, ded:0, food:foodBy[k]||0, loan:Number(mtLoanMap[k])||0, range:""});
+    o.days += info.workingDays; o.salary += info.totalSalary; o.ded += mtDeductFor(nm); o.range = mtRangeText(info);
+  });
+  Object.keys(foodBy).forEach(k=>{ if(!out[k]) out[k] = {days:0, salary:0, ded:0, food:foodBy[k], loan:Number(mtLoanMap[k])||0, range:""}; });
+  Object.keys(out).forEach(k=>{ out[k].balance = out[k].salary - out[k].ded + out[k].food; });
+  return out;
+}
+function wcBuildDryer(workers){
+  const out = {};
+  workers.forEach(w=>{
+    const c = dtCalc(w), k = nameKey(w.name);
+    out[k] = {days:w.salaryRows.length, salary:c.kg, ded:c.ded, food:c.food, loan:dtLoanOf(w.name), range:(w.salaryRows.length ? dtKg(w.kg) + " KG" : ""), balance:c.calc};
+  });
+  return out;
+}
+
+// ---------- Worker: login + own card (read only) ----------
+let wvKey = "";
+function wvTeamCard(title, d){
+  const nm = document.getElementById("wvName").textContent;
+  const person = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.2" fill="#fff"/><path d="M3.5 21c0-4.8 3.8-7.5 8.5-7.5s8.5 2.7 8.5 7.5z" fill="#fff"/></svg>';
+  const IC = {
+    day: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="2.2"/><path d="M4 10.2h16M8.2 3.5v4M15.8 3.5v4"/></svg>',
+    salary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l-1.6 3h-2.8z"/><path d="M8.5 7.5C5.5 10 4.5 13 5.5 16.5 6.2 19 8.5 21 12 21s5.8-2 6.5-4.5c1-3.5 0-6.5-3-9z"/><text x="12" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none">\u20b9</text></svg>',
+    food: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v6a2 2 0 0 0 2 2v10"/><path d="M9 3v6a2 2 0 0 1-2 2"/><path d="M17 3c-2.2 1.6-2.8 4.6-1.2 7 .6.9 1.2 1.3 1.2 2.4V21"/></svg>',
+    loan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M12 5.2v3.6M10.6 6.2h2.8"/><path d="M3 16c2-1.5 4-1.7 6-.7l3 1.2h2.2a1.3 1.3 0 0 1 0 2.6H11"/><path d="M11 19.1l5-1.8 4.2-2.4"/></svg>',
+    ded: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 12h8"/></svg>'
+  };
+  const item = (kind, cls, value, label, extra)=>`<div class="mtd-item" data-k="${kind}"><span class="mtd-c t-${kind} ${cls}"${extra||""}>${IC[kind]}<span class="v">${value}</span></span><span class="mtd-l">${label}</span></div>`;
+  return `<div class="wv-team">${escapeHtml(title)}</div>
+  <div class="mtd">
+    <div class="mtd-band">
+      <span class="mtd-av">${person}</span>
+      <div class="mtd-who"><span class="mtd-name">${escapeHtml(nm.toUpperCase())}</span><span class="mtd-date">${escapeHtml(d.range || "")}</span></div>
+      <div class="mtd-balbox"><small>BALANCE</small><b>\u20b9${rupee(d.balance)}</b></div>
+    </div>
+    <div class="mtd-strip">
+      ${item("day", "", d.days, "DAY")}
+      ${item("salary", "", rupee(d.salary - d.ded), "SALARY")}
+      ${item("food", "", rupee(d.food), "FOOD CASH")}
+      ${item("loan", d.loan>0 ? "has" : "", rupee(d.loan), "LOAN")}
+      ${item("ded", d.ded>0 ? "on" : "", d.ded>0 ? "\u2212" + rupee(d.ded) : "0", "LOAN KALICHADHU")}
+    </div>
+  </div>`;
+}
+function wvLoad(){
+  const body = document.getElementById("wvBody");
+  db.collection("workerCards").doc(wvKey).get().then(doc=>{
+    const d = doc.exists ? doc.data() : null;
+    const parts = [];
+    if(d && d.machine) parts.push(wvTeamCard("Machine Team", d.machine));
+    if(d && d.dryer) parts.push(wvTeamCard("Dryer Team", d.dryer));
+    body.innerHTML = parts.length ? parts.join("") : '<p class="empty">Ippo unpaid salary illa.</p>';
+    document.getElementById("wvUpdated").textContent = (d && d.updatedAt) ? "Last update: " + new Date(d.updatedAt).toLocaleString("en-IN") : "";
+  }).catch(()=>{ body.innerHTML = '<p class="empty">Load aagala. Internet check pannunga.</p>'; });
+}
+function enterWorkerView(key, name){
+  wvKey = key;
+  document.getElementById("lockScreen").style.display = "none";
+  document.getElementById("appRoot").style.display = "none";
+  document.getElementById("supplierViewScreen").style.display = "none";
+  document.getElementById("workerViewScreen").style.display = "block";
+  document.getElementById("wvName").textContent = name;
+  document.getElementById("wvBody").innerHTML = '<p class="empty">Loading...</p>';
+  wvLoad();
+}
+function workerLogout(){
+  localStorage.removeItem("workerSession"); localStorage.removeItem("workerName");
+  auth.signOut().catch(()=>{});
+  wvKey = "";
+  document.getElementById("workerViewScreen").style.display = "none";
+  document.getElementById("lockScreen").style.display = "flex";
+  document.getElementById("workerPinInput").value = "";
+  showLoginPanel("chooser");
+}
+async function workerLogin(){
+  const name = document.getElementById("workerNameInput").value.trim();
+  const pin = document.getElementById("workerPinInput").value.trim();
+  const err = document.getElementById("workerLoginError");
+  if(!name || !pin){ err.textContent = "Peyar and PIN podunga."; return; }
+  const key = nameKey(name), generic = "Peyar illa-na PIN thappu.";
+  err.textContent = "Checking...";
+  try{
+    const dir = await db.collection("workerDirectory").doc(key).get();
+    if(!dir.exists){ err.textContent = generic; return; }
+    await auth.signInWithEmailAndPassword(waEmail(key, Number(dir.data().ver)||1), pin);
+    localStorage.removeItem("sham-unlocked"); localStorage.removeItem("supplierUser"); localStorage.removeItem("supplierName");
+    localStorage.setItem("workerSession", key); localStorage.setItem("workerName", dir.data().name || name);
+    document.getElementById("workerPinInput").value = "";
+    err.textContent = "";
+    enterWorkerView(key, dir.data().name || name);
+  }catch(e){
+    err.textContent = (e && e.code==="auth/too-many-requests") ? "Romba dhadava thappu. Konjam neram kazhichu try pannunga." : generic;
+  }
+}
+document.getElementById("chooseWorkerBtn").addEventListener("click", ()=>showLoginPanel("worker"));
+document.getElementById("workerLoginBtn").addEventListener("click", workerLogin);
+document.getElementById("workerPinInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") workerLogin(); });
+document.getElementById("wvLogoutBtn").addEventListener("click", workerLogout);
+document.getElementById("wvRefreshBtn").addEventListener("click", wvLoad);
+
 // ---- Boot: decide which screen to show first ----
 (function bootLogin(){
   const savedSupplier = localStorage.getItem("supplierUser");
   if(IS_SUPPLIER_LINK){
     if(savedSupplier){ enterSupplierPortal(savedSupplier, localStorage.getItem("supplierName")); }
     else { showLoginPanel("supplier"); }
+    return;
+  }
+  const savedWorker = localStorage.getItem("workerSession");
+  if(savedWorker && !localStorage.getItem("sham-unlocked")){
+    authReady.then((u)=>{
+      if(isWorkerUser(u)) enterWorkerView(savedWorker, localStorage.getItem("workerName") || "");
+      else { localStorage.removeItem("workerSession"); showLoginPanel("chooser"); }
+    });
     return;
   }
   if(localStorage.getItem("sham-unlocked") === "true"){ showApp(); return; }
@@ -2466,7 +2799,7 @@ document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
 })();
 
 // ---------- SCREEN NAVIGATION ----------
-const SCREENS = ["homeScreen","expensesSection","machineSection","dryerSection","dryerWeightSection","storeSection","loanSection","salarySection","monthReportSection","dashboardSection"];
+const SCREENS = ["homeScreen","workerAccessSection","expensesSection","machineSection","dryerSection","dryerWeightSection","storeSection","loanSection","salarySection","monthReportSection","dashboardSection"];
 function showScreen(id){
   SCREENS.forEach(s=>{
     document.getElementById(s).style.display = (s===id) ? "block" : "none";
@@ -2660,7 +2993,8 @@ const HD_NAV_TARGET_TO_BTN = {
   loan: "goLoan",
   salary: "goSalary",
   monthreport: "goMonthReport",
-  dashboard: "goDashboard"
+  dashboard: "goDashboard",
+  workers: "goWorkers"
 };
 document.querySelectorAll(".hd-nav-item[data-nav-target], .hd-quick-card[data-nav-target]").forEach(el=>{
   el.addEventListener("click", ()=>{
@@ -3913,6 +4247,7 @@ function mtUpdateSalaryTotals(){
     el.style.display = d>0 ? "block" : "none";
     el.textContent = "Loan kalichadhu \u2212" + MT_R(d);
   });
+  wcPublish("machine", wcBuildMachine);
 }
 
 const MT_MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -6136,6 +6471,7 @@ const dtSigned = (n)=> n>0 ? "+\u20b9"+rupee(n) : (n<0 ? "\u2212\u20b9"+rupee(-n
 
 // updates numbers in place (no re-render, so the keyboard stays open while typing)
 function dtRefreshNumbers(workers){
+  wcPublish("dryer", ()=>wcBuildDryer(workers));
   const t = {kg:0, food:0, noKg:0, ded:0, calc:0, actual:0};
   workers.forEach(w=>{
     const c = dtCalc(w);
@@ -6212,6 +6548,7 @@ function dtRenderFoodCashInCard(){
   const list = document.getElementById("dtpFoodList");
   const entries = dtFoodCashCache;
   const workers = dtWorkerDetails();
+  wcPublish("dryer", ()=>wcBuildDryer(workers));
   if(workers.length===0){
     list.innerHTML = '<p class="empty" style="margin:8px 0;">Worker edhuvum illa.</p>';
   } else {
