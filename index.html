@@ -2804,18 +2804,30 @@ async function workerLogin(){
   if(!name || !pin){ err.textContent = "Peyar and PIN podunga."; return; }
   const key = nameKey(name), generic = "Peyar illa-na PIN thappu.";
   err.textContent = "Checking...";
+  let dir;
   try{
-    const dir = await db.collection("workerDirectory").doc(key).get();
-    if(!dir.exists){ err.textContent = generic; return; }
-    await auth.signInWithEmailAndPassword(waEmail(key, Number(dir.data().ver)||1), pin);
-    localStorage.removeItem("sham-unlocked"); localStorage.removeItem("supplierUser"); localStorage.removeItem("supplierName");
-    localStorage.setItem("workerSession", key); localStorage.setItem("workerName", dir.data().name || name);
-    document.getElementById("workerPinInput").value = "";
-    err.textContent = "";
-    enterWorkerView(key, dir.data().name || name);
+    await ensureAnon();   // the name lookup needs a (guest) session while the old rules are still on
+    dir = await db.collection("workerDirectory").doc(key).get();
   }catch(e){
-    err.textContent = (e && e.code==="auth/too-many-requests") ? "Romba dhadava thappu. Konjam neram kazhichu try pannunga." : generic;
+    err.textContent = "Connect aagala (" + ((e && e.code) || "error") + "). Internet check pannunga.";
+    return;
   }
+  if(!dir.exists){ err.textContent = generic; return; }
+  try{
+    await auth.signInWithEmailAndPassword(waEmail(key, Number(dir.data().ver)||1), pin);
+  }catch(e){
+    const c = (e && e.code) || "";
+    err.textContent = c==="auth/too-many-requests" ? "Romba dhadava thappu. Konjam neram kazhichu try pannunga."
+      : c==="auth/network-request-failed" ? "Internet check pannunga."
+      : c==="auth/operation-not-allowed" ? "Email/Password Firebase-la enable aagala."
+      : generic;
+    return;
+  }
+  localStorage.removeItem("sham-unlocked"); localStorage.removeItem("supplierUser"); localStorage.removeItem("supplierName");
+  localStorage.setItem("workerSession", key); localStorage.setItem("workerName", dir.data().name || name);
+  document.getElementById("workerPinInput").value = "";
+  err.textContent = "";
+  enterWorkerView(key, dir.data().name || name);
 }
 document.getElementById("chooseWorkerBtn").addEventListener("click", ()=>showLoginPanel("worker"));
 document.getElementById("workerLoginBtn").addEventListener("click", workerLogin);
