@@ -969,6 +969,10 @@
   .kg-sum2 b { font-family:'IBM Plex Mono',monospace; }
   .kg-sum2 .red { color:#B33A3A; }
   .kg-sum2 .big { border-top:2px solid #2F6B3A; margin-top:4px; padding-top:12px; font-weight:900; font-size:17px; color:#17402A; }
+
+  .db-sh-foot { flex-wrap:wrap; }
+  .db-sh-foot .db-note { flex:0 0 100%; margin:0 0 2px; min-height:0; font-weight:700; }
+  .db-sh-foot .db-note:empty { display:none; }
 </style>
 </head>
 <body>
@@ -1720,9 +1724,9 @@
 
             <div class="db-sum" id="dbSummary"></div>
             <button type="button" class="db-del" id="dbDelete">&#128465; Intha naal-a delete pannu</button>
-            <div class="db-note" id="dbNote"></div>
           </div>
           <div class="db-sh-foot">
+            <div class="db-note" id="dbNote"></div>
             <button type="button" class="db-cancel" id="dbCancel">Cancel</button>
             <button type="button" class="db-save" id="dbSave">&#10003; Save day</button>
           </div>
@@ -6076,9 +6080,18 @@ function dbLoadDate(ds){
   dbEl("dbWd").textContent = ds ? dtWd(ds) : "";
   dbRenderRows();
 }
+// "Day add" opens on the first date (from today on) that has no entry yet,
+// so a day you just saved is not shown again as "Day edit".
+function dbNextFreeDate(){
+  const used = new Set(Object.keys((dtCurrentPeriod && dtCurrentPeriod.days) || {}));
+  dtFoodCashCache.forEach(e=>used.add(e.date));
+  let d = new Date(); d.setHours(12,0,0,0);
+  for(let i=0; i<400 && used.has(fmtDate(d)); i++) d.setDate(d.getDate()+1);
+  return fmtDate(d);
+}
 function dbOpen(ds){
   dbRenderPrices();
-  const date = ds || fmtDate(new Date());
+  const date = ds || dbNextFreeDate();
   dbEl("dbDate").value = date;
   dbEl("dbNote").textContent = "";
   dbLoadDate(date);
@@ -6204,12 +6217,20 @@ dbEl("dbSave").addEventListener("click", ()=>{
   if(!ds){ note.textContent = "Date pick pannunga."; return; }
   if(kg<=0 && food.length===0 && !existing){ note.textContent = "KG illa-na, food aavadhu podunga."; return; }
   if(kg>0 && on.length===0){ note.textContent = "Oru worker select pannunga."; return; }
-  const btn = dbEl("dbSave"); btn.disabled = true;
-  note.textContent = "Saving...";
+  const btn = dbEl("dbSave"), label = btn.innerHTML;
+  btn.disabled = true; btn.textContent = "Saving...";
+  note.style.color = ""; note.textContent = "";
+  const slow = setTimeout(()=>{ note.textContent = "Internet romba slow... konjam wait pannunga, thirumba tap pannaadheenga."; }, 7000);
+  const done = ()=>{ clearTimeout(slow); btn.disabled = false; btn.innerHTML = label; };
   dbSaveFood(ds, food).then(()=>dbSaveKg(ds, kg, on.map(r=>r.name))).then(()=>{
-    btn.disabled = false; note.textContent = "";
+    done(); note.textContent = "";
     dbClose(); dtLoadPeriods();
-  }).catch(()=>{ btn.disabled = false; note.textContent = "Couldn't save. Check internet."; });
+  }).catch((e)=>{
+    done();
+    const code = (e && (e.code || e.message)) || "error";
+    note.textContent = "Save aagala (" + code + ")";
+    alert("Save aagala: " + code + "\nInternet check pannunga. Thirumba thirumba same error vandha indha message-a anuppunga.");
+  });
 });
 dbEl("dbDelete").addEventListener("click", ()=>{
   const ds = dbEl("dbDate").value;
