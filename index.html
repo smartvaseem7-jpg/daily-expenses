@@ -943,6 +943,24 @@
   .wv-team { font-family:'Fraunces',serif; font-weight:900; font-size:20px; color:#17402A; margin:14px 4px 8px; }
   .wv-updated { text-align:center; font-size:12px; color:#7C9A78; margin-top:14px; }
   .wv-refresh { display:block; margin:10px auto 0; padding:12px 22px; border-radius:14px; border:1.5px solid #2F6B3A; background:#fff; color:#1F5A33; font-weight:800; }
+
+  /* ===== KG breakdown popup ===== */
+  .kg-day { background:#fff; border:1.5px solid #D5E4CB; border-radius:16px; margin-bottom:12px; overflow:hidden; }
+  .kg-head { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:linear-gradient(135deg,#10331F,#2E7D45); color:#fff; }
+  .kg-date { font-family:'Fraunces',serif; font-weight:800; font-size:18px; }
+  .kg-date small { margin-left:8px; font-family:'Inter',sans-serif; font-size:12px; font-weight:700; padding:2px 10px; border-radius:999px; background:rgba(255,255,255,.2); }
+  .kg-total { text-align:right; }
+  .kg-total small { display:block; font-size:10.5px; font-weight:800; letter-spacing:.06em; color:#CFE5C4; }
+  .kg-total b { font-family:'IBM Plex Mono',monospace; font-size:22px; color:#C8FF5A; }
+  .kg-cols { display:flex; justify-content:space-between; padding:8px 14px; background:#EDF4E4; font-size:11px; font-weight:800; letter-spacing:.05em; color:#5C7A55; }
+  .kg-p { display:flex; justify-content:space-between; padding:11px 14px; border-top:1px solid #E4EDDC; font-weight:700; color:#17301F; }
+  .kg-p b { font-family:'IBM Plex Mono',monospace; }
+  .kg-p.me { background:#E4EFDB; font-weight:900; color:#1F5A33; }
+  .kg-sum { display:flex; justify-content:space-between; padding:14px; border-radius:14px; background:#E4EFDB; border:1.5px solid #B5CBA8; font-weight:800; color:#17402A; }
+  .kg-sum b { font-family:'IBM Plex Mono',monospace; font-size:18px; }
+  .kg-day .kg-date small { display:inline-block; margin:0 0 0 8px; color:#fff; font-size:12px; font-weight:700; letter-spacing:0; text-transform:none; vertical-align:middle; }
+  .kg-day .kg-total small { display:block; margin:0; color:#CFE5C4; font-size:10.5px; }
+  .kg-sum { margin-bottom:14px; }
 </style>
 </head>
 <body>
@@ -2689,12 +2707,41 @@ function wcBuildMachine(){
   Object.keys(out).forEach(k=>{ out[k].balance = out[k].salary - out[k].ded + out[k].food; });
   return out;
 }
+// KG circle: date-wise total KG, who worked together, and each person's share
+function kgSheet(ownName, rows){
+  const ownKey = String(ownName).trim().toLowerCase();
+  let mine = 0;
+  const cards = rows.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>{
+    mine += Number(r.share)||0;
+    const names = (r.names && r.names.length) ? r.names : [ownName];
+    const people = names.map(n=>{
+      const me = String(n).trim().toLowerCase()===ownKey;
+      return `<div class="kg-p${me ? " me" : ""}"><span>${escapeHtml(n)}${me ? " &#9664;" : ""}</span><b>${dtKg(r.share)}</b></div>`;
+    }).join("");
+    return `<div class="kg-day">
+      <div class="kg-head"><span class="kg-date">${fmtCompact(r.date)}<small>${dtWd(r.date)}</small></span><span class="kg-total"><small>TOTAL KG</small><b>${dtKg(r.dayKg)}</b></span></div>
+      <div class="kg-cols"><span>WORKERS</span><span>SHARE KG</span></div>${people}
+    </div>`;
+  }).join("");
+  mtSheet(ownName, "Total " + dtKg(mine) + " KG", cards ? cards + `<div class="kg-sum"><span>${escapeHtml(ownName)} &middot; total KG</span><b>${dtKg(mine)}</b></div>` : '<p class="empty">KG entry illa.</p>');
+}
+function dtOpenKgModal(key){
+  const w = dtWorkerDetails().find(x=>x.name.trim().toLowerCase()===key);
+  if(!w) return;
+  kgSheet(w.name, w.salaryRows.map(r=>({date:r.date, dayKg:r.dayKg, share:r.kg,
+    names:((dtCurrentPeriod && dtCurrentPeriod.days[r.date]) ? dtCurrentPeriod.days[r.date].workers : [])})));
+}
+function dtRangeText(w){
+  const ds = w.salaryRows.map(r=>r.date).sort();
+  if(!ds.length) return "";
+  return ds[0]===ds[ds.length-1] ? mtShortDate(ds[0]) : (mtShortDate(ds[0]) + " \u2013 " + mtShortDate(ds[ds.length-1]));
+}
 function wcBuildDryer(workers){
   const out = {};
   workers.forEach(w=>{
     const c = dtCalc(w), k = nameKey(w.name);
-    out[k] = {days:w.salaryRows.length, salary:c.kg, ded:c.ded, food:c.food, loan:dtLoanOf(w.name), range:(w.salaryRows.length ? dtKg(w.kg) + " KG" : ""), balance:c.calc,
-      salaryDays: w.salaryRows.map(r=>({date:r.date, dayKg:r.dayKg, count:r.count, share:r.kg, amount:r.amount})),
+    out[k] = {days:w.salaryRows.length, salary:c.kg, ded:c.ded, food:c.food, loan:dtLoanOf(w.name), range:dtRangeText(w), kg:w.kg, balance:c.calc,
+      salaryDays: w.salaryRows.map(r=>({date:r.date, dayKg:r.dayKg, count:r.count, share:r.kg, amount:r.amount, names:((dtCurrentPeriod && dtCurrentPeriod.days[r.date]) ? dtCurrentPeriod.days[r.date].workers : [])})),
       foodDays: w.foodRows.map(e=>({date:e.date, m:e.morning, l:e.lunch, e:e.evening}))};
   });
   return out;
@@ -2720,6 +2767,8 @@ function wvOpenDetail(team, kind){
   } else if(kind==="loan" || kind==="ded"){
     mtSheet(name, "Loan balance " + R(t.loan), `<div class="wm-card"><div class="wm-day" style="font-weight:800;"><span>Ippo loan balance</span><span class="mono" style="color:${t.loan>0 ? "#B33A3A" : "#2F6B3A"};">${R(t.loan)}</span></div>
       <div class="wm-day"><span>Intha salary-la kalichadhu</span><span class="mono">${ded>0 ? "&minus;" + R(ded) : R(0)}</span></div></div>`);
+  } else if(kind==="kg"){
+    kgSheet(name, sal);
   } else if(kind==="day"){
     return;
   } else {
@@ -2743,6 +2792,7 @@ function wvTeamCard(title, d, team){
   const nm = document.getElementById("wvName").textContent;
   const person = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.2" fill="#fff"/><path d="M3.5 21c0-4.8 3.8-7.5 8.5-7.5s8.5 2.7 8.5 7.5z" fill="#fff"/></svg>';
   const IC = {
+    kg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5.5" r="2.3"/><path d="M7.2 9h9.6l2.4 11H4.8z"/></svg>',
     day: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="2.2"/><path d="M4 10.2h16M8.2 3.5v4M15.8 3.5v4"/></svg>',
     salary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l-1.6 3h-2.8z"/><path d="M8.5 7.5C5.5 10 4.5 13 5.5 16.5 6.2 19 8.5 21 12 21s5.8-2 6.5-4.5c1-3.5 0-6.5-3-9z"/><text x="12" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none">\u20b9</text></svg>',
     food: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v6a2 2 0 0 0 2 2v10"/><path d="M9 3v6a2 2 0 0 1-2 2"/><path d="M17 3c-2.2 1.6-2.8 4.6-1.2 7 .6.9 1.2 1.3 1.2 2.4V21"/></svg>',
@@ -2758,7 +2808,7 @@ function wvTeamCard(title, d, team){
       <div class="mtd-balbox"><small>BALANCE</small><b>\u20b9${rupee(d.balance)}</b></div>
     </div>
     <div class="mtd-strip">
-      ${item("day", "", d.days, "DAY")}
+      ${(team==="dryer" && d.kg!=null) ? item("kg", "t-day", dtKg(d.kg), "KG") : item("day", "", d.days, "DAY")}
       ${item("salary", "", rupee(d.salary - d.ded), "SALARY")}
       ${item("food", "", rupee(d.food), "FOOD CASH")}
       ${item("loan", d.loan>0 ? "has" : "", rupee(d.loan), "LOAN")}
@@ -6618,6 +6668,7 @@ function dtRenderFoodCashInCard(){
       const days = w.salaryRows.length;
       const person = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.2" fill="#fff"/><path d="M3.5 21c0-4.8 3.8-7.5 8.5-7.5s8.5 2.7 8.5 7.5z" fill="#fff"/></svg>';
       const IC = {
+        kg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5.5" r="2.3"/><path d="M7.2 9h9.6l2.4 11H4.8z"/></svg>',
         day: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="2.2"/><path d="M4 10.2h16M8.2 3.5v4M15.8 3.5v4"/></svg>',
         salary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l-1.6 3h-2.8z"/><path d="M8.5 7.5C5.5 10 4.5 13 5.5 16.5 6.2 19 8.5 21 12 21s5.8-2 6.5-4.5c1-3.5 0-6.5-3-9z"/><text x="12" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none">\u20b9</text></svg>',
         food: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v6a2 2 0 0 0 2 2v10"/><path d="M9 3v6a2 2 0 0 1-2 2"/><path d="M17 3c-2.2 1.6-2.8 4.6-1.2 7 .6.9 1.2 1.3 1.2 2.4V21"/></svg>',
@@ -6631,12 +6682,12 @@ function dtRenderFoodCashInCard(){
           <span class="mtd-av">${person}</span>
           <div class="mtd-who">
             <span class="mtd-name">${escapeHtml(w.name.toUpperCase())}</span>
-            <span class="mtd-date">${days ? dtKg(w.kg) + " KG" : "KG entry illa"}</span>
+            <span class="mtd-date">${days ? dtRangeText(w) : "KG entry illa"}</span>
           </div>
           <div class="mtd-balbox"><small>BALANCE</small><b class="dtc-calc">\u20b9${rupee(c.calc)}</b></div>
         </div>
         <div class="mtd-strip">
-          ${item("day", "", days, "DAY")}
+          ${item("kg", "t-day", dtKg(w.kg), "KG")}
           ${item("salary", "", rupee(c.kg), "SALARY")}
           ${item("food", "", rupee(c.food), "FOOD CASH")}
           ${item("loan", loan>0 ? "has" : "", rupee(loan), "LOAN")}
@@ -6648,6 +6699,7 @@ function dtRenderFoodCashInCard(){
       el.addEventListener("click", (ev)=>{
         const it = ev.target.closest(".mtd-item");
         const k = it ? it.dataset.k : "";
+        if(k==="kg"){ dtOpenKgModal(el.dataset.wkey); return; }
         const mode = k==="salary" ? "salary" : (k==="food" ? "food" : ((k==="loan"||k==="ded") ? "loan" : "statement"));
         dtOpenWorkerModal(el.dataset.wkey, mode);
       });
