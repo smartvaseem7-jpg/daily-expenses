@@ -961,6 +961,14 @@
   .kg-day .kg-date small { display:inline-block; margin:0 0 0 8px; color:#fff; font-size:12px; font-weight:700; letter-spacing:0; text-transform:none; vertical-align:middle; }
   .kg-day .kg-total small { display:block; margin:0; color:#CFE5C4; font-size:10.5px; }
   .kg-sum { margin-bottom:14px; }
+
+  .kg-big { font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:16px; }
+  .kg-sub { display:block; font-size:11.5px; font-weight:600; color:#6B8664; margin-top:2px; }
+  .kg-sum2 { background:#E4EFDB; border:1.5px solid #B5CBA8; border-radius:14px; padding:6px 14px; margin-bottom:14px; }
+  .kg-sum2 > div { display:flex; justify-content:space-between; padding:8px 0; font-weight:700; color:#1F3D24; }
+  .kg-sum2 b { font-family:'IBM Plex Mono',monospace; }
+  .kg-sum2 .red { color:#B33A3A; }
+  .kg-sum2 .big { border-top:2px solid #2F6B3A; margin-top:4px; padding-top:12px; font-weight:900; font-size:17px; color:#17402A; }
 </style>
 </head>
 <body>
@@ -2707,6 +2715,31 @@ function wcBuildMachine(){
   Object.keys(out).forEach(k=>{ out[k].balance = out[k].salary - out[k].ded + out[k].food; });
   return out;
 }
+// Statement as day cards (same look as the KG popup): KG + amount, food, day total
+function stmtCards(rows, opt){
+  opt = opt || {};
+  const R = (n)=>"\u20b9" + rupee(n);
+  let tSal = 0, tFood = 0;
+  const cards = rows.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>{
+    const sal = Number(r.sal)||0, food = opt.salaryOnly ? 0 : (Number(r.food)||0);
+    tSal += sal; tFood += food;
+    const parts = [["M", r.m], ["L", r.l], ["E", r.e]].filter(p=>Number(p[1])>0).map(p=>p[0] + " " + R(p[1])).join(" \u00b7 ");
+    const kgRow = r.share!=null ? `<div class="kg-p"><span class="kg-big">${dtKg(r.share)} KG</span><b>${R(sal)}</b></div>` : "";
+    const foodRow = food>0 ? `<div class="kg-p"><span>Food<span class="kg-sub">${parts}</span></span><b>${R(food)}</b></div>` : "";
+    return `<div class="kg-day">
+      <div class="kg-head"><span class="kg-date">${fmtCompact(r.date)}<small>${dtWd(r.date)}</small></span><span class="kg-total"><small>${opt.salaryOnly ? "SALARY" : "TOTAL"}</small><b>${R(sal + food)}</b></span></div>
+      ${kgRow}${foodRow}
+    </div>`;
+  }).join("");
+  if(!cards) return '<p class="empty" style="margin:6px 0;">Entry edhuvum illa.</p>';
+  const sum = `<div class="kg-sum2">
+      <div><span>Salary</span><b>${R(tSal)}</b></div>
+      ${opt.salaryOnly ? "" : `<div><span>Food</span><b>${R(tFood)}</b></div>`}
+      ${opt.extra || ""}
+      <div class="big"><span>${opt.totalLabel || "Total"}</span><b>${R(opt.totalValue!=null ? opt.totalValue : (tSal + tFood))}</b></div>
+    </div>`;
+  return cards + sum;
+}
 // KG circle: date-wise total KG, who worked together, and each person's share
 function kgSheet(ownName, rows){
   const ownKey = String(ownName).trim().toLowerCase();
@@ -2760,7 +2793,16 @@ function wvOpenDetail(team, kind){
       <div class="wm-day" style="color:#B33A3A;font-weight:700;"><span>Loan kalichadhu</span><span class="mono">&minus;${R(ded)}</span></div>
       <div class="wm-day" style="font-weight:800;border-top:2px solid #2F6B3A;padding-top:10px;"><span>Salary (loan kalicha pinnadi)</span><span class="mono">${R(net)}</span></div>` : "");
   const foodRows = food.length ? food.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(e=>`<div class="wm-day" style="align-items:flex-start;"><span>${mtDateCell(e.date)}<br><span style="font-size:11.5px;color:#6B8664;">Morning ${R(e.m)} &middot; Lunch ${R(e.l)} &middot; Evening ${R(e.e)}</span></span><span class="mono">${R(foodAmt(e))}</span></div>`).join("") + `<div class="wm-day" style="font-weight:800;"><span>Food total</span><span class="mono">${R(t.food)}</span></div>` : `<div class="wm-day"><span style="color:#6B8664;">Food cash entry illa</span><span></span></div>`;
-  if(kind==="salary"){
+  const dRows = ()=>{
+    const by = {};
+    sal.forEach(r=>{ const o = (by[r.date] = by[r.date] || {date:r.date, share:null, sal:0, food:0, m:0, l:0, e:0}); o.share = r.share; o.sal += Number(r.amount)||0; });
+    food.forEach(e=>{ const o = (by[e.date] = by[e.date] || {date:e.date, share:null, sal:0, food:0, m:0, l:0, e:0}); o.food += foodAmt(e); o.m += Number(e.m)||0; o.l += Number(e.l)||0; o.e += Number(e.e)||0; });
+    return Object.keys(by).map(k=>by[k]);
+  };
+  const dedExtra = ded>0 ? `<div class="red"><span>Loan kalichadhu</span><b>&minus;${R(ded)}</b></div>` : "";
+  if(kind==="salary" && team==="dryer"){
+    mtSheet(name, "Salary " + R(net), stmtCards(dRows().filter(r=>r.share!=null), {salaryOnly:true, extra:dedExtra, totalLabel:ded>0 ? "Salary (loan kalicha pinnadi)" : "Salary", totalValue:net}));
+  } else if(kind==="salary"){
     mtSheet(name, "Salary " + R(net), `<div class="wm-card"><small>Naal-wise salary</small>${salRows}${salTotal}</div>`);
   } else if(kind==="food"){
     mtSheet(name, "Food cash " + R(t.food), `<div class="wm-card"><small>Food cash details</small>${foodRows}</div>`);
@@ -2771,6 +2813,8 @@ function wvOpenDetail(team, kind){
     kgSheet(name, sal);
   } else if(kind==="day"){
     return;
+  } else if(team==="dryer"){
+    mtSheet(name, "Balance " + R(t.balance), stmtCards(dRows(), {extra:dedExtra, totalLabel:ded>0 ? "Balance" : "Total", totalValue:t.balance}));
   } else {
     // card tap -> salary + food together, day by day
     const by = {};
@@ -6409,42 +6453,13 @@ function dtOpenWorkerModal(key, mode){
   w.salaryRows.forEach(r=>{ (byDate[r.date] = byDate[r.date] || {sal:null, food:0}).sal = r; });
   w.foodRows.forEach(e=>{ (byDate[e.date] = byDate[e.date] || {sal:null, food:0}).food += e.total; });
   const dates = Object.keys(byDate).sort();
-  let tKg = 0, tShare = 0, tSal = 0, tFood = 0;
-  const dash = "\u2013";
-  const rowsHtml = dates.map(ds=>{
-    const r = byDate[ds], sal = r.sal;
-    const amt = sal ? sal.amount : 0;
-    if(sal){ tKg += sal.dayKg; tShare += sal.kg; tSal += amt; }
-    tFood += r.food;
-    return `<tr>
-      <td class="date">${fmtCompact(ds)}<small>${dtWd(ds)}</small></td>
-      <td>${sal ? dtKg(sal.dayKg) : dash}</td>
-      <td>${sal ? sal.count : dash}</td>
-      <td>${sal ? dtKg(sal.kg) : dash}</td>
-      <td class="b">${sal ? rupee(amt) : dash}</td>
-      <td>${r.food ? rupee(r.food) : dash}</td>
-      <td class="b">${rupee(amt + r.food)}</td>
-    </tr>`;
-  }).join("");
-  const tableHtml = dates.length ? `
-    <div class="stmt-wrap"><table class="stmt">
-      <thead><tr><th>Date</th><th>KG</th><th>Ppl</th><th>Share</th><th>Salary</th><th>Food</th><th>Total</th></tr></thead>
-      <tbody>${rowsHtml}</tbody>
-      <tfoot><tr><td>TOTAL</td><td>${dtKg(tKg)}</td><td></td><td>${dtKg(tShare)}</td><td>${rupee(tSal)}</td><td>${rupee(tFood)}</td><td>${rupee(tSal + tFood)}</td></tr></tfoot>
-    </table></div>`
-    : `<p class="empty" style="margin:6px 0;">Entry edhuvum illa.</p>`;
-
-  // salary only (no food): date, day KG, people, share, salary
-  let sKg = 0, sShare = 0, sAmt = 0;
-  const salRows = dates.filter(ds=>byDate[ds].sal).map(ds=>{
-    const r = byDate[ds].sal; sKg += r.dayKg; sShare += r.kg; sAmt += r.amount;
-    return `<tr><td class="date">${fmtCompact(ds)}<small>${dtWd(ds)}</small></td><td>${dtKg(r.dayKg)}</td><td>${r.count}</td><td>${dtKg(r.kg)}</td><td class="b">${rupee(r.amount)}</td></tr>`;
-  }).join("");
-  const salaryTableHtml = salRows ? `<div class="stmt-wrap"><table class="stmt">
-      <thead><tr><th>Date</th><th>KG</th><th>Ppl</th><th>Share</th><th>Salary</th></tr></thead>
-      <tbody>${salRows}</tbody>
-      <tfoot><tr><td>TOTAL</td><td>${dtKg(sKg)}</td><td></td><td>${dtKg(sShare)}</td><td>${rupee(sAmt)}</td></tr></tfoot>
-    </table></div>` : `<p class="empty" style="margin:6px 0;">KG entry illa.</p>`;
+  const stRows = dates.map(ds=>{
+    const r = byDate[ds], fe = w.foodRows.filter(e=>e.date===ds);
+    const sum = (k)=>fe.reduce((x,e)=>x + (Number(e[k])||0), 0);
+    return {date:ds, share:r.sal ? r.sal.kg : null, sal:r.sal ? r.sal.amount : 0, food:r.food, m:sum("morning"), l:sum("lunch"), e:sum("evening")};
+  });
+  const tableHtml = stmtCards(stRows);
+  const salaryTableHtml = stmtCards(stRows.filter(r=>r.share!=null), {salaryOnly:true});
 
   const foodEntriesHtml = w.foodRows.length ? `<div class="wm-card"><small>Food entries (edit / delete)</small>` +
     w.foodRows.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>
@@ -6470,10 +6485,10 @@ function dtOpenWorkerModal(key, mode){
       <button class="wm-x" id="dtwX">&#10005;</button>
     </div>
     <div class="wm-body">
-      ${mode==="statement" ? `<div class="wm-card"><small>Salary &amp; Food statement</small>${tableHtml}</div>` : ""}
+      ${mode==="statement" ? tableHtml : ""}
       ${mode==="food" ? (foodEntriesHtml || `<div class="wm-card"><p class="empty" style="margin:6px 0;">Food entry illa.</p></div>`) : ""}
       ${mode==="loan" ? (loanHtml || `<div class="wm-card"><p class="empty" style="margin:6px 0;">Loan illa.</p></div>`) : ""}
-      ${mode==="salary" ? `<div class="wm-card"><small>KG Salary statement</small>${salaryTableHtml}</div>` : ""}
+      ${mode==="salary" ? salaryTableHtml : ""}
       <div class="wm-total" style="${mode==="loan" ? "" : "display:none;"}">
         <div class="r"><small>KG Salary</small><b id="dtwSalaryVal"></b></div>
         <div class="r"><small>Food Cash</small><b id="dtwFoodVal"></b></div>
