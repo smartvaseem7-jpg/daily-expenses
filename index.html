@@ -1017,8 +1017,8 @@
       <p style="font-size:16px;margin:0 0 12px;color:#1F3D24 !important;font-weight:800;">Worker Login</p>
       <label class="sup-label" for="workerNameInput">Peyar</label>
       <input class="sup-input" type="text" id="workerNameInput" autocomplete="off" />
-      <label class="sup-label" for="workerPinInput">PIN (6 number)</label>
-      <input class="sup-input" type="password" inputmode="numeric" maxlength="6" id="workerPinInput" autocomplete="current-password" />
+      <label class="sup-label" for="workerPinInput">Password</label>
+      <input class="sup-input" type="password" id="workerPinInput" autocomplete="current-password" autocapitalize="none" spellcheck="false" />
       <div class="lock-error" id="workerLoginError"></div>
       <button id="workerLoginBtn">Login</button>
       <button class="link-btn" data-login-back>Back to Home</button>
@@ -2649,17 +2649,17 @@ async function waLoad(){
   list.innerHTML = keys.map(k=>{
     const d = dirs[k];
     return `<div class="wa-row"><div class="wa-name">${escapeHtml(names[k])}<small>${d ? "Login on" : "Login illa"}</small></div>
-      <button class="wa-btn" data-wa-set="${escapeHtml(names[k])}">${d ? "Change PIN" : "Set PIN"}</button>
+      <button class="wa-btn" data-wa-set="${escapeHtml(names[k])}">${d ? "Change Password" : "Set Password"}</button>
       ${d ? `<button class="wa-btn danger" data-wa-del="${escapeHtml(names[k])}">&times;</button>` : ""}</div>`;
   }).join("");
   const note = document.getElementById("waNote");
   list.querySelectorAll("[data-wa-set]").forEach(b=>b.addEventListener("click", async ()=>{
     const nm = b.dataset.waSet;
-    const pin = (prompt(nm + " - pudhu 6-digit PIN:") || "").trim();
+    const pin = (prompt(nm + " - pudhu password (kuraindhadhu 6 ezhuthu; word, number, symbol ellaam podalaam):") || "").trim();
     if(!pin) return;
-    if(!/^\d{6}$/.test(pin)){ alert("PIN 6 numbers-a irukkanum."); return; }
+    if(pin.length < 6 || pin.length > 40){ alert("Password 6 mudhal 40 ezhuthukkulla irukkanum."); return; }
     note.textContent = "Saving...";
-    try{ await waSetPin(nm, pin); note.textContent = nm + " - PIN set aachu."; }
+    try{ await waSetPin(nm, pin); note.textContent = nm + " - password set aachu."; }
     catch(e){ note.textContent = "Aagala: " + ((e && e.code) || "check internet / Email-Password enable pannirukkaanu paarunga."); }
     waLoad();
   }));
@@ -2899,8 +2899,8 @@ async function workerLogin(){
   const name = document.getElementById("workerNameInput").value.trim();
   const pin = document.getElementById("workerPinInput").value.trim();
   const err = document.getElementById("workerLoginError");
-  if(!name || !pin){ err.textContent = "Peyar and PIN podunga."; return; }
-  const key = nameKey(name), generic = "Peyar illa-na PIN thappu.";
+  if(!name || !pin){ err.textContent = "Peyar and password podunga."; return; }
+  const key = nameKey(name), generic = "Peyar illa-na password thappu.";
   err.textContent = "Checking...";
   let dir;
   try{
