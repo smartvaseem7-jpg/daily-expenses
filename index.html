@@ -973,6 +973,9 @@
   .db-sh-foot { flex-wrap:wrap; }
   .db-sh-foot .db-note { flex:0 0 100%; margin:0 0 2px; min-height:0; font-weight:700; }
   .db-sh-foot .db-note:empty { display:none; }
+
+  .wa-warn { background:#FFF1E0; border:1.5px solid #E8A94C; border-radius:14px; padding:12px 14px; margin:6px 0 12px; font-size:14px; color:#7A4A0B; line-height:1.5; }
+  .wa-warn button { display:block; margin-top:10px; padding:10px 16px; border-radius:12px; border:none; background:#2F6B3A; color:#fff; font-weight:800; font-size:14px; }
 </style>
 </head>
 <body>
@@ -1787,8 +1790,9 @@
         <input type="text" id="waNewName" placeholder="Pudhu worker peyar" autocomplete="off" />
         <button id="waAddBtn" type="button">+ Add</button>
       </div>
+      <div id="waWarn"></div>
+      <div class="save-note" id="waNote" style="font-weight:700;"></div>
       <div id="waList"></div>
-      <div class="save-note" id="waNote"></div>
     </div>
 
     <div id="loanSection" style="display:none;">
@@ -2609,15 +2613,33 @@ function waEmail(key, ver){
   const san = key.replace(/[^a-z0-9]/g, "").slice(0, 20) || "w";
   return san + "-" + waHash(key) + "-v" + ver + "@" + WORKER_EMAIL_DOMAIN;
 }
+function waNeedAdmin(){
+  const u = auth.currentUser;
+  if(!u || u.isAnonymous || isWorkerUser(u)){ const e = new Error("not admin"); e.code = "not-admin"; throw e; }
+}
+function waErrText(e){
+  const code = (e && e.code) || "";
+  if(code==="not-admin" || code==="permission-denied")
+    return "Neenga admin email-la login aagala (guest mode). Lock tap panni, Email + Password-la login pannitu thirumba try pannunga.";
+  if(code==="auth/operation-not-allowed") return "Firebase-la Email/Password enable aagala.";
+  if(code==="auth/network-request-failed") return "Internet check pannunga.";
+  return "Aagala: " + (code || "error");
+}
 async function waSetPin(name, pin){
+  waNeedAdmin();
   const key = nameKey(name);
   const dirRef = db.collection("workerDirectory").doc(key);
   const dir = await dirRef.get();
   const old = dir.exists ? dir.data() : null;
-  const ver = old ? ((Number(old.ver)||1) + 1) : 1;
+  let ver = old ? ((Number(old.ver)||1) + 1) : 1;
   // second Firebase app, so creating the worker's account doesn't sign the admin out
   const sec = firebase.apps.find(a=>a.name==="wsec") || firebase.initializeApp(firebaseConfig, "wsec");
-  const cred = await sec.auth().createUserWithEmailAndPassword(waEmail(key, ver), pin);
+  let cred = null;
+  for(let i=0; i<10 && !cred; i++){
+    try{ cred = await sec.auth().createUserWithEmailAndPassword(waEmail(key, ver), pin); }
+    catch(e){ if(e && e.code==="auth/email-already-in-use"){ ver++; } else throw e; }   // left over from an earlier half-finished try
+  }
+  if(!cred){ const e = new Error("versions"); e.code = "too-many-versions"; throw e; }
   const uid = cred.user.uid;
   await sec.auth().signOut();
   await db.collection("workerAccess").doc(uid).set({workerKey:key, name, ver, createdAt:Date.now()});
@@ -2625,6 +2647,7 @@ async function waSetPin(name, pin){
   if(old && old.uid) await db.collection("workerAccess").doc(old.uid).delete().catch(()=>{});
 }
 async function waRemove(name){
+  waNeedAdmin();
   const key = nameKey(name);
   const dirRef = db.collection("workerDirectory").doc(key);
   const dir = await dirRef.get();
@@ -2639,6 +2662,10 @@ async function waLoad(){
   const names = {};
   const add = (n)=>{ n = String(n||"").trim(); if(n) names[nameKey(n)] = names[nameKey(n)] || n; };
   waExtraNames.forEach(add);
+  const cu = auth.currentUser, warn = document.getElementById("waWarn");
+  warn.innerHTML = (!cu || cu.isAnonymous) ? '<div class="wa-warn">&#9888; Neenga guest mode-la irukkeenga. Password set panna / login list paarkka <b>admin email-la</b> login aaganum.<button id="waRelogin" type="button">Email login-ku po</button></div>' : "";
+  const rl = document.getElementById("waRelogin");
+  if(rl) rl.addEventListener("click", ()=>document.getElementById("lockAgainBtn").click());
   const rs = await Promise.allSettled(["dryerWorkerNames","machineWorkerNames","workerLoans","workerDirectory"].map(c=>db.collection(c).get()));
   const dirs = {};
   rs.forEach((r,i)=>{ if(r.status!=="fulfilled") return; r.value.forEach(doc=>{
@@ -2660,13 +2687,13 @@ async function waLoad(){
     if(pin.length < 6 || pin.length > 40){ alert("Password 6 mudhal 40 ezhuthukkulla irukkanum."); return; }
     note.textContent = "Saving...";
     try{ await waSetPin(nm, pin); note.textContent = nm + " - password set aachu."; }
-    catch(e){ note.textContent = "Aagala: " + ((e && e.code) || "check internet / Email-Password enable pannirukkaanu paarunga."); }
+    catch(e){ const m = waErrText(e); note.textContent = m; alert(m); }
     waLoad();
   }));
   list.querySelectorAll("[data-wa-del]").forEach(b=>b.addEventListener("click", async ()=>{
     const nm = b.dataset.waDel;
     if(!confirm(nm + " - worker login remove pannalama?")) return;
-    try{ await waRemove(nm); note.textContent = nm + " login remove aachu."; }catch(e){ note.textContent = "Aagala."; }
+    try{ await waRemove(nm); note.textContent = nm + " login remove aachu."; }catch(e){ const m = waErrText(e); note.textContent = m; alert(m); }
     waLoad();
   }));
 }
