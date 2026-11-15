@@ -976,6 +976,73 @@
 
   .wa-warn { background:#FFF1E0; border:1.5px solid #E8A94C; border-radius:14px; padding:12px 14px; margin:6px 0 12px; font-size:14px; color:#7A4A0B; line-height:1.5; }
   .wa-warn button { display:block; margin-top:10px; padding:10px 16px; border-radius:12px; border:none; background:#2F6B3A; color:#fff; font-weight:800; font-size:14px; }
+
+  /* ===== SUPPLIER PAGE (new look) ===== */
+  #supplierViewScreen { background:linear-gradient(180deg,#F7F0DC 0%,#F3EBCF 100%); }
+  #supplierViewScreen .sup-header { background:linear-gradient(135deg,#0F3B1E,#237A3B); color:#fff; padding:12px 14px 16px; gap:10px; border-bottom:3px solid #E7C95A; border-radius:0 0 26px 26px / 0 0 16px 16px; box-shadow:0 6px 16px rgba(15,59,30,.28); }
+  .sup-brand img { height:44px; width:auto; display:block; }
+  .sup-div { width:1.5px; height:34px; background:rgba(255,255,255,.45); }
+  .sup-hicon { font-size:22px; }
+  #supplierViewScreen .sup-header h2 { color:#fff; font-size:19px; font-family:'Inter',sans-serif; font-weight:800; }
+  #supplierViewScreen .sup-header #supplierLogoutBtn { border:1.5px solid #CFE9B8; background:rgba(255,255,255,.1); color:#fff; font-weight:800; padding:9px 14px; }
+  #supplierViewScreen .sup-body { max-width:560px; padding:14px 14px 30px; }
+  .sup-hero { position:relative; overflow:hidden; border-radius:26px; padding:20px 16px; display:flex; align-items:center; gap:16px; min-height:190px; background:radial-gradient(120% 90% at 85% 0%,#BFE7F7 0%,rgba(191,231,247,0) 55%),linear-gradient(160deg,#E6F6D2 0%,#B5DF8A 60%,#7FBF52 100%); box-shadow:0 8px 20px rgba(40,90,30,.22); }
+  .sup-hero-deco span { position:absolute; line-height:1; pointer-events:none; }
+  .sup-hero-deco .p1 { right:-6px; top:-4px; font-size:92px; opacity:.9; transform:rotate(8deg); }
+  .sup-hero-deco .p2 { right:62px; top:6px; font-size:60px; opacity:.75; }
+  .sup-hero-deco .c1 { right:6px; bottom:2px; font-size:58px; opacity:.95; }
+  .sup-avatar { position:relative; z-index:1; width:104px; height:104px; flex-shrink:0; border-radius:26px; border:4px solid #fff; background:linear-gradient(145deg,#2E7D45,#0F3B1E); color:#FFE7A0; font-family:'Fraunces',serif; font-weight:900; font-size:52px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 14px rgba(0,0,0,.25); }
+  .sup-hero-text { position:relative; z-index:1; min-width:0; }
+  .sup-pill { display:inline-block; background:#1F6B33; color:#fff; font-weight:800; font-size:15px; padding:6px 14px; border-radius:14px; }
+  .sup-hero-name { font-family:'Fraunces',serif; font-weight:900; font-size:34px; color:#0F3B1E; line-height:1.1; margin:6px 0 2px; word-break:break-word; text-shadow:0 1px 0 rgba(255,255,255,.6); }
+  .sup-hero-line { display:flex; align-items:center; gap:6px; color:#1F6B33; }
+  .sup-hero-line i { flex:1; max-width:46px; height:2px; background:#1F6B33; display:block; }
+  .sup-hero-tag { font-style:italic; font-weight:700; color:#1B4A26; font-size:14px; margin-top:4px; }
+  .sup-tab { display:inline-flex; align-items:center; gap:8px; margin:18px 0 8px; padding:9px 22px 9px 14px; background:linear-gradient(135deg,#0F3B1E,#237A3B); color:#fff; font-weight:800; font-size:16px; border-radius:16px 16px 16px 4px; box-shadow:0 3px 8px rgba(15,59,30,.25); }
+  .sup-chips { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; background:rgba(255,255,255,.65); border-radius:18px; padding:10px; box-shadow:inset 0 0 0 1px rgba(40,90,30,.12); }
+  .sup-chip { position:relative; border:2px solid transparent; background:#fff; border-radius:16px; padding:10px 2px 8px; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.1); font-family:inherit; }
+  .sup-chip .circle { width:36px; height:36px; border-radius:50%; background:#0F5A25; color:#fff; font-weight:900; font-size:19px; display:flex; align-items:center; justify-content:center; }
+  .sup-chip .lbl { font-size:11.5px; font-weight:800; color:#1B3D22; }
+  .sup-chip .tick { display:none; position:absolute; top:-7px; right:-5px; width:22px; height:22px; border-radius:50%; background:#2EA043; color:#fff; font-size:13px; font-weight:900; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,.25); }
+  .sup-chip.on { background:#E4F4D5; border-color:#2E9A4A; }
+  .sup-chip.on .tick { display:flex; }
+  #supplierLocationView .sup-datenav { margin-top:12px; }
+  #supplierViewScreen .sup-form-card { margin-top:12px; background:rgba(255,255,255,.8); border:1px solid rgba(40,90,30,.14); border-radius:18px; padding:14px 14px 10px; box-shadow:0 3px 10px rgba(0,0,0,.07); }
+  .sup-count-row { display:flex; align-items:center; gap:10px; }
+  .sup-count-ico { width:34px; height:34px; border-radius:10px; background:#E1F1D3; color:#1F6B33; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:18px; flex-shrink:0; }
+  .sup-count-row label { font-weight:800; font-size:16px; color:#17301F; margin:0; white-space:nowrap; }
+  .sup-count-row input { flex:1; min-width:0; padding:12px 12px; border-radius:14px; border:1.5px solid #CFDDBE; background:#FCFBF3; font-size:16px; font-weight:700; color:#17301F; }
+  .sup-count-unit { font-size:12.5px; color:#6B7B66; font-weight:600; }
+  #supplierViewScreen .sup-add-btn { display:flex; align-items:center; justify-content:center; gap:12px; width:100%; margin-top:12px; padding:16px; border:none; border-radius:999px; background:linear-gradient(135deg,#0E5A24,#2E9A4A); color:#fff; font-size:20px; font-weight:800; box-shadow:0 8px 16px rgba(14,90,36,.35), inset 0 0 0 3px rgba(255,255,255,.18); }
+  .sup-add-btn .plus { width:34px; height:34px; border-radius:50%; background:#fff; color:#0E5A24; font-size:26px; font-weight:900; line-height:1; display:flex; align-items:center; justify-content:center; }
+  .sup-add-btn:disabled { opacity:.65; }
+  .sup-entry { display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,#EAF4DD,#F4F8E7); border:1.5px solid #CBE0B4; border-radius:18px; padding:12px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+  .sup-e-av { width:54px; height:54px; border-radius:50%; flex-shrink:0; border:3px solid #7CCB5B; background:linear-gradient(145deg,#2E7D45,#0F3B1E); color:#FFE7A0; font-family:'Fraunces',serif; font-weight:900; font-size:26px; display:flex; align-items:center; justify-content:center; }
+  .sup-e-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; border-right:1.5px solid #BBD3A4; padding-right:10px; }
+  .sup-e-main b { font-family:'Fraunces',serif; font-size:19px; color:#0F3B1E; }
+  .sup-e-main span { font-size:12.5px; color:#3E5C3A; font-weight:600; }
+  .sup-e-side { display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:700; color:#1F4A2B; text-align:left; min-width:104px; }
+  .sup-e-side b { font-family:'IBM Plex Mono',monospace; font-size:20px; color:#0F3B1E; }
+  .sup-e-total { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-radius:16px; background:#0F3B1E; color:#fff; font-weight:800; }
+  .sup-e-total b { font-family:'IBM Plex Mono',monospace; font-size:20px; color:#C8FF5A; }
+  .sup-foot { text-align:center; margin-top:26px; padding-top:6px; }
+  .sup-foot-art { font-size:34px; letter-spacing:2px; opacity:.9; }
+  .sup-foot-text { font-family:'Fraunces',serif; font-style:italic; font-weight:700; color:#1F6B33; font-size:17px; margin-top:6px; }
+  #supplierViewScreen .sup-summary-btn { margin-top:16px; }
+
+  /* supplier page: small-screen polish */
+  #supplierViewScreen .sup-header h2 { white-space:nowrap; font-size:17px; flex:1; min-width:0; }
+  .sup-hicon { font-size:18px; }
+  .sup-brand img { height:40px; }
+  .sup-count-row { flex-wrap:wrap; }
+  .sup-count-row label { font-size:15px; }
+  .sup-count-row input { flex:1 1 120px; }
+  .sup-hero-deco .c1 { right:10px; bottom:6px; font-size:46px; }
+  .sup-hero-tag { max-width:70%; }
+  .sup-entry { gap:10px; }
+  .sup-e-main { flex:1 1 0; }
+  .sup-e-side { min-width:0; flex:0 0 auto; }
+  .sup-e-side b { font-size:18px; }
 </style>
 </head>
 <body>
@@ -1063,20 +1130,66 @@
 <div id="supplierViewScreen">
   <div class="sup-header">
     <button id="supplierBackBtn" style="display:none;" aria-label="Back">&#8592;</button>
+    <div class="sup-brand"><img src="logo.png" alt="SHAM Coco" /></div>
+    <span class="sup-div"></span>
+    <span class="sup-hicon">&#128101;</span>
     <h2 id="supplierHeaderTitle">Supplier Panel</h2>
-    <span class="sup-user">&#128100; <span id="supplierHeaderName"></span></span>
-    <button id="supplierLogoutBtn">Logout</button>
+    <span class="sup-user" style="display:none;"><span id="supplierHeaderName"></span></span>
+    <button id="supplierLogoutBtn">&#10162; Logout</button>
   </div>
   <div class="sup-body">
     <div id="supplierLocationsView">
-      <h3 class="display" style="margin:0 0 14px;color:#1F3D24;font-size:19px;">Add Mattai (A &ndash; E)</h3>
-      <div id="supplierLocationsList"></div>
-      <div class="sup-note">You can only add mattai for these locations.<br/>You cannot edit or delete existing data.</div>
+      <div class="sup-hero">
+        <div class="sup-hero-deco" aria-hidden="true"><span class="p1">&#127796;</span><span class="p2">&#127796;</span><span class="c1">&#129381;</span></div>
+        <div class="sup-avatar" id="supplierHeroAvatar">S</div>
+        <div class="sup-hero-text">
+          <span class="sup-pill">&#128100; Supplier</span>
+          <div class="sup-hero-name" id="supplierHeroName"></div>
+          <div class="sup-hero-line"><i></i><span>&#129381;</span><i></i></div>
+          <div class="sup-hero-tag">Manage Your Mattai Supply</div>
+        </div>
+      </div>
+
+      <div class="sup-tab">&#128205; Select Location</div>
+      <div id="supplierLocationsList" class="sup-chips"></div>
+
+      <div id="supplierLocationView">
+        <div class="sup-datenav">
+          <button id="supplierPrevDay" aria-label="Previous day">&#8592;</button>
+          <span id="supplierDateLabel"></span>
+          <button id="supplierCalBtn" aria-label="Pick a date">&#128197;</button>
+          <button id="supplierNextDay" aria-label="Next day">&#8594;</button>
+        </div>
+        <input type="date" id="supplierDatePicker" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" />
+
+        <div class="sup-status-card" id="supplierStatusCard" style="display:none;">
+          <div><span>Original</span><b id="supplierStatusOriginal">0</b></div>
+          <div><span>Remaining</span><b id="supplierStatusRemaining">0</b></div>
+          <div id="supplierStatusCutWrap" style="display:none;"><span>Cut</span><b id="supplierStatusCut" class="cut-red">0</b></div>
+        </div>
+
+        <div class="sup-form-card">
+          <div style="display:none;"><label for="supplierNameSelect">Supplier Name</label><select id="supplierNameSelect" disabled><option id="supplierNameOption"></option></select></div>
+          <div class="sup-count-row">
+            <span class="sup-count-ico">&#9776;</span>
+            <label for="supplierCountInput">Mattai Count</label>
+            <input type="number" inputmode="numeric" id="supplierCountInput" placeholder="Enter count" />
+            <span class="sup-count-unit">(Count)</span>
+          </div>
+          <div class="sup-msg" id="supplierAddNote"></div>
+        </div>
+        <button class="sup-add-btn" id="supplierAddBtn"><span class="plus">+</span> Add Mattai</button>
+
+        <div class="sup-tab" id="supplierEntriesTitle" style="margin-top:22px;">&#128196; My Entries</div>
+        <div id="supplierEntriesList"></div>
+      </div>
 
       <button class="sup-summary-btn" id="supplierSummaryBtn">&#128196; <span>Matta Summary</span> <span class="chev">&rsaquo;</span></button>
 
-      <h3 class="display" style="margin:22px 0 10px;color:#1F3D24;font-size:16px;">My Active Mattai (by Location)</h3>
+      <div class="sup-tab" style="margin-top:20px;">&#129381; My Active Mattai</div>
       <div id="supplierActiveSummaryList"></div>
+
+      <div class="sup-foot"><div class="sup-foot-art" aria-hidden="true">&#127796; &#127796; &#127969; &#127796; &#127796;</div><div class="sup-foot-text">Together for a Greener Tomorrow</div></div>
     </div>
 
     <div id="supplierSummaryView" style="display:none;">
@@ -1093,32 +1206,6 @@
         <span>&#128196; Grand Total Mattai<br/><b id="supplierGrandTotal">0 Mattai</b></span>
         <span class="sup-grand-sub">(All Dates &amp; Locations)</span>
       </div>
-    </div>
-    <div id="supplierLocationView" style="display:none;">
-      <div class="sup-datenav">
-        <button id="supplierPrevDay" aria-label="Previous day">&#8592;</button>
-        <span id="supplierDateLabel"></span>
-        <button id="supplierCalBtn" aria-label="Pick a date">&#128197;</button>
-        <button id="supplierNextDay" aria-label="Next day">&#8594;</button>
-      </div>
-      <input type="date" id="supplierDatePicker" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" />
-
-      <div class="sup-status-card" id="supplierStatusCard" style="display:none;">
-        <div><span>Original</span><b id="supplierStatusOriginal">0</b></div>
-        <div><span>Remaining</span><b id="supplierStatusRemaining">0</b></div>
-        <div id="supplierStatusCutWrap" style="display:none;"><span>Cut</span><b id="supplierStatusCut" class="cut-red">0</b></div>
-      </div>
-
-      <div class="sup-form-card">
-        <label for="supplierNameSelect">Supplier Name</label>
-        <select id="supplierNameSelect" disabled><option id="supplierNameOption"></option></select>
-        <label for="supplierCountInput">Mattai Count</label>
-        <input type="number" inputmode="numeric" id="supplierCountInput" placeholder="0" />
-        <div class="sup-msg" id="supplierAddNote"></div>
-        <button class="sup-add-btn" id="supplierAddBtn">Add</button>
-      </div>
-      <h3 class="display" id="supplierEntriesTitle" style="margin:0 0 8px;color:#1F3D24;font-size:16px;">My Entries</h3>
-      <div id="supplierEntriesList"></div>
     </div>
   </div>
 </div>
@@ -2206,6 +2293,9 @@ function enterSupplierPortal(u, n){
   document.getElementById("appRoot").style.display = "none";
   document.getElementById("supplierViewScreen").style.display = "block";
   document.getElementById("supplierHeaderName").textContent = supplierName;
+  document.getElementById("supplierHeroName").textContent = supplierName;
+  document.getElementById("supplierHeroAvatar").textContent = (supplierName.trim().charAt(0) || "S").toUpperCase();
+  supplierSelectedDate = fmtDate(new Date());
   supplierShowLocations();
   // If the admin deleted this supplier's login, don't keep them signed in.
   ensureAnon().then(()=>db.collection("supplierAccounts").doc(u).get()).then((doc)=>{
@@ -2215,22 +2305,24 @@ function enterSupplierPortal(u, n){
 
 const SUP_LOC_COLORS = {A:["#3B8DDE","#E4F0FB"], B:["#3EA55A","#E4F5E6"], C:["#F2A33A","#FDEBD0"], D:["#8B5CC7","#EFE6FA"], E:["#E0527A","#FBE4EA"]};
 
-function supplierShowLocations(){
-  supplierCurrentSec = null;
-  document.getElementById("supplierBackBtn").style.display = "none";
-  document.getElementById("supplierHeaderTitle").textContent = "Supplier Panel";
-  document.getElementById("supplierLocationsView").style.display = "block";
-  document.getElementById("supplierLocationView").style.display = "none";
+function supplierRenderChips(){
   const list = document.getElementById("supplierLocationsList");
   list.innerHTML = "";
   SECTION_KEYS.forEach(k=>{
-    const [dark, light] = SUP_LOC_COLORS[k];
-    const card = document.createElement("div");
-    card.className = "sup-loc-card sup-loc-plain";
-    card.innerHTML = `<span class="circle" style="background:${dark};">${k}</span><span class="label-wrap"><span class="label">Location ${k}</span><span class="sub">Add mattai details for Location ${k}</span></span><span class="chev">&rsaquo;</span>`;
-    card.addEventListener("click", ()=>supplierOpenLocation(k));
-    list.appendChild(card);
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "sup-chip" + (k===supplierCurrentSec ? " on" : "");
+    chip.innerHTML = '<span class="tick">&#10003;</span><span class="circle">' + k + '</span><span class="lbl">Location ' + k + '</span>';
+    chip.addEventListener("click", ()=>supplierOpenLocation(k));
+    list.appendChild(chip);
   });
+}
+function supplierShowLocations(){
+  document.getElementById("supplierBackBtn").style.display = "none";
+  document.getElementById("supplierHeaderTitle").textContent = "Supplier Panel";
+  document.getElementById("supplierSummaryView").style.display = "none";
+  document.getElementById("supplierLocationsView").style.display = "block";
+  supplierOpenLocation(supplierCurrentSec || SECTION_KEYS[0]);
   supplierLoadActiveSummary();
 }
 
@@ -2419,23 +2511,18 @@ let supplierSelectedDate = fmtDate(new Date());
 
 function supplierOpenLocation(k){
   supplierCurrentSec = k;
-  supplierSelectedDate = fmtDate(new Date());
-  document.getElementById("supplierBackBtn").style.display = "inline-block";
-  document.getElementById("supplierHeaderTitle").textContent = k + " - Location";
-  document.getElementById("supplierLocationsView").style.display = "none";
-  document.getElementById("supplierLocationView").style.display = "block";
+  supplierRenderChips();
   document.getElementById("supplierNameOption").textContent = supplierName;
   document.getElementById("supplierCountInput").value = "";
   document.getElementById("supplierAddNote").textContent = "";
   supplierRenderDateLabel();
   supplierLoadStatus(k);
   supplierLoadEntries(k);
-  document.getElementById("supplierViewScreen").scrollTop = 0;
 }
 
 function supplierRenderDateLabel(){
   document.getElementById("supplierDateLabel").textContent = fmtNice(supplierSelectedDate);
-  document.getElementById("supplierEntriesTitle").textContent = "My Entries (" + supplierCurrentSec + ")";
+  document.getElementById("supplierEntriesTitle").innerHTML = "&#128196; My Entries &middot; Location " + supplierCurrentSec;
 }
 
 function supplierGotoDate(newDateStr){
@@ -2502,15 +2589,17 @@ function supplierLoadEntries(k){
       list.innerHTML = '<p class="empty">No entries from you on this date.</p>';
       return;
     }
-    let rows = "";
-    entries.forEach((e,i)=>{
-      rows += `<tr class="by-supplier">
-        <td>${i+1}</td>
-        <td class="mono">${e.time||""}</td>
-        <td class="mono">${rupee(e.amount)}</td>
-      </tr>`;
-    });
-    list.innerHTML = `<table class="sup-table"><thead><tr><th>No</th><th>Time</th><th>Mattai</th></tr></thead><tbody>${rows}</tbody></table>`;
+    const initial = (supplierName.trim().charAt(0) || "S").toUpperCase();
+    let total = 0;
+    const cards = entries.map(e=>{
+      total += Number(e.amount)||0;
+      return `<div class="sup-entry">
+        <span class="sup-e-av">${escapeHtml(initial)}</span>
+        <div class="sup-e-main"><b>${escapeHtml(supplierName)}</b><span>&#128197; ${escapeHtml(fmtNice(dateStr))}</span><span class="t">&#128339; ${escapeHtml(e.time||"")}</span></div>
+        <div class="sup-e-side"><span>&#128205; Location ${k}</span><span>Mattai: <b>${rupee(e.amount)}</b></span></div>
+      </div>`;
+    }).join("");
+    list.innerHTML = cards + (entries.length>1 ? `<div class="sup-e-total"><span>Total (${entries.length} entries)</span><b>${rupee(total)}</b></div>` : "");
   }).catch(()=>{
     list.innerHTML = '<p class="empty">Couldn\'t load. Check internet.</p>';
   });
@@ -2561,6 +2650,7 @@ document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
     setTimeout(()=>{ if(document.getElementById("supplierAddNote").textContent==="Added!") document.getElementById("supplierAddNote").textContent=""; }, 1500);
     supplierLoadEntries(k);
     supplierLoadStatus(k);
+    supplierLoadActiveSummary();
   }).catch(()=>{
     note.textContent = "Couldn't save. Check internet and try again.";
     btn.disabled = false;
