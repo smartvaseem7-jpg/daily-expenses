@@ -1050,6 +1050,26 @@
   .sup-cam { position:absolute; right:-8px; bottom:-8px; width:34px; height:34px; border-radius:50%; background:#fff; border:2px solid #2E9A4A; display:flex; align-items:center; justify-content:center; font-size:16px; box-shadow:0 2px 6px rgba(0,0,0,.3); }
   .sup-e-av { overflow:hidden; padding:0; }
   .sup-e-av img { width:100%; height:100%; object-fit:cover; display:block; }
+
+  /* ===== STORE ===== */
+  .st-hero { background:linear-gradient(135deg,#10331F,#2E7D45); color:#fff; border-radius:22px; padding:16px; margin:6px 2px 12px; box-shadow:0 6px 16px rgba(23,64,42,.25); }
+  .st-row { display:flex; gap:10px; }
+  .st-stat { flex:1; background:rgba(255,255,255,.12); border-radius:16px; padding:10px 12px; }
+  .st-stat small, .st-bal small { display:block; font-size:10.5px; font-weight:800; letter-spacing:.06em; color:#CFE5C4; }
+  .st-stat b { font-family:'IBM Plex Mono',monospace; font-size:21px; font-weight:700; color:#fff; }
+  .st-stat.out b { color:#FFD08A; }
+  .st-stat i, .st-bal i { font-style:normal; font-size:12px; margin-left:4px; opacity:.85; }
+  .st-bal { margin-top:12px; text-align:center; padding-top:12px; border-top:1px dashed rgba(255,255,255,.35); }
+  .st-bal b { font-family:'IBM Plex Mono',monospace; font-size:38px; font-weight:700; color:#C8FF5A; }
+  .st-actions { margin:0 2px 14px; }
+  .st-actions .db-btn-primary { width:100%; padding:16px 8px; border-radius:16px; font-weight:800; font-size:17px; border:none; color:#fff; background:linear-gradient(135deg,#1F5A33,#2E7D45); box-shadow:0 6px 14px rgba(31,90,51,.35); }
+  #storeSection .kg-day { margin:0 2px 12px; }
+  .st-in { color:#1F7A3A; font-family:'IBM Plex Mono',monospace; }
+  .st-out { color:#C8630B; font-family:'IBM Plex Mono',monospace; }
+  .kg-p.st-loadrow { gap:10px; align-items:center; }
+  .kg-p.st-loadrow > span:first-child { flex:1; min-width:0; }
+  .st-btns button { background:#E9F2DE; border:1px solid #B5CBA8; border-radius:10px; padding:6px 9px; font-size:15px; cursor:pointer; }
+  .st-input { width:100%; padding:15px 16px; border-radius:16px; border:1.5px solid #B5CBA8; background:#fff; font-size:17px; font-weight:600; color:#17301F; }
 </style>
 </head>
 <body>
@@ -1303,10 +1323,10 @@
           <span class="home-card-title">Dryer Weight</span>
           <span class="home-card-desc">Log kaaya kg &amp; day total</span>
         </button>
-        <button class="home-card soon" id="goStore">
+        <button class="home-card" id="goStore">
           <span class="home-card-icon">&#127974;&#65039;</span>
           <span class="home-card-title">Store</span>
-          <span class="home-card-desc">Stock &amp; store management</span>
+          <span class="home-card-desc">Dryer stock &amp; lorry loads</span>
         </button>
         <button class="home-card" id="goLoan">
           <span class="home-card-icon">&#128176;</span>
@@ -1864,14 +1884,53 @@
       <div id="dwRecordsList" class="no-print"></div>
     </div>
 
-    <!-- ===== STORE (placeholder) ===== -->
+    <!-- ===== STORE: dryer weight comes in, lorry loads go out ===== -->
     <div id="storeSection" style="display:none;">
       <div class="section-header">
         <button class="back-btn no-print" data-home>&#8592; Home</button>
         <img src="logo.png" alt="SHAM Coco Production logo" style="width:64px;height:64px;object-fit:contain;" />
         <h2 class="section-title">STORE</h2>
       </div>
-      <p class="empty">Idhu innum build panala. Idhula enna track pannanumnu sollunga, apram add pannuven.</p>
+
+      <div class="st-hero">
+        <div class="st-row">
+          <div class="st-stat"><small>STORE-KU VANDHADHU</small><b id="stIn">0</b><i>kg</i></div>
+          <div class="st-stat out"><small>LORRY-LA POCHU</small><b id="stOut">0</b><i>kg</i></div>
+        </div>
+        <div class="st-bal"><small>BALANCE (STORE-LA IRUKKU)</small><b id="stBal">0</b><i>kg</i></div>
+      </div>
+      <div class="st-actions no-print">
+        <button class="db-btn-primary" id="stAddLoad" type="button">&#128666; Lorry load add</button>
+      </div>
+      <div id="stList"></div>
+
+      <div class="db-sheet-bg no-print" id="stSheet">
+        <div class="db-sheet" style="height:auto;max-height:94dvh;">
+          <div class="db-sh-head">
+            <span class="db-sh-ic">&#128666;</span>
+            <div style="flex:1;min-width:0;"><div class="db-sh-title display" id="stSheetTitle">Lorry load</div><div class="db-sh-sub">Store-la irundhu lorry-la eduthu poradhu</div></div>
+            <button class="db-sh-x" id="stSheetX" type="button">&#10005;</button>
+          </div>
+          <div class="db-sh-body">
+            <div class="db-lbl" style="margin-top:0;">Date</div>
+            <div class="db-datebox"><input type="date" id="stDate" /></div>
+            <div class="db-lbl">Lorry <small>(peyar / number)</small></div>
+            <input type="text" id="stLorry" class="st-input" list="stLorryList" placeholder="e.g. TN 01 AB 1234" autocomplete="off" />
+            <datalist id="stLorryList"></datalist>
+            <div class="db-lbl">Load <small>(kg)</small></div>
+            <input type="number" inputmode="decimal" step="0.01" id="stKg" class="db-kg-in" placeholder="0" />
+            <div class="db-hint" id="stHint"></div>
+            <div class="db-lbl">Note <small>(venumna)</small></div>
+            <input type="text" id="stNote" class="st-input" placeholder="Enga poguthu / yaarukku" autocomplete="off" />
+            <button type="button" class="db-del" id="stDelete">&#128465; Intha load-a delete pannu</button>
+          </div>
+          <div class="db-sh-foot">
+            <div class="db-note" id="stNoteMsg"></div>
+            <button type="button" class="db-cancel" id="stCancel">Cancel</button>
+            <button type="button" class="db-save" id="stSave">&#10003; Save</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ===== LOAN ===== -->
@@ -2707,6 +2766,106 @@ document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
   });
 });
 
+// ===================== STORE: dryer weight in, lorry loads out =====================
+let stIns = [], stLoads = [], stEditId = null;
+const stKgFmt = (n)=>Number(n||0).toLocaleString("en-IN", {maximumFractionDigits:2});
+function stBalanceUpTo(dateStr, skipId){
+  const inn = stIns.filter(r=>r.date<=dateStr).reduce((a,r)=>a + r.kg, 0);
+  const out = stLoads.filter(r=>r.date<=dateStr && r.id!==skipId).reduce((a,r)=>a + r.kg, 0);
+  return inn - out;
+}
+function stLoad(){
+  const list = document.getElementById("stList");
+  list.innerHTML = '<p class="empty">Loading...</p>';
+  Promise.all([db.collection("dryerWeight").get(), db.collection("storeLoads").get()]).then(([wSnap, lSnap])=>{
+    stIns = [];
+    wSnap.forEach(doc=>{
+      const teams = dwTeamsFromData(doc.data()).filter(t=>t.values.length>0)
+        .map(t=>({name:t.name, kg:t.values.reduce((a,v)=>a + (Number(v)||0), 0)}));
+      const kg = teams.reduce((a,t)=>a + t.kg, 0);
+      if(kg>0) stIns.push({date:doc.id, kg, teams});
+    });
+    stLoads = [];
+    lSnap.forEach(doc=>{
+      const d = doc.data();
+      if(d && d.date && Number(d.kg)>0) stLoads.push({id:doc.id, date:d.date, lorry:d.lorry||"", kg:Number(d.kg), note:d.note||""});
+    });
+    stRender();
+  }).catch(()=>{ list.innerHTML = '<p class="empty">Load aagala. Internet check pannunga.</p>'; });
+}
+function stRender(){
+  const totalIn = stIns.reduce((a,r)=>a + r.kg, 0), totalOut = stLoads.reduce((a,r)=>a + r.kg, 0), bal = totalIn - totalOut;
+  document.getElementById("stIn").textContent = stKgFmt(totalIn);
+  document.getElementById("stOut").textContent = stKgFmt(totalOut);
+  const b = document.getElementById("stBal");
+  b.textContent = stKgFmt(bal); b.style.color = bal<0 ? "#FF9A8A" : "";
+  const lorries = Array.from(new Set(stLoads.map(l=>l.lorry).filter(Boolean)));
+  document.getElementById("stLorryList").innerHTML = lorries.map(l=>`<option value="${escapeHtml(l)}"></option>`).join("");
+
+  const dates = Array.from(new Set([...stIns.map(r=>r.date), ...stLoads.map(r=>r.date)])).sort();
+  if(!dates.length){ document.getElementById("stList").innerHTML = '<p class="empty">Innum edhuvum illa. Dryer Weight save pannina inga varum.</p>'; return; }
+  let run = 0;
+  const cards = dates.map(ds=>{
+    const inn = stIns.find(r=>r.date===ds), loads = stLoads.filter(r=>r.date===ds);
+    run += (inn ? inn.kg : 0) - loads.reduce((a,l)=>a + l.kg, 0);
+    const inRow = inn ? `<div class="kg-p"><span>&#9878;&#65039; Dryer weight${inn.teams.length>1 ? `<span class="kg-sub">${inn.teams.map(t=>escapeHtml(t.name) + " " + stKgFmt(t.kg)).join(" &middot; ")}</span>` : ""}</span><b class="st-in">+${stKgFmt(inn.kg)} kg</b></div>` : "";
+    const outRows = loads.map(l=>`<div class="kg-p st-loadrow"><span>&#128666; ${escapeHtml(l.lorry || "Lorry")}${l.note ? `<span class="kg-sub">${escapeHtml(l.note)}</span>` : ""}</span><b class="st-out">&minus;${stKgFmt(l.kg)} kg</b><span class="st-btns no-print"><button type="button" data-st-edit="${l.id}" aria-label="Edit">&#9998;</button></span></div>`).join("");
+    return {ds, html:`<div class="kg-day"><div class="kg-head"><span class="kg-date">${fmtCompact(ds)}<small>${dtWd(ds)}</small></span><span class="kg-total"><small>BALANCE</small><b${run<0 ? ' style="color:#FF9A8A"' : ""}>${stKgFmt(run)}</b></span></div>${inRow}${outRows}</div>`};
+  });
+  const list = document.getElementById("stList");
+  list.innerHTML = cards.reverse().map(c=>c.html).join("");   // newest date on top
+  list.querySelectorAll("[data-st-edit]").forEach(btn=>btn.addEventListener("click", ()=>stOpen(btn.dataset.stEdit)));
+}
+function stSheetHint(){
+  const ds = document.getElementById("stDate").value, kg = Number(document.getElementById("stKg").value)||0;
+  if(!ds){ document.getElementById("stHint").textContent = ""; return; }
+  const bal = stBalanceUpTo(ds, stEditId);
+  const h = document.getElementById("stHint");
+  h.textContent = "Andha date varaikkum store-la irukkadhu: " + stKgFmt(bal) + " kg" + (kg>0 ? "  \u2192  load-ku aprom: " + stKgFmt(bal - kg) + " kg" : "");
+  h.style.color = (kg>0 && bal-kg<0) ? "#B33A3A" : "";
+}
+function stOpen(id){
+  stEditId = id || null;
+  const rec = id ? stLoads.find(l=>l.id===id) : null;
+  document.getElementById("stSheetTitle").textContent = rec ? "Load edit" : "Lorry load";
+  document.getElementById("stDate").value = rec ? rec.date : fmtDate(new Date());
+  document.getElementById("stLorry").value = rec ? rec.lorry : "";
+  document.getElementById("stKg").value = rec ? rec.kg : "";
+  document.getElementById("stNote").value = rec ? rec.note : "";
+  document.getElementById("stDelete").style.display = rec ? "block" : "none";
+  document.getElementById("stNoteMsg").textContent = "";
+  stSheetHint();
+  document.getElementById("stSheet").style.display = "flex";
+}
+function stClose(){ document.getElementById("stSheet").style.display = "none"; }
+document.getElementById("stAddLoad").addEventListener("click", ()=>stOpen());
+document.getElementById("stSheetX").addEventListener("click", stClose);
+document.getElementById("stCancel").addEventListener("click", stClose);
+document.getElementById("stSheet").addEventListener("click", (e)=>{ if(e.target===document.getElementById("stSheet")) stClose(); });
+document.getElementById("stKg").addEventListener("input", stSheetHint);
+document.getElementById("stDate").addEventListener("change", stSheetHint);
+document.getElementById("stSave").addEventListener("click", ()=>{
+  const msg = document.getElementById("stNoteMsg");
+  const date = document.getElementById("stDate").value, kg = Number(document.getElementById("stKg").value)||0;
+  const lorry = document.getElementById("stLorry").value.trim(), note = document.getElementById("stNote").value.trim();
+  if(!date){ msg.textContent = "Date pick pannunga."; return; }
+  if(kg<=0){ msg.textContent = "Load kg podunga."; return; }
+  const bal = stBalanceUpTo(date, stEditId);
+  if(kg>bal && !confirm("Store-la andha date varaikkum " + stKgFmt(bal) + " kg thaan irukku. Appadiyum " + stKgFmt(kg) + " kg save pannalama?")) return;
+  const btn = document.getElementById("stSave"), label = btn.innerHTML;
+  btn.disabled = true; btn.textContent = "Saving..."; msg.textContent = "";
+  const rec = {date, month:monthKey(date), lorry, kg, note, updatedAt:Date.now()};
+  const p = stEditId ? db.collection("storeLoads").doc(stEditId).set(rec, {merge:true})
+                     : db.collection("storeLoads").add(Object.assign({createdAt:Date.now()}, rec));
+  p.then(()=>{ btn.disabled = false; btn.innerHTML = label; stClose(); stLoad(); })
+   .catch((e)=>{ btn.disabled = false; btn.innerHTML = label; const c = (e && e.code) || "error"; msg.textContent = "Save aagala (" + c + ")"; alert("Save aagala: " + c); });
+});
+document.getElementById("stDelete").addEventListener("click", ()=>{
+  if(!stEditId || !confirm("Intha lorry load-a delete pannalama?")) return;
+  db.collection("storeLoads").doc(stEditId).delete().then(()=>{ stClose(); stLoad(); })
+    .catch((e)=>{ alert("Delete aagala: " + ((e && e.code) || "error")); });
+});
+
 // ===================== AUTH: admin email login + worker logins =====================
 const WORKER_EMAIL_DOMAIN = "workers.sham-coco.app";
 const authReady = new Promise(res=>{ const un = auth.onAuthStateChanged(u=>{ un(); res(u); }); });
@@ -3272,7 +3431,7 @@ document.getElementById("goDryer").addEventListener("click", ()=>{
     dtLoadPeriods();
   }
 });
-document.getElementById("goStore").addEventListener("click", ()=>showScreen("storeSection"));
+document.getElementById("goStore").addEventListener("click", ()=>{ showScreen("storeSection"); stLoad(); });
 document.getElementById("goDryerWeight").addEventListener("click", ()=>{
   showScreen("dryerWeightSection");
   if(!dwLoadedOnce){
@@ -7765,8 +7924,8 @@ document.getElementById("dwSaveBtn").addEventListener("click", ()=>{
     teams,
     values: flat
   }).then(()=>{
-    note.textContent = "Saved!";
-    setTimeout(()=>{ note.textContent=""; }, 1500);
+    note.textContent = "Saved! Store-ku poiduchu \u2713";
+    setTimeout(()=>{ note.textContent=""; }, 2500);
     dwLoadRecords();
   }).catch(()=>{
     note.textContent = "Couldn't save. Check internet.";
