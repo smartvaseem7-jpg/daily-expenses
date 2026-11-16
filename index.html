@@ -1043,6 +1043,13 @@
   .sup-e-main { flex:1 1 0; }
   .sup-e-side { min-width:0; flex:0 0 auto; }
   .sup-e-side b { font-size:18px; }
+
+  /* supplier photo */
+  button.sup-avatar { position:relative; padding:0; cursor:pointer; overflow:visible; font-family:'Fraunces',serif; }
+  .sup-avatar img { width:100%; height:100%; object-fit:cover; border-radius:22px; display:block; }
+  .sup-cam { position:absolute; right:-8px; bottom:-8px; width:34px; height:34px; border-radius:50%; background:#fff; border:2px solid #2E9A4A; display:flex; align-items:center; justify-content:center; font-size:16px; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+  .sup-e-av { overflow:hidden; padding:0; }
+  .sup-e-av img { width:100%; height:100%; object-fit:cover; display:block; }
 </style>
 </head>
 <body>
@@ -1141,7 +1148,8 @@
     <div id="supplierLocationsView">
       <div class="sup-hero">
         <div class="sup-hero-deco" aria-hidden="true"><span class="p1">&#127796;</span><span class="p2">&#127796;</span><span class="c1">&#129381;</span></div>
-        <div class="sup-avatar" id="supplierHeroAvatar">S</div>
+        <button class="sup-avatar" id="supplierHeroAvatar" type="button" aria-label="Photo maathu"><img id="supplierHeroImg" alt="" style="display:none;" /><span id="supplierHeroInitial">S</span><span class="sup-cam">&#128247;</span></button>
+        <input type="file" id="supplierPhotoInput" accept="image/*" style="display:none;" />
         <div class="sup-hero-text">
           <span class="sup-pill">&#128100; Supplier</span>
           <div class="sup-hero-name" id="supplierHeroName"></div>
@@ -2294,17 +2302,59 @@ function enterSupplierPortal(u, n){
   document.getElementById("supplierViewScreen").style.display = "block";
   document.getElementById("supplierHeaderName").textContent = supplierName;
   document.getElementById("supplierHeroName").textContent = supplierName;
-  document.getElementById("supplierHeroAvatar").textContent = (supplierName.trim().charAt(0) || "S").toUpperCase();
+  document.getElementById("supplierHeroInitial").textContent = (supplierName.trim().charAt(0) || "S").toUpperCase();
+  supplierPhoto = ""; supplierApplyPhoto();
   supplierSelectedDate = fmtDate(new Date());
   supplierShowLocations();
   // If the admin deleted this supplier's login, don't keep them signed in.
   ensureAnon().then(()=>db.collection("supplierAccounts").doc(u).get()).then((doc)=>{
-    if(!doc.exists) supplierLogout();
+    if(!doc.exists){ supplierLogout(); return; }
+    supplierPhoto = doc.data().photo || "";
+    supplierApplyPhoto();
   }).catch(()=>{});
 }
 
 const SUP_LOC_COLORS = {A:["#3B8DDE","#E4F0FB"], B:["#3EA55A","#E4F5E6"], C:["#F2A33A","#FDEBD0"], D:["#8B5CC7","#EFE6FA"], E:["#E0527A","#FBE4EA"]};
 
+// ---- Supplier photo: tap the picture, choose a photo; it is shrunk to a small
+// square and saved on the supplier's own account record.
+let supplierPhoto = "";
+function supplierApplyPhoto(){
+  const img = document.getElementById("supplierHeroImg"), ini = document.getElementById("supplierHeroInitial");
+  if(supplierPhoto){ img.src = supplierPhoto; img.style.display = "block"; ini.style.display = "none"; }
+  else { img.removeAttribute("src"); img.style.display = "none"; ini.style.display = ""; }
+  if(supplierCurrentSec) supplierLoadEntries(supplierCurrentSec);
+}
+function supplierShrinkPhoto(file){
+  return new Promise((resolve, reject)=>{
+    const fr = new FileReader();
+    fr.onerror = reject;
+    fr.onload = ()=>{
+      const im = new Image();
+      im.onerror = reject;
+      im.onload = ()=>{
+        const S = 256, c = document.createElement("canvas"); c.width = S; c.height = S;
+        const side = Math.min(im.width, im.height), sx = (im.width - side)/2, sy = (im.height - side)/2;
+        c.getContext("2d").drawImage(im, sx, sy, side, side, 0, 0, S, S);
+        resolve(c.toDataURL("image/jpeg", 0.82));
+      };
+      im.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+document.getElementById("supplierHeroAvatar").addEventListener("click", ()=>document.getElementById("supplierPhotoInput").click());
+document.getElementById("supplierPhotoInput").addEventListener("change", async (e)=>{
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(!f || !supplierUsername) return;
+  try{
+    const url = await supplierShrinkPhoto(f);
+    await ensureAnon();
+    await db.collection("supplierAccounts").doc(supplierUsername).set({photo:url}, {merge:true});
+    supplierPhoto = url; supplierApplyPhoto();
+  }catch(err){ alert("Photo save aagala. Vera photo try pannunga / internet check pannunga."); }
+});
 function supplierRenderChips(){
   const list = document.getElementById("supplierLocationsList");
   list.innerHTML = "";
@@ -2594,7 +2644,7 @@ function supplierLoadEntries(k){
     const cards = entries.map(e=>{
       total += Number(e.amount)||0;
       return `<div class="sup-entry">
-        <span class="sup-e-av">${escapeHtml(initial)}</span>
+        <span class="sup-e-av">${supplierPhoto ? `<img src="${supplierPhoto}" alt="" />` : escapeHtml(initial)}</span>
         <div class="sup-e-main"><b>${escapeHtml(supplierName)}</b><span>&#128197; ${escapeHtml(fmtNice(dateStr))}</span><span class="t">&#128339; ${escapeHtml(e.time||"")}</span></div>
         <div class="sup-e-side"><span>&#128205; Location ${k}</span><span>Mattai: <b>${rupee(e.amount)}</b></span></div>
       </div>`;
@@ -4536,10 +4586,23 @@ function mtRangeText(info){
   return first===last ? mtShortDate(first) : (mtShortDate(first) + " \u2013 " + mtShortDate(last));
 }
 
+// Same order as on the Workers page: the order each worker was added
+// (earliest date first, then the order inside that day). Not alphabetical.
+function mtOrderedNames(map, dayDocs){
+  const order = [], seen = new Set();
+  Object.keys(dayDocs || {}).sort().forEach(ds=>{
+    (Array.isArray(dayDocs[ds].workers) ? dayDocs[ds].workers : []).forEach(w=>{
+      const nm = String((w && w.name) || "").trim();
+      if(nm && map[nm] && !seen.has(nm)){ seen.add(nm); order.push(nm); }
+    });
+  });
+  Object.keys(map).sort().forEach(nm=>{ if(!seen.has(nm)){ seen.add(nm); order.push(nm); } });
+  return order;
+}
 function mtRenderSalaryCards(){
   const container = document.getElementById("mtSalaryList");
   const map = mtSalaryAggCache.map;
-  const names = Object.keys(map).sort();
+  const names = mtOrderedNames(map, mtSalaryAggCache.dayDocs);
   document.getElementById("mtWorkersCountChip").textContent = names.length + (names.length===1 ? " Worker" : " Workers");
   const dateSet = new Set();
   names.forEach(nm=>map[nm].days.forEach(d=>dateSet.add(d.date)));
