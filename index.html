@@ -1070,6 +1070,24 @@
   .kg-p.st-loadrow > span:first-child { flex:1; min-width:0; }
   .st-btns button { background:#E9F2DE; border:1px solid #B5CBA8; border-radius:10px; padding:6px 9px; font-size:15px; cursor:pointer; }
   .st-input { width:100%; padding:15px 16px; border-radius:16px; border:1.5px solid #B5CBA8; background:#fff; font-size:17px; font-weight:600; color:#17301F; }
+
+  /* store v2 */
+  .kg-day.st-done { opacity:.5; filter:grayscale(.55); }
+  .kg-p.st-left { background:#E4EFDB; font-weight:800; color:#17402A; }
+  .kg-p.st-left.fin { background:#EEE; color:#777; }
+  .kg-p.st-warn, .st-plan .r.bad { background:#FDECEA; color:#B33A3A; font-weight:800; }
+  .st-plan { margin-top:10px; border:1.5px solid #B5CBA8; border-radius:14px; overflow:hidden; background:#fff; }
+  .st-plan:empty { display:none; }
+  .st-plan .r { display:flex; justify-content:space-between; gap:8px; padding:10px 12px; border-top:1px solid #E4EDDC; font-weight:700; color:#1F3D24; }
+  .st-plan .r:first-child { border-top:none; }
+  .st-plan .r b { font-family:'IBM Plex Mono',monospace; }
+  .st-plan .r.ok { background:#E4EFDB; font-weight:900; }
+  .st-dr { display:flex; align-items:center; gap:12px; background:#fff; border:1.5px solid #D5E4CB; border-radius:14px; padding:12px 14px; margin-bottom:8px; cursor:pointer; }
+  .st-dr.on { background:#E4F4D5; border-color:#2E9A4A; }
+  .st-dr input { width:22px; height:22px; accent-color:#2F6B3A; flex-shrink:0; }
+  .st-dd { flex:1; font-family:'Fraunces',serif; font-weight:800; font-size:17px; color:#17301F; }
+  .st-dd small { margin-left:8px; font-family:'Inter',sans-serif; font-size:12px; font-weight:700; color:#6B8664; }
+  .st-dr b { font-family:'IBM Plex Mono',monospace; color:#1F5A33; }
 </style>
 </head>
 <body>
@@ -1902,10 +1920,13 @@
       <div class="st-actions no-print">
         <button class="db-btn-primary" id="stAddLoad" type="button">&#128666; Lorry load add</button>
       </div>
+      <div class="sup-tab">&#9878;&#65039; Store (Dryer Weight)</div>
       <div id="stList"></div>
+      <div class="sup-tab">&#128666; Lorry Load</div>
+      <div id="stLoadList"></div>
 
       <div class="db-sheet-bg no-print" id="stSheet">
-        <div class="db-sheet" style="height:auto;max-height:94dvh;">
+        <div class="db-sheet" style="height:94dvh;">
           <div class="db-sh-head">
             <span class="db-sh-ic">&#128666;</span>
             <div style="flex:1;min-width:0;"><div class="db-sh-title display" id="stSheetTitle">Lorry load</div><div class="db-sh-sub">Store-la irundhu lorry-la eduthu poradhu</div></div>
@@ -1919,7 +1940,9 @@
             <datalist id="stLorryList"></datalist>
             <div class="db-lbl">Load <small>(kg)</small></div>
             <input type="number" inputmode="decimal" step="0.01" id="stKg" class="db-kg-in" placeholder="0" />
-            <div class="db-hint" id="stHint"></div>
+            <div class="db-lbl">Evadhu date-la irundhu edukkanum? <small>(select pannunga)</small></div>
+            <div id="stDates"></div>
+            <div class="st-plan" id="stPlan"></div>
             <div class="db-lbl">Note <small>(venumna)</small></div>
             <input type="text" id="stNote" class="st-input" placeholder="Enga poguthu / yaarukku" autocomplete="off" />
             <button type="button" class="db-del" id="stDelete">&#128465; Intha load-a delete pannu</button>
@@ -2766,35 +2789,58 @@ document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
   });
 });
 
-// ===================== STORE: dryer weight in, lorry loads out =====================
-let stIns = [], stLoads = [], stEditId = null;
+// ===================== STORE: dryer weight in, lorry loads out (taken from chosen dates) =====================
+let stIns = [], stLoads = [], stEditId = null, stSel = new Set(), stManual = false;
 const stKgFmt = (n)=>Number(n||0).toLocaleString("en-IN", {maximumFractionDigits:2});
-function stBalanceUpTo(dateStr, skipId){
-  const inn = stIns.filter(r=>r.date<=dateStr).reduce((a,r)=>a + r.kg, 0);
-  const out = stLoads.filter(r=>r.date<=dateStr && r.id!==skipId).reduce((a,r)=>a + r.kg, 0);
-  return inn - out;
+const stR2 = (n)=>Math.round((Number(n)||0)*100)/100;
+
+// How much of each date's weight is left, and which dates each lorry load took from.
+// Loads saved with chosen dates use exactly those; older loads without dates take the oldest stock first.
+function stAlloc(skipId){
+  const rem = {}, view = {}, legacy = [];
+  stIns.forEach(r=>{ rem[r.date] = r.kg; });
+  stLoads.forEach(l=>{
+    if(l.id===skipId) return;
+    if(l.alloc && l.alloc.length){
+      view[l.id] = l.alloc.map(a=>({date:a.date, kg:Number(a.kg)||0}));
+      view[l.id].forEach(a=>{ rem[a.date] = (rem[a.date]||0) - a.kg; });
+    } else legacy.push(l);
+  });
+  legacy.sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{
+    let need = l.kg; view[l.id] = [];
+    Object.keys(rem).sort().forEach(d=>{
+      if(need<=0.0001 || d>l.date) return;
+      const take = Math.min(need, Math.max(0, rem[d]));
+      if(take>0){ rem[d] -= take; need -= take; view[l.id].push({date:d, kg:take}); }
+    });
+    if(need>0.0001) view[l.id].push({date:"", kg:stR2(need)});
+  });
+  Object.keys(rem).forEach(d=>{ rem[d] = stR2(rem[d]); });
+  return {rem, view};
 }
 function stLoad(){
-  const list = document.getElementById("stList");
-  list.innerHTML = '<p class="empty">Loading...</p>';
+  document.getElementById("stList").innerHTML = '<p class="empty">Loading...</p>';
   Promise.all([db.collection("dryerWeight").get(), db.collection("storeLoads").get()]).then(([wSnap, lSnap])=>{
     stIns = [];
     wSnap.forEach(doc=>{
       const teams = dwTeamsFromData(doc.data()).filter(t=>t.values.length>0)
         .map(t=>({name:t.name, kg:t.values.reduce((a,v)=>a + (Number(v)||0), 0)}));
-      const kg = teams.reduce((a,t)=>a + t.kg, 0);
+      const kg = stR2(teams.reduce((a,t)=>a + t.kg, 0));
       if(kg>0) stIns.push({date:doc.id, kg, teams});
     });
+    stIns.sort((a,b)=>a.date.localeCompare(b.date));
     stLoads = [];
     lSnap.forEach(doc=>{
       const d = doc.data();
-      if(d && d.date && Number(d.kg)>0) stLoads.push({id:doc.id, date:d.date, lorry:d.lorry||"", kg:Number(d.kg), note:d.note||""});
+      if(d && d.date && Number(d.kg)>0) stLoads.push({id:doc.id, date:d.date, lorry:d.lorry||"", kg:Number(d.kg), note:d.note||"", alloc:Array.isArray(d.alloc) ? d.alloc : null});
     });
+    stLoads.sort((a,b)=>a.date.localeCompare(b.date));
     stRender();
-  }).catch(()=>{ list.innerHTML = '<p class="empty">Load aagala. Internet check pannunga.</p>'; });
+  }).catch(()=>{ document.getElementById("stList").innerHTML = '<p class="empty">Load aagala. Internet check pannunga.</p>'; });
 }
 function stRender(){
-  const totalIn = stIns.reduce((a,r)=>a + r.kg, 0), totalOut = stLoads.reduce((a,r)=>a + r.kg, 0), bal = totalIn - totalOut;
+  const {rem, view} = stAlloc(null);
+  const totalIn = stR2(stIns.reduce((a,r)=>a + r.kg, 0)), totalOut = stR2(stLoads.reduce((a,r)=>a + r.kg, 0)), bal = stR2(totalIn - totalOut);
   document.getElementById("stIn").textContent = stKgFmt(totalIn);
   document.getElementById("stOut").textContent = stKgFmt(totalOut);
   const b = document.getElementById("stBal");
@@ -2802,27 +2848,68 @@ function stRender(){
   const lorries = Array.from(new Set(stLoads.map(l=>l.lorry).filter(Boolean)));
   document.getElementById("stLorryList").innerHTML = lorries.map(l=>`<option value="${escapeHtml(l)}"></option>`).join("");
 
-  const dates = Array.from(new Set([...stIns.map(r=>r.date), ...stLoads.map(r=>r.date)])).sort();
-  if(!dates.length){ document.getElementById("stList").innerHTML = '<p class="empty">Innum edhuvum illa. Dryer Weight save pannina inga varum.</p>'; return; }
-  let run = 0;
-  const cards = dates.map(ds=>{
-    const inn = stIns.find(r=>r.date===ds), loads = stLoads.filter(r=>r.date===ds);
-    run += (inn ? inn.kg : 0) - loads.reduce((a,l)=>a + l.kg, 0);
-    const inRow = inn ? `<div class="kg-p"><span>&#9878;&#65039; Dryer weight${inn.teams.length>1 ? `<span class="kg-sub">${inn.teams.map(t=>escapeHtml(t.name) + " " + stKgFmt(t.kg)).join(" &middot; ")}</span>` : ""}</span><b class="st-in">+${stKgFmt(inn.kg)} kg</b></div>` : "";
-    const outRows = loads.map(l=>`<div class="kg-p st-loadrow"><span>&#128666; ${escapeHtml(l.lorry || "Lorry")}${l.note ? `<span class="kg-sub">${escapeHtml(l.note)}</span>` : ""}</span><b class="st-out">&minus;${stKgFmt(l.kg)} kg</b><span class="st-btns no-print"><button type="button" data-st-edit="${l.id}" aria-label="Edit">&#9998;</button></span></div>`).join("");
-    return {ds, html:`<div class="kg-day"><div class="kg-head"><span class="kg-date">${fmtCompact(ds)}<small>${dtWd(ds)}</small></span><span class="kg-total"><small>BALANCE</small><b${run<0 ? ' style="color:#FF9A8A"' : ""}>${stKgFmt(run)}</b></span></div>${inRow}${outRows}</div>`};
-  });
-  const list = document.getElementById("stList");
-  list.innerHTML = cards.reverse().map(c=>c.html).join("");   // newest date on top
-  list.querySelectorAll("[data-st-edit]").forEach(btn=>btn.addEventListener("click", ()=>stOpen(btn.dataset.stEdit)));
+  // stock cards: only that date's dryer weight kg (no running balance)
+  document.getElementById("stList").innerHTML = stIns.length ? stIns.map(r=>{
+    const left = rem[r.date], done = left<=0.0001;
+    const takers = [];
+    stLoads.forEach(l=>(view[l.id]||[]).forEach(a=>{ if(a.date===r.date) takers.push({l, kg:a.kg}); }));
+    const teamSub = r.teams.length>1 ? `<span class="kg-sub">${r.teams.map(t=>escapeHtml(t.name) + " " + stKgFmt(t.kg)).join(" &middot; ")}</span>` : "";
+    const takeRows = takers.map(t=>`<div class="kg-p"><span>&#128666; ${escapeHtml(t.l.lorry || "Lorry")}<span class="kg-sub">${fmtCompact(t.l.date)}</span></span><b class="st-out">&minus;${stKgFmt(t.kg)} kg</b></div>`).join("");
+    const leftRow = takers.length ? (left<-0.0001
+      ? `<div class="kg-p st-warn"><span>&#9888; Load adhigam</span><b>${stKgFmt(left)} kg</b></div>`
+      : `<div class="kg-p st-left${done ? " fin" : ""}"><span>${done ? "&#10003; Mudinjuchu" : "Meedhi irukku"}</span><b>${stKgFmt(Math.max(0,left))} kg</b></div>`) : "";
+    return `<div class="kg-day${done && takers.length ? " st-done" : ""}">
+      <div class="kg-head"><span class="kg-date">${fmtCompact(r.date)}<small>${dtWd(r.date)}</small></span><span class="kg-total"><small>KG</small><b>${stKgFmt(r.kg)}</b></span></div>
+      <div class="kg-p"><span>&#9878;&#65039; Dryer weight${teamSub}</span><b class="st-in">+${stKgFmt(r.kg)} kg</b></div>
+      ${takeRows}${leftRow}
+    </div>`;
+  }).join("") : '<p class="empty">Innum edhuvum illa. Dryer Weight save pannina inga varum.</p>';
+
+  // lorry load cards: which dates the load was taken from
+  const ll = document.getElementById("stLoadList");
+  ll.innerHTML = stLoads.length ? stLoads.map(l=>{
+    const from = (view[l.id]||[]).map(a=> a.date
+      ? `<div class="kg-p"><span>&#9878;&#65039; ${fmtCompact(a.date)}<span class="kg-sub">${dtWd(a.date)}</span></span><b class="st-out">${stKgFmt(a.kg)} kg</b></div>`
+      : `<div class="kg-p st-warn"><span>&#9888; Store-la illaadhadhu</span><b>${stKgFmt(a.kg)} kg</b></div>`).join("");
+    return `<div class="kg-day">
+      <div class="kg-head"><span class="kg-date">${fmtCompact(l.date)}<small>${dtWd(l.date)}</small></span><span class="kg-total"><small>LOAD KG</small><b style="color:#FFD08A;">${stKgFmt(l.kg)}</b></span></div>
+      <div class="kg-p st-loadrow"><span>&#128666; ${escapeHtml(l.lorry || "Lorry")}${l.note ? `<span class="kg-sub">${escapeHtml(l.note)}</span>` : ""}</span><span class="st-btns no-print"><button type="button" data-st-edit="${l.id}" aria-label="Edit">&#9998;</button></span></div>
+      ${from}
+    </div>`;
+  }).join("") : '<p class="empty">Innum lorry load illa.</p>';
+  ll.querySelectorAll("[data-st-edit]").forEach(btn=>btn.addEventListener("click", ()=>stOpen(btn.dataset.stEdit)));
 }
-function stSheetHint(){
-  const ds = document.getElementById("stDate").value, kg = Number(document.getElementById("stKg").value)||0;
-  if(!ds){ document.getElementById("stHint").textContent = ""; return; }
-  const bal = stBalanceUpTo(ds, stEditId);
-  const h = document.getElementById("stHint");
-  h.textContent = "Andha date varaikkum store-la irukkadhu: " + stKgFmt(bal) + " kg" + (kg>0 ? "  \u2192  load-ku aprom: " + stKgFmt(bal - kg) + " kg" : "");
-  h.style.color = (kg>0 && bal-kg<0) ? "#B33A3A" : "";
+
+// ---- Lorry load sheet: choose the dates it is taken from ----
+function stPlan(kg, rem){
+  const need0 = stR2(kg); let need = need0; const plan = [];
+  Array.from(stSel).sort().forEach(d=>{
+    if(need<=0.0001) return;
+    const take = Math.min(need, Math.max(0, rem[d]||0));
+    if(take>0){ plan.push({date:d, kg:stR2(take)}); need = stR2(need - take); }
+  });
+  return {plan, short:need};
+}
+function stRefreshSheet(){
+  const date = document.getElementById("stDate").value, kg = Number(document.getElementById("stKg").value)||0;
+  const {rem} = stAlloc(stEditId);
+  const avail = stIns.filter(r=>(!date || r.date<=date) && (rem[r.date]||0)>0.0001);
+  Array.from(stSel).forEach(d=>{ if(!avail.some(r=>r.date===d)) stSel.delete(d); });
+  if(!stManual && kg>0){                       // auto: oldest dates first until the load is covered
+    stSel = new Set(); let c = 0;
+    for(const r of avail){ if(c>=kg-0.0001) break; stSel.add(r.date); c += rem[r.date]; }
+  }
+  const box = document.getElementById("stDates");
+  box.innerHTML = avail.length ? avail.map(r=>`<label class="st-dr${stSel.has(r.date) ? " on" : ""}"><input type="checkbox" data-d="${r.date}"${stSel.has(r.date) ? " checked" : ""}><span class="st-dd">${fmtCompact(r.date)}<small>${dtWd(r.date)}</small></span><b>${stKgFmt(rem[r.date])} kg</b></label>`).join("")
+    : '<p class="empty" style="margin:4px 0;">Intha date varaikkum store-la kg illa.</p>';
+  box.querySelectorAll("input[data-d]").forEach(cb=>cb.addEventListener("change", ()=>{
+    stManual = true; if(cb.checked) stSel.add(cb.dataset.d); else stSel.delete(cb.dataset.d); stRefreshSheet();
+  }));
+  const p = stPlan(kg, rem), el = document.getElementById("stPlan");
+  if(kg<=0){ el.innerHTML = ""; return; }
+  const selTotal = stR2(Array.from(stSel).reduce((a,d)=>a + (rem[d]||0), 0));
+  el.innerHTML = p.plan.map(x=>`<div class="r"><span>${fmtCompact(x.date)} ${dtWd(x.date)}</span><b>${stKgFmt(x.kg)} kg</b></div>`).join("")
+    + (p.short>0.0001 ? `<div class="r bad"><span>&#9888; Select panna dates-la ${stKgFmt(selTotal)} kg thaan irukku</span><b>${stKgFmt(p.short)} kg kuraivu</b></div>` : `<div class="r ok"><span>&#10003; Load</span><b>${stKgFmt(kg)} kg</b></div>`);
 }
 function stOpen(id){
   stEditId = id || null;
@@ -2834,7 +2921,13 @@ function stOpen(id){
   document.getElementById("stNote").value = rec ? rec.note : "";
   document.getElementById("stDelete").style.display = rec ? "block" : "none";
   document.getElementById("stNoteMsg").textContent = "";
-  stSheetHint();
+  stSel = new Set(); stManual = false;
+  if(rec){
+    const v = stAlloc(null).view[rec.id] || [];
+    v.forEach(a=>{ if(a.date) stSel.add(a.date); });
+    stManual = stSel.size>0;
+  }
+  stRefreshSheet();
   document.getElementById("stSheet").style.display = "flex";
 }
 function stClose(){ document.getElementById("stSheet").style.display = "none"; }
@@ -2842,26 +2935,26 @@ document.getElementById("stAddLoad").addEventListener("click", ()=>stOpen());
 document.getElementById("stSheetX").addEventListener("click", stClose);
 document.getElementById("stCancel").addEventListener("click", stClose);
 document.getElementById("stSheet").addEventListener("click", (e)=>{ if(e.target===document.getElementById("stSheet")) stClose(); });
-document.getElementById("stKg").addEventListener("input", stSheetHint);
-document.getElementById("stDate").addEventListener("change", stSheetHint);
+document.getElementById("stKg").addEventListener("input", stRefreshSheet);
+document.getElementById("stDate").addEventListener("change", stRefreshSheet);
 document.getElementById("stSave").addEventListener("click", ()=>{
   const msg = document.getElementById("stNoteMsg");
-  const date = document.getElementById("stDate").value, kg = Number(document.getElementById("stKg").value)||0;
+  const date = document.getElementById("stDate").value, kg = stR2(document.getElementById("stKg").value);
   const lorry = document.getElementById("stLorry").value.trim(), note = document.getElementById("stNote").value.trim();
   if(!date){ msg.textContent = "Date pick pannunga."; return; }
   if(kg<=0){ msg.textContent = "Load kg podunga."; return; }
-  const bal = stBalanceUpTo(date, stEditId);
-  if(kg>bal && !confirm("Store-la andha date varaikkum " + stKgFmt(bal) + " kg thaan irukku. Appadiyum " + stKgFmt(kg) + " kg save pannalama?")) return;
+  const {rem} = stAlloc(stEditId), p = stPlan(kg, rem);
+  if(p.short>0.0001){ msg.textContent = "Select panna dates-la " + stKgFmt(p.short) + " kg kuraivu. Innum date select pannunga."; return; }
   const btn = document.getElementById("stSave"), label = btn.innerHTML;
   btn.disabled = true; btn.textContent = "Saving..."; msg.textContent = "";
-  const rec = {date, month:monthKey(date), lorry, kg, note, updatedAt:Date.now()};
-  const p = stEditId ? db.collection("storeLoads").doc(stEditId).set(rec, {merge:true})
+  const rec = {date, month:monthKey(date), lorry, kg, note, alloc:p.plan, updatedAt:Date.now()};
+  const w = stEditId ? db.collection("storeLoads").doc(stEditId).set(rec, {merge:true})
                      : db.collection("storeLoads").add(Object.assign({createdAt:Date.now()}, rec));
-  p.then(()=>{ btn.disabled = false; btn.innerHTML = label; stClose(); stLoad(); })
+  w.then(()=>{ btn.disabled = false; btn.innerHTML = label; stClose(); stLoad(); })
    .catch((e)=>{ btn.disabled = false; btn.innerHTML = label; const c = (e && e.code) || "error"; msg.textContent = "Save aagala (" + c + ")"; alert("Save aagala: " + c); });
 });
 document.getElementById("stDelete").addEventListener("click", ()=>{
-  if(!stEditId || !confirm("Intha lorry load-a delete pannalama?")) return;
+  if(!stEditId || !confirm("Intha lorry load-a delete pannalama? Andha kg thirumba store-ku varum.")) return;
   db.collection("storeLoads").doc(stEditId).delete().then(()=>{ stClose(); stLoad(); })
     .catch((e)=>{ alert("Delete aagala: " + ((e && e.code) || "error")); });
 });
