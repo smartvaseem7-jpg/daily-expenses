@@ -1088,6 +1088,25 @@
   .st-dd { flex:1; font-family:'Fraunces',serif; font-weight:800; font-size:17px; color:#17301F; }
   .st-dd small { margin-left:8px; font-family:'Inter',sans-serif; font-size:12px; font-weight:700; color:#6B8664; }
   .st-dr b { font-family:'IBM Plex Mono',monospace; color:#1F5A33; }
+
+  /* store: team boxes, clear button, dryer-weight store button */
+  .st-teams { display:flex; gap:8px; padding:6px 14px 12px; border-top:1px solid #E4EDDC; }
+  .st-team { flex:1; border-radius:12px; padding:8px 10px; background:#F4F9EE; border:1.5px solid #C5DAB5; }
+  .st-team .lab { display:block; font-size:11.5px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:#fff; background:#2F6B3A; border-radius:8px; padding:2px 8px; width:max-content; margin-bottom:5px; }
+  .st-team.t2 { background:#FFF6E4; border-color:#EBCB8B; }
+  .st-team.t2 .lab { background:#C8870B; }
+  .st-team .val { font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:18px; color:#17301F; }
+  .st-team .val small { font-family:'Inter',sans-serif; font-size:12px; font-weight:700; color:#6B8664; }
+  .st-actions .db-btn-ghost { width:100%; padding:15px 8px; border-radius:16px; font-weight:800; font-size:17px; background:#fff; color:#1F5A33; border:2px solid #2E6B3F; cursor:pointer; }
+  .st-clear { display:block; width:100%; margin:18px 2px 6px; padding:13px; background:none; border:1.5px solid #E2BDBD; border-radius:14px; color:#B33A3A; font-weight:800; font-size:14px; cursor:pointer; }
+  .st-p2-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .st-mini { background:linear-gradient(135deg,#10331F,#2E7D45); color:#fff; border-radius:14px; padding:8px 14px; text-align:right; }
+  .st-mini small { display:block; font-size:10px; font-weight:800; letter-spacing:.06em; color:#CFE5C4; }
+  .st-mini b { font-family:'IBM Plex Mono',monospace; font-size:20px; color:#C8FF5A; }
+  .st-mini i { font-style:normal; font-size:11px; margin-left:4px; opacity:.85; }
+  .dw-store-btn { display:block; width:100%; margin-top:10px; padding:11px; border-radius:12px; border:none; background:linear-gradient(135deg,#1F5A33,#2E7D45); color:#fff; font-weight:800; font-size:14px; cursor:pointer; }
+  .dw-store-btn.ok { background:#E4EFDB; color:#3B6B35; cursor:default; }
+  .dw-store-btn.diff { background:linear-gradient(135deg,#C8870B,#E0A22A); }
 </style>
 </head>
 <body>
@@ -1895,6 +1914,7 @@
       <div class="save-note no-print" id="dwSaveNote"></div>
       <div class="actions no-print">
         <button class="btn-export" id="dwSaveBtn" style="flex:1;">&#128190; Save</button>
+        <button class="btn-export" id="dwStoreBtn" style="flex:1.4;">&#128230; Save + Store-ku anuppu</button>
         <button class="btn-export" id="dwPrintBtn">&#128424; Print</button>
       </div>
 
@@ -1910,20 +1930,41 @@
         <h2 class="section-title">STORE</h2>
       </div>
 
-      <div class="st-hero">
-        <div class="st-row">
-          <div class="st-stat"><small>STORE-KU VANDHADHU</small><b id="stIn">0</b><i>kg</i></div>
-          <div class="st-stat out"><small>LORRY-LA POCHU</small><b id="stOut">0</b><i>kg</i></div>
+      <div class="mt-swipe-viewport" id="stSwipeViewport">
+        <div class="mt-swipe-track" id="stSwipeTrack">
+
+          <div class="mt-swipe-page" id="stSwipePage1">
+            <div class="st-hero">
+              <div class="st-row">
+                <div class="st-stat"><small>STORE-KU VANDHADHU</small><b id="stIn">0</b><i>kg</i></div>
+                <div class="st-stat out"><small>LORRY-LA POCHU</small><b id="stOut">0</b><i>kg</i></div>
+              </div>
+              <div class="st-bal"><small>BALANCE (STORE-LA IRUKKU)</small><b id="stBal">0</b><i>kg</i></div>
+            </div>
+            <div class="st-actions no-print">
+              <button class="db-btn-ghost" id="stToLoads" type="button">&#128666; Lorry Load &rsaquo;</button>
+            </div>
+            <div class="sup-tab">&#9878;&#65039; Store (Dryer Weight)</div>
+            <div id="stList"></div>
+            <button class="st-clear no-print" id="stClearAll" type="button">&#128465; Ellaathayum clear pannu</button>
+            <p class="empty swipe-hint no-print">Lorry Load paakanumna &larr; swipe pannunga</p>
+          </div>
+
+          <div class="mt-swipe-page" id="stSwipePage2">
+            <div class="st-p2-top no-print">
+              <button class="back-btn" id="stToStore" type="button">&#8592; Store</button>
+              <div class="st-mini"><small>BALANCE</small><b id="stBal2">0</b><i>kg</i></div>
+            </div>
+            <h2 class="db-title" style="margin-top:6px;">Lorry Load</h2>
+            <div class="st-actions no-print">
+              <button class="db-btn-primary" id="stAddLoad" type="button">&#128666; Lorry load add</button>
+            </div>
+            <div id="stLoadList"></div>
+            <p class="empty swipe-hint no-print">&rarr; swipe pannina Store-ku thirumba varalam</p>
+          </div>
+
         </div>
-        <div class="st-bal"><small>BALANCE (STORE-LA IRUKKU)</small><b id="stBal">0</b><i>kg</i></div>
       </div>
-      <div class="st-actions no-print">
-        <button class="db-btn-primary" id="stAddLoad" type="button">&#128666; Lorry load add</button>
-      </div>
-      <div class="sup-tab">&#9878;&#65039; Store (Dryer Weight)</div>
-      <div id="stList"></div>
-      <div class="sup-tab">&#128666; Lorry Load</div>
-      <div id="stLoadList"></div>
 
       <div class="db-sheet-bg no-print" id="stSheet">
         <div class="db-sheet" style="height:94dvh;">
@@ -2820,13 +2861,12 @@ function stAlloc(skipId){
 }
 function stLoad(){
   document.getElementById("stList").innerHTML = '<p class="empty">Loading...</p>';
-  Promise.all([db.collection("dryerWeight").get(), db.collection("storeLoads").get()]).then(([wSnap, lSnap])=>{
-    stIns = [];
+  Promise.all([db.collection("storeStock").get(), db.collection("storeLoads").get()]).then(([wSnap, lSnap])=>{
+    stIns = [];   // only what was sent with the "Store-ku anuppu" button
     wSnap.forEach(doc=>{
-      const teams = dwTeamsFromData(doc.data()).filter(t=>t.values.length>0)
-        .map(t=>({name:t.name, kg:t.values.reduce((a,v)=>a + (Number(v)||0), 0)}));
-      const kg = stR2(teams.reduce((a,t)=>a + t.kg, 0));
-      if(kg>0) stIns.push({date:doc.id, kg, teams});
+      const d = doc.data() || {}, kg = stR2(d.kg);
+      const teams = (Array.isArray(d.teams) ? d.teams : []).map(t=>({name:String(t.name||""), kg:stR2(t.kg)})).filter(t=>t.kg>0);
+      if(kg>0) stIns.push({date:d.date || doc.id, kg, teams});
     });
     stIns.sort((a,b)=>a.date.localeCompare(b.date));
     stLoads = [];
@@ -2845,6 +2885,7 @@ function stRender(){
   document.getElementById("stOut").textContent = stKgFmt(totalOut);
   const b = document.getElementById("stBal");
   b.textContent = stKgFmt(bal); b.style.color = bal<0 ? "#FF9A8A" : "";
+  document.getElementById("stBal2").textContent = stKgFmt(bal);
   const lorries = Array.from(new Set(stLoads.map(l=>l.lorry).filter(Boolean)));
   document.getElementById("stLorryList").innerHTML = lorries.map(l=>`<option value="${escapeHtml(l)}"></option>`).join("");
 
@@ -2853,17 +2894,17 @@ function stRender(){
     const left = rem[r.date], done = left<=0.0001;
     const takers = [];
     stLoads.forEach(l=>(view[l.id]||[]).forEach(a=>{ if(a.date===r.date) takers.push({l, kg:a.kg}); }));
-    const teamSub = r.teams.length>1 ? `<span class="kg-sub">${r.teams.map(t=>escapeHtml(t.name) + " " + stKgFmt(t.kg)).join(" &middot; ")}</span>` : "";
+    const teamRows = r.teams.length ? `<div class="st-teams">${r.teams.map((t,i)=>`<div class="st-team t${(i%2)+1}"><span class="lab">${escapeHtml(t.name || ("Team " + (i+1)))}</span><span class="val">${stKgFmt(t.kg)}<small> kg</small></span></div>`).join("")}</div>` : "";
     const takeRows = takers.map(t=>`<div class="kg-p"><span>&#128666; ${escapeHtml(t.l.lorry || "Lorry")}<span class="kg-sub">${fmtCompact(t.l.date)}</span></span><b class="st-out">&minus;${stKgFmt(t.kg)} kg</b></div>`).join("");
     const leftRow = takers.length ? (left<-0.0001
       ? `<div class="kg-p st-warn"><span>&#9888; Load adhigam</span><b>${stKgFmt(left)} kg</b></div>`
       : `<div class="kg-p st-left${done ? " fin" : ""}"><span>${done ? "&#10003; Mudinjuchu" : "Meedhi irukku"}</span><b>${stKgFmt(Math.max(0,left))} kg</b></div>`) : "";
     return `<div class="kg-day${done && takers.length ? " st-done" : ""}">
       <div class="kg-head"><span class="kg-date">${fmtCompact(r.date)}<small>${dtWd(r.date)}</small></span><span class="kg-total"><small>KG</small><b>${stKgFmt(r.kg)}</b></span></div>
-      <div class="kg-p"><span>&#9878;&#65039; Dryer weight${teamSub}</span><b class="st-in">+${stKgFmt(r.kg)} kg</b></div>
-      ${takeRows}${leftRow}
+      <div class="kg-p"><span>&#9878;&#65039; Dryer weight</span><b class="st-in">+${stKgFmt(r.kg)} kg</b></div>
+      ${teamRows}${takeRows}${leftRow}
     </div>`;
-  }).join("") : '<p class="empty">Innum edhuvum illa. Dryer Weight save pannina inga varum.</p>';
+  }).join("") : '<p class="empty">Innum edhuvum illa. Dryer Weight page-la <b>Store-ku anuppu</b> button thotta inga varum.</p>';
 
   // lorry load cards: which dates the load was taken from
   const ll = document.getElementById("stLoadList");
@@ -2957,6 +2998,61 @@ document.getElementById("stDelete").addEventListener("click", ()=>{
   if(!stEditId || !confirm("Intha lorry load-a delete pannalama? Andha kg thirumba store-ku varum.")) return;
   db.collection("storeLoads").doc(stEditId).delete().then(()=>{ stClose(); stLoad(); })
     .catch((e)=>{ alert("Delete aagala: " + ((e && e.code) || "error")); });
+});
+
+
+// ---- Store: swipe between Store and Lorry Load ----
+(function(){
+  const viewport = document.getElementById("stSwipeViewport"), track = document.getElementById("stSwipeTrack");
+  if(!viewport || !track) return;
+  let page = 0, startX = null, startY = null, dX = 0, drag = false, axis = null;
+  function setPage(p, animate){
+    page = p;
+    track.style.transition = animate===false ? "none" : "";
+    track.style.transform = `translateX(${p===0 ? "0%" : "-50%"})`;
+  }
+  window.stGoPage = (p)=>{ setPage(p); window.scrollTo(0,0); };
+  viewport.addEventListener("touchstart", (e)=>{ if(e.touches.length!==1) return; startX = e.touches[0].clientX; startY = e.touches[0].clientY; dX = 0; drag = true; axis = null; track.classList.add("dragging"); }, {passive:true});
+  viewport.addEventListener("touchmove", (e)=>{
+    if(!drag || startX===null) return;
+    const dx = e.touches[0].clientX - startX, dy = e.touches[0].clientY - startY;
+    if(axis===null) axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    if(axis!=="x") return;
+    if((page===0 && dx<0) || (page===1 && dx>0)){
+      dX = dx;
+      track.style.transform = `translateX(${(page===0 ? 0 : -50) + (dx / viewport.offsetWidth) * 50}%)`;
+      e.preventDefault();
+    }
+  }, {passive:false});
+  viewport.addEventListener("touchend", ()=>{
+    if(!drag) return; drag = false; track.classList.remove("dragging");
+    const th = viewport.offsetWidth * 0.18;
+    if(axis==="x"){ if(page===0 && dX < -th) setPage(1); else if(page===1 && dX > th) setPage(0); else setPage(page); }
+    startX = startY = null; dX = 0; axis = null;
+  });
+})();
+document.getElementById("stToLoads").addEventListener("click", ()=>window.stGoPage(1));
+document.getElementById("stToStore").addEventListener("click", ()=>window.stGoPage(0));
+
+// ---- Store: clear everything (stock + lorry loads). Dryer Weight records are NOT touched. ----
+async function stDeleteAll(colName, ids){
+  for(let i=0; i<ids.length; i+=400){
+    const batch = db.batch();
+    ids.slice(i, i+400).forEach(id=>batch.delete(db.collection(colName).doc(id)));
+    await batch.commit();
+  }
+}
+document.getElementById("stClearAll").addEventListener("click", async ()=>{
+  try{
+    const [a, b] = await Promise.all([db.collection("storeStock").get(), db.collection("storeLoads").get()]);
+    const sIds = [], lIds = [];
+    a.forEach(d=>sIds.push(d.id)); b.forEach(d=>lIds.push(d.id));
+    if(!sIds.length && !lIds.length){ alert("Store-la edhuvum illa."); return; }
+    if(!confirm("Store-la " + sIds.length + " stock date, " + lIds.length + " lorry load irukku.\nELLAATHAYUM delete pannalama? Thirumba edukka mudiyaadhu.\n(Dryer Weight page records delete aagaadhu.)")) return;
+    if(!confirm("Urudhiya? Store ellaam clear aagidum.")) return;
+    await stDeleteAll("storeStock", sIds); await stDeleteAll("storeLoads", lIds);
+    stLoad();
+  }catch(e){ alert("Clear aagala: " + ((e && e.code) || "error")); }
 });
 
 // ===================== AUTH: admin email login + worker logins =====================
@@ -8017,14 +8113,32 @@ document.getElementById("dwSaveBtn").addEventListener("click", ()=>{
     teams,
     values: flat
   }).then(()=>{
-    note.textContent = "Saved! Store-ku poiduchu \u2713";
-    setTimeout(()=>{ note.textContent=""; }, 2500);
+    note.textContent = "Saved!";
+    setTimeout(()=>{ note.textContent=""; }, 1800);
     dwLoadRecords();
   }).catch(()=>{
     note.textContent = "Couldn't save. Check internet.";
   });
 });
 
+// Store gets a weight ONLY when this is pressed (Save alone never sends it)
+function dwSendToStore(ds, teamTotals){
+  const teams = teamTotals.filter(t=>Number(t.kg)>0).map(t=>({name:t.name, kg:stR2(t.kg)}));
+  const kg = stR2(teams.reduce((a,t)=>a + t.kg, 0));
+  return db.collection("storeStock").doc(ds).set({date:ds, month:monthKey(ds), kg, teams, sentAt:Date.now()});
+}
+document.getElementById("dwStoreBtn").addEventListener("click", ()=>{
+  const note = document.getElementById("dwSaveNote");
+  const teams = dwCollectTeams();
+  if(!teams.some(t=>t.values.length>0)){ note.textContent = "Weight entha value-um podunga."; setTimeout(()=>{ note.textContent=""; }, 1500); return; }
+  const flat = []; teams.forEach(t=>t.values.forEach(v=>flat.push(v)));
+  const ds = dwSelectedDate;
+  note.textContent = "Saving...";
+  dwPersistPromise = db.collection("dryerWeight").doc(ds).set({date:ds, month:monthKey(ds), teams, values:flat})
+    .then(()=>dwSendToStore(ds, teams.filter(t=>t.values.length>0).map(t=>({name:t.name, kg:t.values.reduce((s,v)=>s+(Number(v)||0),0)}))))
+    .then(()=>{ note.textContent = "Saved. Store-ku anuppiyachu \u2713"; setTimeout(()=>{ note.textContent=""; }, 2500); dwLoadRecords(); })
+    .catch((e)=>{ note.textContent = "Aagala (" + ((e && e.code) || "check internet") + ")"; });
+});
 document.getElementById("dwPrintBtn").addEventListener("click", ()=>window.print());
 
 document.getElementById("dtpPrintBtn").addEventListener("click", ()=>{
@@ -8039,7 +8153,9 @@ document.getElementById("dtpRecordsPrintBtn").addEventListener("click", ()=>{
 function dwLoadRecords(){
   const container = document.getElementById("dwRecordsList");
   container.innerHTML = '<p class="empty">Loading records...</p>';
-  db.collection("dryerWeight").get().then((snap)=>{
+  Promise.all([db.collection("dryerWeight").get(), db.collection("storeStock").get().catch(()=>null)]).then(([snap, sSnap])=>{
+    const sent = {};
+    if(sSnap) sSnap.forEach(d=>{ sent[d.id] = stR2((d.data()||{}).kg); });
     const records = [];
     snap.forEach(doc=>{
       const teamsOfDay = dwTeamsFromData(doc.data()).filter(t=>t.values.length>0);
@@ -8064,9 +8180,20 @@ function dwLoadRecords(){
           </div>
         </div>
         <div class="dt-record-date">${fmtNice(r.date)} &middot; ${r.count} entries</div>
+        ${(()=>{ const sk = sent[r.date], now = stR2(r.total);
+          if(sk===undefined) return `<button class="dw-store-btn no-print" data-tostore="${r.date}">&#128230; Store-ku anuppu</button>`;
+          if(Math.abs(sk-now)<0.005) return `<button class="dw-store-btn ok no-print" disabled>&#10003; Store-la irukku</button>`;
+          return `<button class="dw-store-btn diff no-print" data-tostore="${r.date}">&#128260; Store update (${stKgFmt(sk)} &rarr; ${stKgFmt(now)})</button>`; })()}
         ${r.teamTotals.length>1 ? `<div class="dt-record-date">${r.teamTotals.map(t=>dwEsc(t.name)+": "+t.kg.toFixed(2)).join(" &middot; ")}</div>` : ""}
       </div>
     `).join("");
+    container.querySelectorAll("[data-tostore]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const r = records.find(x=>x.date===btn.dataset.tostore); if(!r) return;
+        btn.disabled = true; btn.textContent = "Anuppuren...";
+        dwSendToStore(r.date, r.teamTotals).then(()=>dwLoadRecords()).catch((e)=>{ btn.disabled = false; alert("Aagala: " + ((e && e.code) || "check internet")); });
+      });
+    });
     container.querySelectorAll("[data-editdate]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         dwSelectedDate = btn.dataset.editdate;
@@ -8077,7 +8204,7 @@ function dwLoadRecords(){
     container.querySelectorAll("[data-deldate]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         const dateToDelete = btn.dataset.deldate;
-        if(!confirm(`${fmtNice(dateToDelete)} oda weight record-a delete pannalama? Ithu thirumba edukka mudiyaadhu.`)) return;
+        if(!confirm(`${fmtNice(dateToDelete)} oda weight record-a delete pannalama? Ithu thirumba edukka mudiyaadhu. (Store-ku anuppina kg delete aagaadhu.)`)) return;
         db.collection("dryerWeight").doc(dateToDelete).delete().then(()=>{
           if(dwSelectedDate === dateToDelete){
             dwLoadDay(dwSelectedDate);
