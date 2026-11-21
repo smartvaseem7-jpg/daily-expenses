@@ -1107,6 +1107,49 @@
   .dw-store-btn { display:block; width:100%; margin-top:10px; padding:11px; border-radius:12px; border:none; background:linear-gradient(135deg,#1F5A33,#2E7D45); color:#fff; font-weight:800; font-size:14px; cursor:pointer; }
   .dw-store-btn.ok { background:#E4EFDB; color:#3B6B35; cursor:default; }
   .dw-store-btn.diff { background:linear-gradient(135deg,#C8870B,#E0A22A); }
+
+  /* ================= LAPTOP / WIDE SCREEN LAYOUT (phone layout is untouched) ================= */
+  @media screen and (min-width:1000px){
+    /* ordinary pages: a comfortable reading width instead of a phone-wide strip */
+    .wrap { max-width:980px; }
+    .wrap:has(#homeScreen[style*="block"]) { max-width:1200px; }
+
+    /* Machine / Dryer / Store: all the swipe pages sit side by side (no swiping with a mouse) */
+    .wrap:has(#machineSection[style*="block"]),
+    .wrap:has(#dryerSection[style*="block"]),
+    .wrap:has(#storeSection[style*="block"]) { max-width:1380px; padding:14px 20px 50px; }
+    .wrap:has(#storeSection[style*="block"]) .card { padding:14px 14px; border-radius:12px; }
+    #mtSwipeTrack, #dtSwipeTrack, #stSwipeTrack { display:grid !important; width:100% !important; transform:none !important; transition:none !important; gap:0; align-items:start; }
+    #mtSwipeTrack { grid-template-columns:repeat(3, minmax(0,1fr)); }
+    #dtSwipeTrack, #stSwipeTrack { grid-template-columns:repeat(2, minmax(0,1fr)); }
+    #mtSwipeTrack > .mt-swipe-page, #dtSwipeTrack > .mt-swipe-page, #stSwipeTrack > .mt-swipe-page { width:auto !important; min-width:0; padding:0 18px !important; }
+    #mtSwipeTrack > .mt-swipe-page:first-child, #dtSwipeTrack > .mt-swipe-page:first-child, #stSwipeTrack > .mt-swipe-page:first-child { padding-left:4px !important; }
+    #mtSwipeTrack > .mt-swipe-page:last-child, #dtSwipeTrack > .mt-swipe-page:last-child, #stSwipeTrack > .mt-swipe-page:last-child { padding-right:4px !important; }
+    #mtSwipeTrack > .mt-swipe-page + .mt-swipe-page, #dtSwipeTrack > .mt-swipe-page + .mt-swipe-page, #stSwipeTrack > .mt-swipe-page + .mt-swipe-page { border-left:1.5px dashed #CFDDBE; }
+    /* things that only make sense for swiping */
+    #machineSection .mt-page-tabs, #dryerSection .swipe-hint, #machineSection .swipe-hint, #storeSection .swipe-hint,
+    #dbSalaryBtn, #stToLoads, #stToStore { display:none !important; }
+    #mtSwipePageWorkers .section-header .back-btn, #mtSwipePageWorkers .section-header img,
+    #mtSwipePage2 .section-header .back-btn, #mtSwipePage2 .section-header img,
+    #dtSwipePage2 .section-header .back-btn, #dtSwipePage2 .section-header img { display:none; }
+    .db-fab { right:34px; bottom:26px; }
+
+    /* pop-up sheets become centred dialogs, not full-height phone sheets */
+    .db-sheet-bg { align-items:center; }
+    .db-sheet { max-width:560px !important; height:auto !important; max-height:90vh; border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,.35); }
+    .db-sh-body { min-height:0; }
+    .sal-modal-bg { align-items:center; }
+
+    .st-p2-top { justify-content:flex-end; }
+    #stSwipePage2 .db-title { margin:10px 0 12px !important; }
+    /* worker's own page: keep it phone-width in the middle */
+    #workerViewScreen > div:last-child { max-width:520px; margin:0 auto; }
+  }
+  @media screen and (min-width:1700px){
+    .wrap:has(#machineSection[style*="block"]),
+    .wrap:has(#dryerSection[style*="block"]),
+    .wrap:has(#storeSection[style*="block"]) { max-width:1560px; }
+  }
 </style>
 </head>
 <body>
