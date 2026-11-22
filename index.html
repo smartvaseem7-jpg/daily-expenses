@@ -1150,6 +1150,19 @@
     .wrap:has(#dryerSection[style*="block"]),
     .wrap:has(#storeSection[style*="block"]) { max-width:1560px; }
   }
+
+  /* sounds */
+  .sd-btn { padding:8px 12px; border-radius:12px; border:1.5px solid #2F6B3A; background:#fff; color:#1F5A33; font-weight:800; font-size:13px; cursor:pointer; margin-left:auto; max-width:46%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ledger-row .sd-btn + .idel { margin-left:8px; }
+  .sd-row { display:flex; align-items:center; gap:12px; background:#fff; border:1.5px solid #D5E4CB; border-radius:16px; padding:10px 12px; margin-bottom:8px; cursor:pointer; }
+  .sd-row.on { background:#E4F4D5; border-color:#2E9A4A; }
+  .sd-play { width:42px; height:42px; border-radius:50%; border:none; background:#2F6B3A; color:#fff; font-size:16px; cursor:pointer; flex-shrink:0; }
+  .sd-name { flex:1; min-width:0; font-weight:800; font-size:16px; color:#17301F; }
+  .sd-name small { display:block; font-weight:600; font-size:12px; color:#6B8664; margin-top:2px; }
+  .sd-del { background:none; border:none; font-size:18px; cursor:pointer; }
+  .sd-tick { width:24px; text-align:center; font-weight:900; color:#1F7A3A; font-size:18px; }
+  .sd-up { display:block; text-align:center; margin-top:12px; padding:15px; border:2px dashed #2F6B3A; border-radius:16px; color:#1F5A33; font-weight:800; font-size:15px; cursor:pointer; background:#F4F9EE; }
+  .sd-up small { display:block; font-weight:600; color:#6B8664; margin-top:2px; }
 </style>
 </head>
 <body>
@@ -1215,6 +1228,28 @@
       <div class="lock-error" id="supplierLoginError"></div>
       <button id="supplierLoginBtn">Login</button>
       <button class="link-btn" data-login-back>Back to Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SOUND PICKER (admin): choose / upload sounds for suppliers ===== -->
+<div class="db-sheet-bg no-print" id="sdSheet">
+  <div class="db-sheet">
+    <div class="db-sh-head">
+      <span class="db-sh-ic">&#128276;</span>
+      <div style="flex:1;min-width:0;"><div class="db-sh-title display" id="sdTitle">Sound</div><div class="db-sh-sub">Pudicha sound select pannunga</div></div>
+      <button class="db-sh-x" id="sdX" type="button">&#10005;</button>
+    </div>
+    <div class="db-sh-body">
+      <div id="sdList"></div>
+      <label class="sd-up" for="sdFile">&#10133; Pudhu sound add pannu <small>(phone / laptop-la irundhu)</small></label>
+      <input type="file" id="sdFile" accept="audio/*" style="display:none;" />
+      <div class="db-hint">MP3 / WAV / M4A podalaam. Mudhal 6 second mattum edukkum.</div>
+    </div>
+    <div class="db-sh-foot">
+      <div class="db-note" id="sdMsg"></div>
+      <button type="button" class="db-cancel" id="sdCancel">Cancel</button>
+      <button type="button" class="db-save" id="sdSave">&#10003; Save</button>
     </div>
   </div>
 </div>
@@ -1664,7 +1699,7 @@
 
     <!-- ===== MACHINE TEAM ===== -->
     <div id="mtNotifyPanel" class="mt-notify-panel no-print">
-  <div class="mt-notify-head"><span>&#128276; Supplier Notifications</span><button id="mtNotifyClear" class="mt-notify-clear">Clear</button></div>
+  <div class="mt-notify-head"><span>&#128276; Supplier Notifications</span><span><button id="mtSoundToggle" class="mt-notify-clear" type="button">&#128266; Sound</button> <button id="mtNotifyClear" class="mt-notify-clear">Clear</button></span></div>
   <div id="mtNotifyList"><div style="font-size:12px;color:#9A8B6E;text-align:center;padding:8px;">No new notifications.</div></div>
 </div>
 <div id="mtNotifyToast" class="mt-notify-toast"></div>
@@ -2861,6 +2896,7 @@ document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
     sections: { [k]: { entries: firebase.firestore.FieldValue.arrayUnion(entry) } }
   }, {merge:true}).then(()=>supplierTopUpSupplierRecord(k, amount)).then(()=>{
     note.textContent = "Added!";
+    sndPlayForSupplier(supplierUsername);
     input.value = "";
     btn.disabled = false;
     setTimeout(()=>{ if(document.getElementById("supplierAddNote").textContent==="Added!") document.getElementById("supplierAddNote").textContent=""; }, 1500);
@@ -2871,6 +2907,189 @@ document.getElementById("supplierAddBtn").addEventListener("click", ()=>{
     note.textContent = "Couldn't save. Check internet and try again.";
     btn.disabled = false;
   });
+});
+
+// ===================== SOUND (plays when a supplier adds matta) =====================
+// Each supplier can have his own sound (built-in or one uploaded by the admin).
+// It plays on the supplier's phone when he adds, and on the admin's device when the admin app is open.
+let sndCtx = null;
+const sndCustomCache = {};      // custom sound id -> data URL
+function sndOn(){ try{ return localStorage.getItem("sham-sound") !== "off"; }catch(e){ return true; } }
+function sndUnlock(){            // phones only allow sound after a tap, so unlock on the first touch/click
+  try{
+    if(!sndCtx){ const AC = window.AudioContext || window.webkitAudioContext; if(AC) sndCtx = new AC(); }
+    if(sndCtx && sndCtx.state === "suspended") sndCtx.resume();
+  }catch(e){}
+}
+["pointerdown","touchstart","click","keydown"].forEach(ev=>document.addEventListener(ev, sndUnlock, {passive:true}));
+function sndTone(freq, at, dur, vol, type){
+  const o = sndCtx.createOscillator(), g = sndCtx.createGain();
+  o.type = type || "sine"; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(vol, at + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  o.connect(g); g.connect(sndCtx.destination);
+  o.start(at); o.stop(at + dur + 0.05);
+}
+const SND_BUILTIN = {
+  chime: {label:"Ding-Ding-Dong", play(t){ sndTone(987.8,t,.45,.5); sndTone(1318.5,t+.22,.45,.5); sndTone(1568,t+.44,.7,.5,"triangle"); }},
+  ding:  {label:"Soft Ding", play(t){ sndTone(659.3,t,.18,.4); sndTone(987.8,t+.12,.35,.4); }},
+  bell:  {label:"Bell", play(t){ [1,2.76,5.4].forEach((m,i)=>sndTone(523.3*m,t,1.4/(i+1),.45/(i+1))); sndTone(523.3,t+.7,1.2,.3); }},
+  coin:  {label:"Coin (Ka-ching)", play(t){ sndTone(1318.5,t,.09,.4,"square"); sndTone(1975.5,t+.09,.6,.4,"square"); }},
+  tada:  {label:"Ta-da", play(t){ [523.3,659.3,784,1046.5].forEach((f,i)=>sndTone(f,t+i*.11,.4,.45,"triangle")); sndTone(1046.5,t+.5,.8,.4,"triangle"); }},
+  horn:  {label:"Lorry Horn", play(t){ sndTone(233,t,.35,.45,"sawtooth"); sndTone(233,t+.45,.6,.45,"sawtooth"); sndTone(293.7,t+.45,.6,.3,"sawtooth"); }}
+};
+function sndBuiltinPlay(key){
+  sndUnlock(); if(!sndCtx) return;
+  (SND_BUILTIN[key] || SND_BUILTIN.chime).play(sndCtx.currentTime + 0.02);
+}
+// id = "builtin:bell" | "custom:<docId>" ; returns after starting the sound
+async function sndPlayId(id, force){
+  if(!force && !sndOn()) return;
+  sndUnlock();
+  id = id || "builtin:chime";
+  try{ if(navigator.vibrate) navigator.vibrate([120, 60, 120]); }catch(e){}
+  if(id.indexOf("custom:") === 0){
+    const cid = id.slice(7);
+    try{
+      let url = sndCustomCache[cid];
+      if(!url){
+        const d = await db.collection("appSoundData").doc(cid).get();
+        if(d.exists) url = sndCustomCache[cid] = d.data().data;
+      }
+      if(url){ const a = new Audio(url); a.volume = 1; await a.play(); return; }
+    }catch(e){}
+    id = "builtin:chime";          // sound was deleted / cannot play: fall back
+  }
+  sndBuiltinPlay(id.replace("builtin:", ""));
+}
+// which sound belongs to this supplier (own sound, else the default, else Ding-Ding-Dong)
+async function sndResolveId(username){
+  let id = "";
+  try{
+    if(username){ const d = await db.collection("supplierAccounts").doc(username).get(); id = (d.exists && d.data().soundId) || ""; }
+    if(!id){ const d2 = await db.collection("appSettings").doc("sounds").get(); id = (d2.exists && d2.data().defaultId) || ""; }
+  }catch(e){}
+  return id || "builtin:chime";
+}
+function sndPlayForSupplier(username){
+  if(!sndOn()) return;
+  sndUnlock();
+  sndResolveId(username).then(id=>sndPlayId(id)).catch(()=>sndBuiltinPlay("chime"));
+}
+function sndChime(force){ if(force || sndOn()) sndBuiltinPlay("chime"); }
+function sndSuccess(){ if(sndOn()) sndBuiltinPlay("ding"); }
+
+// ---- Sound picker: built-in + uploaded sounds; assign to a supplier (or the default) ----
+let sdTarget = null, sdChoice = "", sdMeta = [];
+async function sdLoadMeta(){
+  try{
+    const snap = await db.collection("appSounds").get();
+    sdMeta = [];
+    snap.forEach(d=>sdMeta.push({id:d.id, name:(d.data()||{}).name || "Sound", createdAt:(d.data()||{}).createdAt || 0}));
+    sdMeta.sort((a,b)=>a.createdAt-b.createdAt);
+  }catch(e){ sdMeta = []; }
+  const map = {}; sdMeta.forEach(m=>{ map["custom:" + m.id] = m.name; });
+  return map;
+}
+function sdLabel(id, names, isDefault){
+  if(!id) return isDefault ? SND_BUILTIN.chime.label + " (default)" : "Default sound";
+  if(id.indexOf("builtin:")===0) return (SND_BUILTIN[id.slice(8)] || SND_BUILTIN.chime).label;
+  return names[id] || "Pazhaiya sound (illa)";
+}
+function sdRender(){
+  const rows = [];
+  if(sdTarget && sdTarget.type==="supplier")
+    rows.push({id:"", label:"Default sound use pannu", sub:"Default-la set pannadhu"});
+  Object.keys(SND_BUILTIN).forEach(k=>rows.push({id:"builtin:" + k, label:SND_BUILTIN[k].label, sub:"Built-in"}));
+  sdMeta.forEach(m=>rows.push({id:"custom:" + m.id, label:m.name, sub:"Un sound", custom:true, cid:m.id}));
+  document.getElementById("sdList").innerHTML = rows.map(r=>`<div class="sd-row${r.id===sdChoice ? " on" : ""}" data-sid="${escapeHtml(r.id)}">
+      <button type="button" class="sd-play" data-play="${escapeHtml(r.id)}" aria-label="Kelu">&#9654;</button>
+      <div class="sd-name">${escapeHtml(r.label)}<small>${escapeHtml(r.sub)}</small></div>
+      ${r.custom ? `<button type="button" class="sd-del" data-del="${escapeHtml(r.cid)}" aria-label="Delete">&#128465;</button>` : ""}
+      <span class="sd-tick">${r.id===sdChoice ? "&#10003;" : ""}</span>
+    </div>`).join("");
+  const box = document.getElementById("sdList");
+  box.querySelectorAll(".sd-row").forEach(row=>row.addEventListener("click", ()=>{ sdChoice = row.dataset.sid; sdRender(); }));
+  box.querySelectorAll("[data-play]").forEach(b=>b.addEventListener("click", (ev)=>{ ev.stopPropagation(); sndPlayId(b.dataset.play || "builtin:chime", true); }));
+  box.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click", async (ev)=>{
+    ev.stopPropagation();
+    if(!confirm("Intha sound-a delete pannalama?")) return;
+    try{
+      await db.collection("appSounds").doc(b.dataset.del).delete();
+      await db.collection("appSoundData").doc(b.dataset.del).delete();
+      delete sndCustomCache[b.dataset.del];
+      if(sdChoice === "custom:" + b.dataset.del) sdChoice = "";
+      await sdLoadMeta(); sdRender();
+    }catch(e){ document.getElementById("sdMsg").textContent = "Delete aagala (" + ((e && e.code) || "error") + ")"; }
+  }));
+}
+async function sdOpen(target, current){
+  sdTarget = target; sdChoice = current || "";
+  document.getElementById("sdTitle").textContent = target.type==="default" ? "Default sound" : (target.name + " - sound");
+  document.getElementById("sdMsg").textContent = "";
+  await sdLoadMeta();
+  sdRender();
+  document.getElementById("sdSheet").style.display = "flex";
+}
+function sdClose(){ document.getElementById("sdSheet").style.display = "none"; }
+document.getElementById("sdX").addEventListener("click", sdClose);
+document.getElementById("sdCancel").addEventListener("click", sdClose);
+document.getElementById("sdSheet").addEventListener("click", (e)=>{ if(e.target===document.getElementById("sdSheet")) sdClose(); });
+document.getElementById("sdSave").addEventListener("click", ()=>{
+  const msg = document.getElementById("sdMsg"), btn = document.getElementById("sdSave"), label = btn.innerHTML;
+  if(!sdTarget) return;
+  btn.disabled = true; btn.textContent = "Saving..."; msg.textContent = "";
+  const w = sdTarget.type==="default"
+    ? db.collection("appSettings").doc("sounds").set({defaultId:sdChoice}, {merge:true})
+    : db.collection("supplierAccounts").doc(sdTarget.user).set({soundId:sdChoice}, {merge:true});
+  w.then(()=>{ btn.disabled = false; btn.innerHTML = label; sdClose(); mtLoadSupplierAccounts(); })
+   .catch((e)=>{ btn.disabled = false; btn.innerHTML = label; msg.textContent = "Save aagala (" + ((e && e.code) || "error") + ")"; });
+});
+
+// uploaded file -> small mono 16 kHz WAV (first 6 seconds), so it fits in the database
+async function sdFileToWav(file){
+  const buf = await file.arrayBuffer();
+  const AC = window.AudioContext || window.webkitAudioContext, ctx = new AC();
+  let audio;
+  try{ audio = await new Promise((res, rej)=>{ const p = ctx.decodeAudioData(buf, res, rej); if(p && p.then) p.then(res, rej); }); }
+  finally{ try{ ctx.close(); }catch(e){} }
+  const rate = 16000, seconds = Math.min(audio.duration, 6), n = Math.max(1, Math.floor(seconds * rate));
+  const off = new OfflineAudioContext(1, n, rate);
+  const src = off.createBufferSource(); src.buffer = audio; src.connect(off.destination); src.start(0);
+  const pcm = (await off.startRendering()).getChannelData(0);
+  const fade = Math.min(n, Math.floor(rate * 0.15));
+  const bytes = new Uint8Array(44 + n * 2), dv = new DataView(bytes.buffer);
+  const ws = (o, t)=>{ for(let i=0; i<t.length; i++) dv.setUint8(o + i, t.charCodeAt(i)); };
+  ws(0,"RIFF"); dv.setUint32(4, 36 + n*2, true); ws(8,"WAVE"); ws(12,"fmt "); dv.setUint32(16,16,true); dv.setUint16(20,1,true);
+  dv.setUint16(22,1,true); dv.setUint32(24,rate,true); dv.setUint32(28,rate*2,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+  ws(36,"data"); dv.setUint32(40, n*2, true);
+  for(let i=0; i<n; i++){
+    let v = Math.max(-1, Math.min(1, pcm[i]));
+    if(i > n - fade) v *= (n - i) / fade;
+    dv.setInt16(44 + i*2, v < 0 ? v * 0x8000 : v * 0x7FFF, true);
+  }
+  let bin = ""; for(let i=0; i<bytes.length; i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return {dataUrl:"data:audio/wav;base64," + btoa(bin), seconds:Math.round(seconds*10)/10};
+}
+document.getElementById("sdFile").addEventListener("change", async (e)=>{
+  const f = e.target.files && e.target.files[0]; e.target.value = "";
+  const msg = document.getElementById("sdMsg");
+  if(!f) return;
+  if(f.size > 15*1024*1024){ msg.textContent = "File romba periya. Chinna sound file podunga."; return; }
+  msg.textContent = "Sound ready pannuren...";
+  try{
+    const wav = await sdFileToWav(f);
+    const nm = (prompt("Intha sound-ku peyar:", f.name.replace(/\.[^.]+$/, "").slice(0, 30)) || "").trim() || "Sound";
+    const id = "s" + Date.now().toString(36);
+    await db.collection("appSoundData").doc(id).set({data:wav.dataUrl});
+    await db.collection("appSounds").doc(id).set({name:nm, seconds:wav.seconds, createdAt:Date.now()});
+    sndCustomCache[id] = wav.dataUrl;
+    sdChoice = "custom:" + id;
+    await sdLoadMeta(); sdRender();
+    msg.textContent = "Sound add aachu. Save tap pannunga.";
+    sndPlayId(sdChoice, true);
+  }catch(err){ msg.textContent = "Intha file-a padikka mudiyala. Vera file (mp3/wav) try pannunga."; }
 });
 
 // ===================== STORE: dryer weight in, lorry loads out (taken from chosen dates) =====================
@@ -4568,6 +4787,7 @@ async function mtShowSupplierNotification(k,e){
   mtNotifications = mtNotifications.slice(0,20);
   mtSaveNotificationHistory();
   mtRenderNotifications();
+  sndPlayForSupplier(e.addedBy || "");
   const toast = document.getElementById("mtNotifyToast");
   if(toast){
     toast.innerHTML = "&#128276; New Matta: <b>" + escapeHtml(e.name || "Supplier") + "</b> &middot; " + escapeHtml(k) + " &middot; " + rupee(Number(e.amount)||0) + " Mattai";
@@ -6428,21 +6648,21 @@ function mtRebuildActiveSuppliers(){
 }
 document.getElementById("mtRebuildSuppliersBtn").addEventListener("click", mtRebuildActiveSuppliers);
 
-function mtLoadSupplierAccounts(){
+async function mtLoadSupplierAccounts(){
   const list = document.getElementById("mtSupplierAccountsList");
   if(!list) return;
-  db.collection("supplierAccounts").get().then(snap=>{
+  try{
+    const [snap, names, dflt] = await Promise.all([db.collection("supplierAccounts").get(), sdLoadMeta(), db.collection("appSettings").doc("sounds").get().catch(()=>null)]);
+    const defaultId = (dflt && dflt.exists && dflt.data().defaultId) || "";
     list.innerHTML = "";
-    if(snap.empty){
-      list.innerHTML = '<p class="empty" style="margin:4px 0;">No supplier logins yet.</p>';
-      return;
-    }
+    const addRow = (html)=>{ const row = document.createElement("div"); row.className = "ledger-row display"; row.innerHTML = html; list.appendChild(row); };
+    addRow(`<div class="iname">&#128276; DEFAULT SOUND <span class="icat">(sound set pannaadha ellaa suppliers-kum)</span></div><button class="sd-btn no-print" data-sound="__default">${escapeHtml(sdLabel(defaultId, names, true))}</button>`);
+    if(snap.empty){ const p = document.createElement("p"); p.className = "empty"; p.style.margin = "4px 0"; p.textContent = "No supplier logins yet."; list.appendChild(p); return; }
     snap.forEach(doc=>{
       const d = doc.data();
-      const row = document.createElement("div");
-      row.className = "ledger-row display";
-      row.innerHTML = `<div class="iname">${escapeHtml((d.name||doc.id).toUpperCase())} <span class="icat">(${escapeHtml(doc.id)})</span></div><button class="idel no-print" data-supplieruser="${doc.id}">&#128465;</button>`;
-      list.appendChild(row);
+      addRow(`<div class="iname">${escapeHtml((d.name||doc.id).toUpperCase())} <span class="icat">(${escapeHtml(doc.id)})</span></div>
+        <button class="sd-btn no-print" data-sound="${escapeHtml(doc.id)}" data-sname="${escapeHtml(d.name||doc.id)}" data-cur="${escapeHtml(d.soundId||"")}">&#128276; ${escapeHtml(sdLabel(d.soundId||"", names, false))}</button>
+        <button class="idel no-print" data-supplieruser="${escapeHtml(doc.id)}">&#128465;</button>`);
     });
     list.querySelectorAll("[data-supplieruser]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
@@ -6450,9 +6670,15 @@ function mtLoadSupplierAccounts(){
         db.collection("supplierAccounts").doc(btn.dataset.supplieruser).delete().then(mtLoadSupplierAccounts);
       });
     });
-  }).catch(()=>{
+    list.querySelectorAll("[data-sound]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        if(btn.dataset.sound==="__default") sdOpen({type:"default"}, defaultId);
+        else sdOpen({type:"supplier", user:btn.dataset.sound, name:btn.dataset.sname}, btn.dataset.cur);
+      });
+    });
+  }catch(e){
     list.innerHTML = '<p class="empty" style="margin:4px 0;">Couldn\'t load. Check internet.</p>';
-  });
+  }
 }
 
 document.getElementById("mtAddSupplierAccountBtn").addEventListener("click", ()=>{
@@ -8964,6 +9190,19 @@ function mtStartGlobalSupplierNotificationSync(){
 }
 
 mtLoadNotificationHistory();
+
+(function(){
+  const btn = document.getElementById("mtSoundToggle");
+  if(!btn) return;
+  const paint = ()=>{ btn.innerHTML = sndOn() ? "&#128266; Sound on" : "&#128263; Sound off"; };
+  paint();
+  btn.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    try{ localStorage.setItem("sham-sound", sndOn() ? "off" : "on"); }catch(err){}
+    paint();
+    if(sndOn()) sndChime();     // let him hear it
+  });
+})();
 
 if("serviceWorker" in navigator){
   navigator.serviceWorker.register("sw-1-1.js").catch(()=>{});
